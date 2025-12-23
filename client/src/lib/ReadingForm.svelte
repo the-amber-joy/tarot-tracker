@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import DeckModal from './DeckModal.svelte';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let onBack: () => void;
@@ -27,6 +28,7 @@
   let spreadName = '';
   let notes = '';
   let spreadCards: Record<number, any> = {};
+  let isDeckModalOpen = false;
   
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -64,6 +66,19 @@
   
   function handleTemplateAutoSelected(event: CustomEvent) {
     spreadTemplate = event.detail;
+  }
+  
+  function openDeckModal() {
+    isDeckModalOpen = true;
+  }
+  
+  function closeDeckModal() {
+    isDeckModalOpen = false;
+  }
+  
+  function handleDeckAdded() {
+    // Reload decks when a new one is added
+    loadDecks();
   }
   
   async function handleSubmit(e: Event) {
@@ -159,7 +174,7 @@
               <option value={deck.name}>{deck.name}</option>
             {/each}
           </select>
-          <button type="button" class="btn btn-primary">Manage Decks</button>
+          <button type="button" class="btn btn-primary" on:click={openDeckModal}>Manage Decks</button>
         </div>
       </div>
       
@@ -212,3 +227,9 @@
     </div>
   </form>
 </div>
+
+<DeckModal 
+  isOpen={isDeckModalOpen}
+  onClose={closeDeckModal}
+  onDeckAdded={handleDeckAdded}
+/>

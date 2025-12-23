@@ -115,7 +115,6 @@
               type="text" 
               id="cardPositionName" 
               bind:value={positionLabel}
-              readonly
             />
           </div>
           
