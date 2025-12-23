@@ -591,3 +591,29 @@ tbody tr:hover {
 .modal-actions .btn {
   flex: 0 0 auto;
 }
+
+/* Read-only spread canvas for detail view */
+.spread-canvas-readonly {
+  position: relative;
+  min-height: 750px;
+  min-width: 750px;
+  background: #f8f9fa;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  margin-top: 10px;
+  padding: 40px;
+}
+
+.card-position.readonly {
+  cursor: default;
+}
+
+.card-position.readonly:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  z-index: 100;
+}
+
+.card-position.readonly[style*="rotate"]:hover {
+  transform: rotate(90deg) scale(1.02);
+}

@@ -270,13 +270,22 @@ function hideCardModal() {
 function saveCard(event) {
   event.preventDefault();
 
+  const cardName = document.getElementById("cardName").value.trim();
+
+  // Validate that the card name is in the tarot cards list
+  const isValidCard = tarotCards.some((card) => card.name === cardName);
+  if (!isValidCard) {
+    alert("Please select a valid card name from the list.");
+    return;
+  }
+
   const positionIndex = parseInt(
     document.getElementById("cardPositionIndex").value,
   );
   const position = currentSpreadTemplate.positions[positionIndex];
 
   spreadCards[positionIndex] = {
-    card_name: document.getElementById("cardName").value,
+    card_name: cardName,
     interpretation: document.getElementById("cardInterpretation").value,
     position_x: position.defaultX,
     position_y: position.defaultY,
@@ -333,10 +342,16 @@ function getFormData() {
     time = now.toTimeString().slice(0, 5);
   }
 
+  // Get spread name, use template name if not provided
+  let spreadName = document.getElementById("spreadName").value.trim();
+  if (!spreadName && currentSpreadTemplate) {
+    spreadName = currentSpreadTemplate.name;
+  }
+
   return {
     date: date,
     time: time,
-    spread_name: document.getElementById("spreadName").value,
+    spread_name: spreadName,
     spread_template_id: currentSpreadTemplate?.id || null,
     deck_name: document.getElementById("deckName").value,
     notes: document.getElementById("notes").value,
@@ -432,6 +447,11 @@ async function loadReadingDetails(id) {
 function displayReadingDetails(reading) {
   const container = document.getElementById("readingDetails");
 
+  // Check if reading has a spread template
+  const hasSpreadTemplate =
+    reading.spread_template_id &&
+    spreadTemplates.find((t) => t.id === reading.spread_template_id);
+
   container.innerHTML = `
         <div class="detail-section">
             <h3>Reading Information</h3>
@@ -456,6 +476,17 @@ function displayReadingDetails(reading) {
             }
         </div>
         
+        ${
+          hasSpreadTemplate
+            ? `
+        <div class="detail-section">
+            <h3>Spread Layout</h3>
+            <div id="detailSpreadCanvas" class="spread-canvas-readonly"></div>
+        </div>
+        `
+            : ""
+        }
+        
         <div class="detail-section">
             <h3>Cards (${reading.cards.length})</h3>
             ${reading.cards
@@ -475,6 +506,70 @@ function displayReadingDetails(reading) {
               .join("")}
         </div>
     `;
+
+  // Render spread layout if available
+  if (hasSpreadTemplate) {
+    renderDetailSpreadLayout(reading);
+  }
+}
+
+// Render spread layout in detail view (read-only)
+function renderDetailSpreadLayout(reading) {
+  const canvas = document.getElementById("detailSpreadCanvas");
+  const template = spreadTemplates.find(
+    (t) => t.id === reading.spread_template_id,
+  );
+
+  if (!template || !canvas) return;
+
+  canvas.innerHTML = "";
+  canvas.className = "spread-canvas-readonly";
+
+  // Create a map of cards by position label
+  const cardsByPosition = {};
+  reading.cards.forEach((card) => {
+    cardsByPosition[card.position] = card;
+  });
+
+  // Render each position
+  template.positions.forEach((position, index) => {
+    const positionDiv = document.createElement("div");
+    positionDiv.className = "card-position readonly";
+    positionDiv.style.left = `${position.defaultX}px`;
+    positionDiv.style.top = `${position.defaultY}px`;
+
+    // Apply rotation if specified
+    if (position.rotation) {
+      positionDiv.style.transform = `rotate(${position.rotation}deg)`;
+    }
+
+    const cardData = cardsByPosition[position.label];
+
+    if (cardData) {
+      positionDiv.classList.add("filled");
+      positionDiv.innerHTML = `
+        <div class="position-number">${position.order}</div>
+        <div class="position-label">${position.label}</div>
+        <div class="card-name">${cardData.card_name}</div>
+      `;
+
+      // Add interpretation tooltip if available
+      if (cardData.interpretation) {
+        positionDiv.title = `${position.label}\n${cardData.card_name}\n\n${cardData.interpretation}`;
+      } else {
+        positionDiv.title = `${position.label}\n${cardData.card_name}`;
+      }
+    } else {
+      positionDiv.innerHTML = `
+        <div class="position-number">${position.order}</div>
+        <div class="position-label">${position.label}</div>
+        <div class="empty-card">—</div>
+      `;
+      positionDiv.title = position.label;
+    }
+
+    canvas.appendChild(positionDiv);
+  });
 }
 
 async function loadReadingForEdit(id) {
