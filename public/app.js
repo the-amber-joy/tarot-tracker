@@ -10,6 +10,7 @@ let spreadTemplates = [];
 let currentSpreadTemplate = null;
 let spreadCards = {}; // { positionIndex: { card_name, interpretation, position_x, position_y } }
 let focusTrapHandler = null;
+let preventCanvasClick = false; // Prevent canvas clicks after drag/rotate
 
 // Focus trap utility functions
 function trapFocus(modalElement) {
@@ -262,9 +263,10 @@ function renderSpreadCanvas() {
     positionBtn.style.left = `${xPos}px`;
     positionBtn.style.top = `${yPos}px`;
 
-    // Apply rotation if specified
-    if (position.rotation) {
-      positionBtn.style.transform = `rotate(${position.rotation}deg)`;
+    // Apply rotation - use stored rotation if available, otherwise use template rotation
+    const rotation = cardData?.rotation ?? position.rotation ?? 0;
+    if (rotation) {
+      positionBtn.style.transform = `rotate(${rotation}deg)`;
     }
 
     positionBtn.dataset.positionIndex = index;
@@ -275,11 +277,11 @@ function renderSpreadCanvas() {
         <div class="position-number">${position.order}</div>
         <div class="position-label">${position.label}</div>
         <div class="card-name">${cardData.card_name}</div>
+        <div class="rotation-handle" title="Drag to rotate">↻</div>
       `;
 
-      // Make filled cards draggable
+      // Make filled cards draggable and rotatable
       positionBtn.style.cursor = "grab";
-      makeDraggable(positionBtn, index);
 
       // Prevent modal opening after drag
       positionBtn.addEventListener("click", (e) => {
@@ -289,6 +291,15 @@ function renderSpreadCanvas() {
         }
         openCardModal(index);
       });
+
+      // Append to canvas first
+      canvas.appendChild(positionBtn);
+
+      // Then make draggable and rotatable
+      makeDraggable(positionBtn, index);
+      makeRotatable(positionBtn, index);
+
+      return; // Skip the canvas.appendChild at the end
     } else {
       positionBtn.innerHTML = `
         <div class="position-number">${position.order}</div>
@@ -341,6 +352,7 @@ function renderCustomCard(index) {
   cardBtn.style.left = `${cardData.position_x}px`;
   cardBtn.style.top = `${cardData.position_y}px`;
 
+  // Apply rotation if specified
   if (cardData.rotation) {
     cardBtn.style.transform = `rotate(${cardData.rotation}deg)`;
   }
@@ -354,6 +366,7 @@ function renderCustomCard(index) {
       cardData.position_label || "Card " + positionNumber
     }</div>
     <div class="card-name">${cardData.card_name}</div>
+    <div class="rotation-handle" title="Drag to rotate">↻</div>
   `;
 
   cardBtn.title = cardData.position_label || `Card ${positionNumber}`;
@@ -363,11 +376,25 @@ function renderCustomCard(index) {
   );
 
   cardBtn.addEventListener("click", (e) => {
+    // Don't open modal if card was just dragged or rotated
+    if (cardBtn.dataset.justDragged) {
+      e.stopPropagation();
+      return;
+    }
+
     e.stopPropagation();
     openCardModal(index, true);
   });
 
+  // Set cursor style
+  cardBtn.style.cursor = "grab";
+
+  // Append to canvas first
   canvas.appendChild(cardBtn);
+
+  // Then make draggable and rotatable
+  makeDraggable(cardBtn, index);
+  makeRotatable(cardBtn, index);
 }
 
 // Make a card draggable
@@ -387,6 +414,7 @@ function makeDraggable(cardElement, cardKey) {
     // Only start drag on left click
     if (e.button !== 0) return;
 
+    e.stopPropagation(); // Prevent canvas click
     startX = e.clientX;
     startY = e.clientY;
     initialX = e.clientX - cardElement.offsetLeft;
@@ -439,7 +467,7 @@ function makeDraggable(cardElement, cardKey) {
       setTimeout(() => {
         delete cardElement.dataset.justDragged;
         hasMoved = false;
-      }, 50);
+      }, 200);
     }
 
     document.removeEventListener("mousemove", drag);
@@ -447,8 +475,86 @@ function makeDraggable(cardElement, cardKey) {
   }
 }
 
+// Make a card rotatable via handle
+function makeRotatable(cardElement, cardKey) {
+  const handle = cardElement.querySelector(".rotation-handle");
+  if (!handle) {
+    return;
+  }
+
+  let isRotating = false;
+  let currentRotation = spreadCards[cardKey]?.rotation || 0;
+
+  handle.addEventListener("mousedown", rotateStart);
+
+  function rotateStart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    isRotating = true;
+
+    // Prevent dragging and clicking while rotating
+    cardElement.dataset.justDragged = "true";
+
+    document.addEventListener("mousemove", rotate);
+    document.addEventListener("mouseup", rotateEnd);
+  }
+
+  function rotate(e) {
+    if (!isRotating) return;
+
+    e.preventDefault();
+
+    // Get card center
+    const rect = cardElement.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    // Calculate angle from center to mouse
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+    const degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
+
+    currentRotation = Math.round(degrees);
+
+    // Apply rotation
+    const currentTransform = cardElement.style.transform
+      .replace(/rotate\([^)]*\)/, "")
+      .trim();
+    cardElement.style.transform =
+      `${currentTransform} rotate(${currentRotation}deg)`.trim();
+  }
+
+  function rotateEnd(e) {
+    if (!isRotating) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    isRotating = false;
+
+    // Store rotation in spreadCards
+    spreadCards[cardKey].rotation = currentRotation;
+
+    // Prevent canvas clicks for a moment after rotation
+    preventCanvasClick = true;
+
+    // Keep the justDragged flag a bit longer to prevent modal opening
+    setTimeout(() => {
+      delete cardElement.dataset.justDragged;
+      preventCanvasClick = false;
+    }, 200);
+
+    document.removeEventListener("mousemove", rotate);
+    document.removeEventListener("mouseup", rotateEnd);
+  }
+}
+
 // Custom spread functions
 function handleCanvasClick(event) {
+  // Don't add card if we just finished dragging/rotating
+  if (preventCanvasClick) {
+    return;
+  }
+
   // Don't add card if clicking on an existing card
   if (event.target.closest(".card-position")) {
     return;
@@ -464,60 +570,6 @@ function handleCanvasClick(event) {
 
   // Open modal with position set to click location
   openCustomCardModal(newKey, x, y);
-}
-
-function renderCustomCard(cardKey) {
-  const canvas = document.getElementById("spreadCanvas");
-  const cardData = spreadCards[cardKey];
-
-  if (!cardData) return;
-
-  const cardBtn = document.createElement("button");
-  cardBtn.type = "button";
-  cardBtn.className = "card-position filled custom-card";
-  cardBtn.style.left = `${cardData.position_x}px`;
-  cardBtn.style.top = `${cardData.position_y}px`;
-
-  // Apply rotation if specified
-  if (cardData.rotation) {
-    cardBtn.style.transform = `rotate(${cardData.rotation}deg)`;
-  }
-
-  cardBtn.dataset.cardKey = cardKey;
-  cardBtn.innerHTML = `
-    <div class="position-label">${
-      cardData.position_label || "Card " + (cardKey + 1)
-    }</div>
-    <div class="card-name">${cardData.card_name}</div>
-  `;
-
-  cardBtn.setAttribute(
-    "aria-label",
-    `${cardData.position_label || "Card"} - ${cardData.card_name}`,
-  );
-
-  // Add click to edit
-  cardBtn.addEventListener("click", (e) => {
-    // Don't open modal if card was just dragged
-    if (cardBtn.dataset.justDragged) {
-      e.stopPropagation();
-      return;
-    }
-
-    e.stopPropagation();
-    openCustomCardModal(
-      cardKey,
-      cardData.position_x,
-      cardData.position_y,
-      cardData,
-    );
-  });
-
-  // Make draggable
-  cardBtn.style.cursor = "grab";
-  makeDraggable(cardBtn, cardKey);
-
-  canvas.appendChild(cardBtn);
 }
 
 function openCustomCardModal(cardKey, x, y, existingCard = null) {
@@ -693,12 +745,27 @@ function saveCard(event) {
     y = existingCard?.position_y ?? position.defaultY;
   }
 
+  // Preserve existing rotation if editing, otherwise default to 0 (or template rotation for predefined)
+  const existingRotation = spreadCards[positionIndex]?.rotation;
+  let rotation;
+
+  if (existingRotation !== undefined) {
+    rotation = existingRotation;
+  } else if (currentSpreadTemplate.id !== "custom") {
+    // For predefined spreads, use template rotation as default
+    const position = currentSpreadTemplate.positions[positionIndex];
+    rotation = position?.rotation || 0;
+  } else {
+    rotation = 0;
+  }
+
   spreadCards[positionIndex] = {
     card_name: cardName,
     position_label: positionLabel,
     interpretation: interpretation,
     position_x: x,
     position_y: y,
+    rotation: rotation,
   };
 
   renderSpreadCanvas();
