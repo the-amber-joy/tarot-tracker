@@ -123,6 +123,9 @@ function setupEventListeners() {
     .addEventListener("click", () => editReading());
   document.getElementById("deleteBtn").addEventListener("click", deleteReading);
   document
+    .getElementById("deleteFormBtn")
+    .addEventListener("click", deleteReading);
+  document
     .getElementById("sortDateBtn")
     .addEventListener("click", toggleDateSort);
 
@@ -187,9 +190,11 @@ function showFormView(readingId = null) {
 
   if (readingId) {
     document.getElementById("formTitle").textContent = "Edit Reading";
+    document.getElementById("deleteFormBtn").classList.remove("hidden");
     loadReadingForEdit(readingId);
   } else {
     document.getElementById("formTitle").textContent = "New Reading";
+    document.getElementById("deleteFormBtn").classList.add("hidden");
     resetForm();
   }
 }
