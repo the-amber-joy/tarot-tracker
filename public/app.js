@@ -215,18 +215,91 @@ function setNow() {
 // Spread template management
 let pendingCardPosition = null; // Stores click coordinates for custom spread
 
+function convertToCustomSpread() {
+  // Before converting, create placeholder entries for all empty positions
+  if (currentSpreadTemplate && currentSpreadTemplate.positions) {
+    currentSpreadTemplate.positions.forEach((position, index) => {
+      if (!spreadCards[index]) {
+        // Create an empty placeholder for unfilled positions
+        spreadCards[index] = {
+          card_name: "",
+          position_label: position.label,
+          interpretation: "",
+          position_x: position.defaultX,
+          position_y: position.defaultY,
+          rotation: position.rotation || 0,
+          isEmpty: true, // Mark as empty so we can render it differently
+        };
+      }
+    });
+  }
+
+  const customTemplate = spreadTemplates.find((t) => t.id === "custom");
+  if (customTemplate) {
+    currentSpreadTemplate = customTemplate;
+    document.getElementById("spreadTemplate").value = "custom";
+    // Re-render to show all positions including empty ones
+    renderSpreadCanvas();
+  }
+}
+
 function onSpreadTemplateChange(event) {
   const templateId = event.target.value;
-  currentSpreadTemplate = spreadTemplates.find((t) => t.id === templateId);
-  spreadCards = {}; // Reset cards when changing template
+  const newTemplate = spreadTemplates.find((t) => t.id === templateId);
+
+  // Check if we have existing cards
+  const existingCardCount = Object.keys(spreadCards).length;
+
+  if (existingCardCount > 0 && newTemplate.id !== "custom") {
+    // Check if new template has enough positions
+    if (existingCardCount > newTemplate.positions.length) {
+      alert(
+        `The ${newTemplate.name} spread only has ${
+          newTemplate.positions.length
+        } positions, but you have ${existingCardCount} cards. Please remove ${
+          existingCardCount - newTemplate.positions.length
+        } card(s) first.`,
+      );
+      // Reset the select back to current template
+      document.getElementById("spreadTemplate").value =
+        currentSpreadTemplate?.id || "";
+      return;
+    }
+
+    // Remap cards to new template positions
+    const remappedCards = {};
+    Object.keys(spreadCards)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .forEach((key, index) => {
+        const card = spreadCards[key];
+        const newPosition = newTemplate.positions[index];
+        remappedCards[index] = {
+          ...card,
+          position_x: newPosition.defaultX,
+          position_y: newPosition.defaultY,
+          rotation: newPosition.rotation || 0,
+        };
+      });
+    spreadCards = remappedCards;
+  }
+
+  currentSpreadTemplate = newTemplate;
   renderSpreadCanvas();
 }
 
 function renderSpreadCanvas() {
   const canvas = document.getElementById("spreadCanvas");
 
+  // If no template selected, default to custom spread behavior
   if (!currentSpreadTemplate) {
     canvas.innerHTML = "";
+    canvas.className = "spread-canvas custom-spread";
+    canvas.addEventListener("click", handleCanvasClick);
+
+    // Render any existing cards
+    Object.keys(spreadCards).forEach((key) => {
+      renderCustomCard(parseInt(key));
+    });
     return;
   }
 
@@ -348,7 +421,13 @@ function renderCustomCard(index) {
 
   const cardBtn = document.createElement("button");
   cardBtn.type = "button";
-  cardBtn.className = "card-position filled custom-card";
+
+  // Check if this is an empty placeholder
+  const isEmpty = cardData.isEmpty || !cardData.card_name;
+
+  cardBtn.className = isEmpty
+    ? "card-position custom-card"
+    : "card-position filled custom-card";
   cardBtn.style.left = `${cardData.position_x}px`;
   cardBtn.style.top = `${cardData.position_y}px`;
 
@@ -360,19 +439,32 @@ function renderCustomCard(index) {
   cardBtn.dataset.positionIndex = index;
 
   const positionNumber = index + 1;
-  cardBtn.innerHTML = `
-    <div class="position-number">${positionNumber}</div>
-    <div class="position-label">${
-      cardData.position_label || "Card " + positionNumber
-    }</div>
-    <div class="card-name">${cardData.card_name}</div>
-    <div class="rotation-handle" title="Drag to rotate">↻</div>
-  `;
+
+  if (isEmpty) {
+    // Render as empty placeholder
+    cardBtn.innerHTML = `
+      <div class="position-number">${positionNumber}</div>
+      <div class="position-label">${
+        cardData.position_label || "Card " + positionNumber
+      }</div>
+      <div class="empty-card">+</div>
+    `;
+  } else {
+    // Render as filled card
+    cardBtn.innerHTML = `
+      <div class="position-number">${positionNumber}</div>
+      <div class="position-label">${
+        cardData.position_label || "Card " + positionNumber
+      }</div>
+      <div class="card-name">${cardData.card_name}</div>
+      <div class="rotation-handle" title="Drag to rotate">↻</div>
+    `;
+  }
 
   cardBtn.title = cardData.position_label || `Card ${positionNumber}`;
   cardBtn.setAttribute(
     "aria-label",
-    `${cardData.position_label} - ${cardData.card_name}`,
+    `${cardData.position_label} - ${isEmpty ? "Add card" : cardData.card_name}`,
   );
 
   cardBtn.addEventListener("click", (e) => {
@@ -386,15 +478,17 @@ function renderCustomCard(index) {
     openCardModal(index, true);
   });
 
-  // Set cursor style
-  cardBtn.style.cursor = "grab";
-
   // Append to canvas first
   canvas.appendChild(cardBtn);
 
-  // Then make draggable and rotatable
+  // Make all cards draggable and rotatable (both empty and filled)
+  cardBtn.style.cursor = "grab";
   makeDraggable(cardBtn, index);
-  makeRotatable(cardBtn, index);
+
+  // Only add rotation handle to filled cards
+  if (!isEmpty) {
+    makeRotatable(cardBtn, index);
+  }
 }
 
 // Make a card draggable
@@ -439,6 +533,27 @@ function makeDraggable(cardElement, cardKey) {
     const deltaX = Math.abs(e.clientX - startX);
     const deltaY = Math.abs(e.clientY - startY);
     if (deltaX > 5 || deltaY > 5) {
+      // Check if we need to convert to custom spread
+      if (
+        !hasMoved &&
+        currentSpreadTemplate &&
+        currentSpreadTemplate.id !== "custom"
+      ) {
+        if (
+          !confirm(
+            "Moving cards will convert this to a custom spread. Continue?",
+          )
+        ) {
+          // Cancel the drag
+          isDragging = false;
+          cardElement.style.cursor = "grab";
+          document.removeEventListener("mousemove", drag);
+          document.removeEventListener("mouseup", dragEnd);
+          return;
+        }
+        // Convert to custom spread
+        convertToCustomSpread();
+      }
       hasMoved = true;
     }
 
@@ -488,6 +603,19 @@ function makeRotatable(cardElement, cardKey) {
   handle.addEventListener("mousedown", rotateStart);
 
   function rotateStart(e) {
+    // Warn user if this is a predefined spread
+    if (currentSpreadTemplate && currentSpreadTemplate.id !== "custom") {
+      if (
+        !confirm(
+          "Rotating cards will convert this to a custom spread. Continue?",
+        )
+      ) {
+        return;
+      }
+      // Convert to custom spread
+      convertToCustomSpread();
+    }
+
     e.preventDefault();
     e.stopPropagation();
     isRotating = true;
@@ -560,6 +688,15 @@ function handleCanvasClick(event) {
     return;
   }
 
+  // Auto-select Custom template if none selected
+  if (!currentSpreadTemplate) {
+    const customTemplate = spreadTemplates.find((t) => t.id === "custom");
+    if (customTemplate) {
+      currentSpreadTemplate = customTemplate;
+      document.getElementById("spreadTemplate").value = "custom";
+    }
+  }
+
   const canvas = document.getElementById("spreadCanvas");
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left - 50; // Center the card (100px width / 2)
@@ -568,8 +705,10 @@ function handleCanvasClick(event) {
   // Generate a new unique key for this card
   const newKey = Object.keys(spreadCards).length;
 
+  pendingCardPosition = { x, y };
+
   // Open modal with position set to click location
-  openCustomCardModal(newKey, x, y);
+  openCardModal(newKey, true);
 }
 
 function openCustomCardModal(cardKey, x, y, existingCard = null) {
@@ -696,31 +835,32 @@ function saveCard(event) {
   event.preventDefault();
 
   const cardName = document.getElementById("cardName").value.trim();
-
-  // Validate that the card name is in the tarot cards list
-  const isValidCard = tarotCards.some((card) => card.name === cardName);
-  if (!isValidCard) {
-    alert("Please select a valid card name from the list.");
-    return;
-  }
-
   const positionIndex = parseInt(
     document.getElementById("cardPositionIndex").value,
   );
 
-  // Check if card is already used in another position
-  const cardAlreadyUsed = Object.keys(spreadCards).some((posIndex) => {
-    return (
-      parseInt(posIndex) !== positionIndex &&
-      spreadCards[posIndex].card_name === cardName
-    );
-  });
+  // Validate card name if provided
+  if (cardName) {
+    const isValidCard = tarotCards.some((card) => card.name === cardName);
+    if (!isValidCard) {
+      alert("Please select a valid card name from the list.");
+      return;
+    }
 
-  if (cardAlreadyUsed) {
-    alert(
-      `The card "${cardName}" is already used in this reading. Each card can only be used once.`,
-    );
-    return;
+    // Check if card is already used in another position
+    const cardAlreadyUsed = Object.keys(spreadCards).some((posIndex) => {
+      return (
+        parseInt(posIndex) !== positionIndex &&
+        spreadCards[posIndex].card_name === cardName
+      );
+    });
+
+    if (cardAlreadyUsed) {
+      alert(
+        `The card "${cardName}" is already used in this reading. Each card can only be used once.`,
+      );
+      return;
+    }
   }
 
   const positionLabel = document
@@ -766,6 +906,7 @@ function saveCard(event) {
     position_x: x,
     position_y: y,
     rotation: rotation,
+    isEmpty: !cardName, // Mark as empty if no card name provided
   };
 
   renderSpreadCanvas();

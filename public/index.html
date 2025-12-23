@@ -80,8 +80,8 @@
 
           <div class="form-group">
             <label for="spreadTemplate">Spread Template</label>
-            <select id="spreadTemplate" required>
-              <option value="" disabled selected>Select a template...</option>
+            <select id="spreadTemplate">
+              <option value="">Start adding cards to create a custom spread...</option>
               <!-- Populated by JavaScript -->
             </select>
           </div>
@@ -172,12 +172,12 @@
 
             <div class="form-group">
               <label for="cardPositionName">Position</label>
-              <input type="text" id="cardPositionName" required>
+              <input type="text" id="cardPositionName">
             </div>
 
             <div class="form-group">
               <label for="cardName">Card Name</label>
-              <input type="text" id="cardName" list="cardList" placeholder="Start typing card name..." required>
+              <input type="text" id="cardName" list="cardList" placeholder="Start typing card name...">
               <datalist id="cardList">
                 <!-- Populated by JavaScript -->
               </datalist>
