@@ -13,6 +13,15 @@ const db = new sqlite3.Database(path.join(__dirname, "tarot.db"), (err) => {
 // Initialize database schema
 function initDatabase() {
   db.serialize(() => {
+    // Create decks table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS decks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create readings table
     db.run(`
       CREATE TABLE IF NOT EXISTS readings (

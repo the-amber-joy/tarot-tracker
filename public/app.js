@@ -5,10 +5,12 @@ let editMode = false;
 let tarotCards = [];
 let sortDateDescending = true; // true = newest first, false = oldest first
 let allReadings = [];
+let allDecks = [];
 
 // Initialize app
 document.addEventListener("DOMContentLoaded", async () => {
   await loadTarotCards();
+  await loadDecks();
   setupEventListeners();
   loadReadings();
 });
@@ -38,6 +40,7 @@ function setupEventListeners() {
   document
     .getElementById("editBtn")
     .addEventListener("click", () => editReading());
+  document.getElementById("deleteBtn").addEventListener("click", deleteReading);
   document
     .getElementById("sortDateBtn")
     .addEventListener("click", toggleDateSort);
@@ -52,6 +55,21 @@ function setupEventListeners() {
   document
     .getElementById("readingForm")
     .addEventListener("submit", saveReading);
+
+  // Deck management
+  document
+    .getElementById("manageDeckBtn")
+    .addEventListener("click", showDeckModal);
+  document
+    .getElementById("closeDeckModal")
+    .addEventListener("click", hideDeckModal);
+  document.getElementById("addDeckBtn").addEventListener("click", addNewDeck);
+  document.getElementById("newDeckName").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addNewDeck();
+    }
+  });
 }
 
 // View management
@@ -386,4 +404,150 @@ async function saveReading(event) {
 
 function editReading() {
   showFormView(currentReadingId);
+}
+
+async function deleteReading() {
+  if (!currentReadingId) return;
+
+  if (
+    !confirm(
+      "Are you sure you want to delete this reading? This cannot be undone.",
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/readings/${currentReadingId}`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      showSummaryView();
+    } else {
+      const error = await response.json();
+      alert("Error deleting reading: " + error.error);
+    }
+  } catch (error) {
+    console.error("Error deleting reading:", error);
+    alert("Error deleting reading. Please try again.");
+  }
+}
+
+// Deck management functions
+async function loadDecks() {
+  try {
+    const response = await fetch("/api/decks");
+    allDecks = await response.json();
+    populateDeckSelect();
+  } catch (error) {
+    console.error("Error loading decks:", error);
+  }
+}
+
+function populateDeckSelect() {
+  const select = document.getElementById("deckName");
+  const currentValue = select.value;
+
+  // Keep the placeholder option
+  select.innerHTML =
+    '<option value="" disabled selected>Select a deck...</option>';
+
+  allDecks.forEach((deck) => {
+    const option = document.createElement("option");
+    option.value = deck.name;
+    option.textContent = deck.name;
+    select.appendChild(option);
+  });
+
+  // Restore selected value if it still exists
+  if (currentValue && allDecks.some((d) => d.name === currentValue)) {
+    select.value = currentValue;
+  }
+}
+
+function showDeckModal() {
+  document.getElementById("deckModal").classList.remove("hidden");
+  displayDeckList();
+}
+
+function hideDeckModal() {
+  document.getElementById("deckModal").classList.add("hidden");
+  document.getElementById("newDeckName").value = "";
+}
+
+function displayDeckList() {
+  const deckList = document.getElementById("deckList");
+
+  if (allDecks.length === 0) {
+    deckList.innerHTML =
+      '<li class="empty-message">No decks yet. Add one above!</li>';
+    return;
+  }
+
+  deckList.innerHTML = allDecks
+    .map(
+      (deck) => `
+    <li>
+      <span>${deck.name}</span>
+      <button class="btn-remove-small" onclick="deleteDeck(${deck.id})">Delete</button>
+    </li>
+  `,
+    )
+    .join("");
+}
+
+async function addNewDeck() {
+  const nameInput = document.getElementById("newDeckName");
+  const name = nameInput.value.trim();
+
+  if (!name) {
+    alert("Please enter a deck name");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/decks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
+    });
+
+    if (response.ok) {
+      nameInput.value = "";
+      await loadDecks();
+      displayDeckList();
+    } else {
+      const error = await response.json();
+      alert(error.error || "Error adding deck");
+    }
+  } catch (error) {
+    console.error("Error adding deck:", error);
+    alert("Error adding deck. Please try again.");
+  }
+}
+
+async function deleteDeck(deckId) {
+  if (!confirm("Are you sure you want to delete this deck?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/decks/${deckId}`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      await loadDecks();
+      displayDeckList();
+    } else {
+      const error = await response.json();
+      alert(error.error || "Error deleting deck");
+    }
+  } catch (error) {
+    console.error("Error deleting deck:", error);
+    alert("Error deleting deck. Please try again.");
+  }
 }

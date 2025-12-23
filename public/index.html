@@ -69,12 +69,13 @@
 
           <div class="form-group">
             <label for="deckName">Deck Used</label>
-            <select id="deckName" required>
-              <option value="" disabled selected>Select a deck...</option>
-              <option value="Biddy Everyday">Biddy Everyday</option>
-              <option value="Flower Child">Flower Child</option>
-              <option value="Weiser Tarot">Weiser Tarot</option>
-            </select>
+            <div class="input-with-button">
+              <select id="deckName" required>
+                <option value="" disabled selected>Select a deck...</option>
+                <!-- Populated by JavaScript -->
+              </select>
+              <button type="button" id="manageDeckBtn" class="btn-small">Manage Decks</button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -112,12 +113,40 @@
         <h2>Reading Details</h2>
         <div>
           <button id="editBtn" class="btn btn-primary">Edit</button>
+          <button id="deleteBtn" class="btn btn-danger">Delete</button>
           <button id="backFromDetailBtn" class="btn btn-secondary">← Back to Summary</button>
         </div>
       </div>
 
       <div id="readingDetails">
         <!-- Populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Deck Management Modal -->
+    <div id="deckModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Manage Decks</h2>
+          <button id="closeDeckModal" class="btn-close">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="newDeckName">Add New Deck</label>
+            <div class="input-with-button">
+              <input type="text" id="newDeckName" placeholder="Enter deck name...">
+              <button id="addDeckBtn" class="btn-small">Add</button>
+            </div>
+          </div>
+
+          <div class="deck-list">
+            <h3>Your Decks</h3>
+            <ul id="deckList">
+              <!-- Populated by JavaScript -->
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>

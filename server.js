@@ -17,6 +17,54 @@ app.get("/api/cards", (req, res) => {
   res.json(TAROT_CARDS);
 });
 
+// Deck management endpoints
+
+// Get all decks
+app.get("/api/decks", (req, res) => {
+  db.all("SELECT * FROM decks ORDER BY name", [], (err, decks) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(decks);
+  });
+});
+
+// Add a new deck
+app.post("/api/decks", (req, res) => {
+  const { name } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: "Deck name is required" });
+  }
+
+  db.run("INSERT INTO decks (name) VALUES (?)", [name.trim()], function (err) {
+    if (err) {
+      if (err.message.includes("UNIQUE")) {
+        return res.status(400).json({ error: "Deck name already exists" });
+      }
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({
+      id: this.lastID,
+      name: name.trim(),
+      message: "Deck added successfully",
+    });
+  });
+});
+
+// Delete a deck
+app.delete("/api/decks/:id", (req, res) => {
+  db.run("DELETE FROM decks WHERE id = ?", [req.params.id], function (err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: "Deck not found" });
+    }
+    res.json({ message: "Deck deleted successfully" });
+  });
+});
+
 // Get all readings (for summary table)
 app.get("/api/readings", (req, res) => {
   db.all(
