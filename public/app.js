@@ -6,12 +6,17 @@ let tarotCards = [];
 let sortDateDescending = true; // true = newest first, false = oldest first
 let allReadings = [];
 let allDecks = [];
+let spreadTemplates = [];
+let currentSpreadTemplate = null;
+let spreadCards = {}; // { positionIndex: { card_name, interpretation, position_x, position_y } }
 
 // Initialize app
 document.addEventListener("DOMContentLoaded", async () => {
   await loadTarotCards();
   await loadDecks();
+  await loadSpreadTemplates();
   setupEventListeners();
+  populateCardDatalist();
   loadReadings();
 });
 
@@ -23,6 +28,43 @@ async function loadTarotCards() {
   } catch (error) {
     console.error("Error loading cards:", error);
   }
+}
+
+// Load spread templates from the server
+async function loadSpreadTemplates() {
+  try {
+    const response = await fetch("/api/spreads");
+    spreadTemplates = await response.json();
+    populateSpreadTemplates();
+  } catch (error) {
+    console.error("Error loading spread templates:", error);
+  }
+}
+
+// Populate spread template dropdown
+function populateSpreadTemplates() {
+  const select = document.getElementById("spreadTemplate");
+  select.innerHTML =
+    '<option value="" disabled selected>Select a template...</option>';
+
+  spreadTemplates.forEach((template) => {
+    const option = document.createElement("option");
+    option.value = template.id;
+    option.textContent = template.name;
+    select.appendChild(option);
+  });
+}
+
+// Populate card datalist for autocomplete
+function populateCardDatalist() {
+  const datalist = document.getElementById("cardList");
+  datalist.innerHTML = "";
+
+  tarotCards.forEach((card) => {
+    const option = document.createElement("option");
+    option.value = card.name;
+    datalist.appendChild(option);
+  });
 }
 
 // Setup event listeners
@@ -48,13 +90,27 @@ function setupEventListeners() {
   // Form controls
   document.getElementById("setTodayBtn").addEventListener("click", setToday);
   document.getElementById("setNowBtn").addEventListener("click", setNow);
-  document.getElementById("addCardBtn").addEventListener("click", addCardField);
+  document
+    .getElementById("spreadTemplate")
+    .addEventListener("change", onSpreadTemplateChange);
   document
     .getElementById("cancelBtn")
     .addEventListener("click", () => showSummaryView());
   document
     .getElementById("readingForm")
     .addEventListener("submit", saveReading);
+
+  // Card modal
+  document
+    .getElementById("closeCardModal")
+    .addEventListener("click", hideCardModal);
+  document
+    .getElementById("cancelCardBtn")
+    .addEventListener("click", hideCardModal);
+  document
+    .getElementById("removeCardBtn")
+    .addEventListener("click", removeCard);
+  document.getElementById("cardForm").addEventListener("submit", saveCard);
 
   // Deck management
   document
@@ -96,7 +152,6 @@ function showFormView(readingId = null) {
   } else {
     document.getElementById("formTitle").textContent = "New Reading";
     resetForm();
-    addCardField(); // Start with one card field
   }
 }
 
@@ -121,74 +176,147 @@ function setNow() {
   document.getElementById("readingTime").value = timeString;
 }
 
-// Card field management
-let cardFieldCounter = 0;
-
-function addCardField(cardData = null) {
-  const container = document.getElementById("cardsContainer");
-  const cardId = ++cardFieldCounter;
-
-  const cardDiv = document.createElement("div");
-  cardDiv.className = "card-entry";
-  cardDiv.dataset.cardId = cardId;
-
-  cardDiv.innerHTML = `
-        <div class="card-entry-header">
-            <h4>Card ${cardId}</h4>
-            <button type="button" class="btn-remove" onclick="removeCard(${cardId})">Remove</button>
-        </div>
-        <div class="form-group">
-            <label>Position/Meaning</label>
-            <input type="text" class="card-position" placeholder="e.g., Past, Present, Future" 
-                   value="${cardData?.position || ""}" required>
-        </div>
-        <div class="form-group">
-            <label>Card</label>
-            <input type="text" class="card-name-input" list="cardsList" 
-                   placeholder="Start typing to search..." 
-                   value="${cardData?.card_name || ""}" required>
-            <datalist id="cardsList">
-                ${tarotCards
-                  .map((card) => `<option value="${card.name}">`)
-                  .join("")}
-            </datalist>
-        </div>
-        <div class="form-group">
-            <label>Interpretation</label>
-            <textarea class="card-interpretation" rows="3" 
-                      placeholder="Your interpretation of this card...">${
-                        cardData?.interpretation || ""
-                      }</textarea>
-        </div>
-    `;
-
-  container.appendChild(cardDiv);
+// Spread template management
+function onSpreadTemplateChange(event) {
+  const templateId = event.target.value;
+  currentSpreadTemplate = spreadTemplates.find((t) => t.id === templateId);
+  spreadCards = {}; // Reset cards when changing template
+  renderSpreadCanvas();
 }
 
-function removeCard(cardId) {
-  const cardEntry = document.querySelector(`[data-card-id="${cardId}"]`);
-  if (cardEntry) {
-    cardEntry.remove();
+function renderSpreadCanvas() {
+  const canvas = document.getElementById("spreadCanvas");
+
+  if (!currentSpreadTemplate) {
+    canvas.innerHTML =
+      '<p class="placeholder-text">Select a spread template to begin</p>';
+    return;
   }
+
+  // Clear existing content
+  canvas.innerHTML = "";
+  canvas.className = "spread-canvas";
+
+  // Render each position
+  currentSpreadTemplate.positions.forEach((position, index) => {
+    const positionDiv = document.createElement("div");
+    positionDiv.className = "card-position";
+    positionDiv.style.left = `${position.defaultX}px`;
+    positionDiv.style.top = `${position.defaultY}px`;
+
+    // Apply rotation if specified
+    if (position.rotation) {
+      positionDiv.style.transform = `rotate(${position.rotation}deg)`;
+    }
+
+    positionDiv.dataset.positionIndex = index;
+
+    // Check if this position has a card
+    const cardData = spreadCards[index];
+
+    if (cardData) {
+      positionDiv.classList.add("filled");
+      positionDiv.innerHTML = `
+        <div class="position-number">${position.order}</div>
+        <div class="position-label">${position.label}</div>
+        <div class="card-name">${cardData.card_name}</div>
+      `;
+    } else {
+      positionDiv.innerHTML = `
+        <div class="position-number">${position.order}</div>
+        <div class="position-label">${position.label}</div>
+        <div class="empty-card">+</div>
+      `;
+    }
+
+    positionDiv.title = position.label;
+    positionDiv.addEventListener("click", () => openCardModal(index));
+
+    canvas.appendChild(positionDiv);
+  });
+}
+
+// Card modal management
+function openCardModal(positionIndex) {
+  const position = currentSpreadTemplate.positions[positionIndex];
+  const existingCard = spreadCards[positionIndex];
+
+  document.getElementById("cardPositionIndex").value = positionIndex;
+  document.getElementById("cardPositionName").value = position.label;
+  document.getElementById("cardModalTitle").textContent = existingCard
+    ? "Edit Card"
+    : "Add Card";
+
+  if (existingCard) {
+    document.getElementById("cardName").value = existingCard.card_name;
+    document.getElementById("cardInterpretation").value =
+      existingCard.interpretation || "";
+    document.getElementById("removeCardBtn").classList.remove("hidden");
+  } else {
+    document.getElementById("cardName").value = "";
+    document.getElementById("cardInterpretation").value = "";
+    document.getElementById("removeCardBtn").classList.add("hidden");
+  }
+
+  document.getElementById("cardModal").classList.remove("hidden");
+  document.getElementById("cardName").focus();
+}
+
+function hideCardModal() {
+  document.getElementById("cardModal").classList.add("hidden");
+  document.getElementById("cardForm").reset();
+}
+
+function saveCard(event) {
+  event.preventDefault();
+
+  const positionIndex = parseInt(
+    document.getElementById("cardPositionIndex").value,
+  );
+  const position = currentSpreadTemplate.positions[positionIndex];
+
+  spreadCards[positionIndex] = {
+    card_name: document.getElementById("cardName").value,
+    interpretation: document.getElementById("cardInterpretation").value,
+    position_x: position.defaultX,
+    position_y: position.defaultY,
+  };
+
+  renderSpreadCanvas();
+  hideCardModal();
+}
+
+function removeCard() {
+  const positionIndex = parseInt(
+    document.getElementById("cardPositionIndex").value,
+  );
+  delete spreadCards[positionIndex];
+  renderSpreadCanvas();
+  hideCardModal();
 }
 
 // Form management
 function resetForm() {
   document.getElementById("readingForm").reset();
-  document.getElementById("cardsContainer").innerHTML = "";
-  cardFieldCounter = 0;
+  spreadCards = {};
+  currentSpreadTemplate = null;
   currentReadingId = null;
+  document.getElementById("spreadCanvas").innerHTML =
+    '<p class="placeholder-text">Select a spread template to begin</p>';
 }
 
 function getFormData() {
+  // Convert spreadCards object to array format for API
   const cards = [];
-  const cardEntries = document.querySelectorAll(".card-entry");
-
-  cardEntries.forEach((entry) => {
+  Object.keys(spreadCards).forEach((positionIndex) => {
+    const cardData = spreadCards[positionIndex];
+    const position = currentSpreadTemplate.positions[positionIndex];
     cards.push({
-      position: entry.querySelector(".card-position").value,
-      card_name: entry.querySelector(".card-name-input").value,
-      interpretation: entry.querySelector(".card-interpretation").value,
+      position: position.label,
+      card_name: cardData.card_name,
+      interpretation: cardData.interpretation || "",
+      position_x: cardData.position_x,
+      position_y: cardData.position_y,
     });
   });
 
@@ -209,6 +337,7 @@ function getFormData() {
     date: date,
     time: time,
     spread_name: document.getElementById("spreadName").value,
+    spread_template_id: currentSpreadTemplate?.id || null,
     deck_name: document.getElementById("deckName").value,
     notes: document.getElementById("notes").value,
     cards: cards,
@@ -360,13 +489,39 @@ async function loadReadingForEdit(id) {
     document.getElementById("deckName").value = reading.deck_name;
     document.getElementById("notes").value = reading.notes || "";
 
-    // Clear and add card fields
-    document.getElementById("cardsContainer").innerHTML = "";
-    cardFieldCounter = 0;
+    // Set spread template if available
+    if (reading.spread_template_id) {
+      document.getElementById("spreadTemplate").value =
+        reading.spread_template_id;
+      currentSpreadTemplate = spreadTemplates.find(
+        (t) => t.id === reading.spread_template_id,
+      );
+    }
 
-    reading.cards.forEach((card) => {
-      addCardField(card);
+    // Load cards into spreadCards
+    spreadCards = {};
+    reading.cards.forEach((card, index) => {
+      // Find position index by label
+      const positionIndex =
+        currentSpreadTemplate?.positions.findIndex(
+          (p) => p.label === card.position,
+        ) ?? index;
+
+      spreadCards[positionIndex] = {
+        card_name: card.card_name,
+        interpretation: card.interpretation,
+        position_x:
+          card.position_x ||
+          currentSpreadTemplate?.positions[positionIndex]?.defaultX ||
+          0,
+        position_y:
+          card.position_y ||
+          currentSpreadTemplate?.positions[positionIndex]?.defaultY ||
+          0,
+      };
     });
+
+    renderSpreadCanvas();
   } catch (error) {
     console.error("Error loading reading for edit:", error);
   }
@@ -374,6 +529,12 @@ async function loadReadingForEdit(id) {
 
 async function saveReading(event) {
   event.preventDefault();
+
+  // Validate that at least one card has been added
+  if (Object.keys(spreadCards).length === 0) {
+    alert("Please add at least one card to the reading.");
+    return;
+  }
 
   const formData = getFormData();
   const url = currentReadingId

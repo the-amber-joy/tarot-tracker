@@ -79,6 +79,14 @@
           </div>
 
           <div class="form-group">
+            <label for="spreadTemplate">Spread Template</label>
+            <select id="spreadTemplate" required>
+              <option value="" disabled selected>Select a template...</option>
+              <!-- Populated by JavaScript -->
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="spreadName">Spread Name</label>
             <input type="text" id="spreadName" placeholder="e.g., Three Card Spread, Celtic Cross" required>
           </div>
@@ -91,12 +99,12 @@
 
         <div class="form-section">
           <div class="section-header">
-            <h3>Cards</h3>
-            <button type="button" id="addCardBtn" class="btn btn-secondary">+ Add Card</button>
+            <h3>Spread Layout</h3>
+            <p class="hint">Click on a card position to add a card</p>
           </div>
 
-          <div id="cardsContainer">
-            <!-- Cards will be added here dynamically -->
+          <div id="spreadCanvas">
+            <p class="placeholder-text">Select a spread template to begin</p>
           </div>
         </div>
 
@@ -146,6 +154,46 @@
               <!-- Populated by JavaScript -->
             </ul>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Entry Modal -->
+    <div id="cardModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="cardModalTitle">Add Card</h2>
+          <button id="closeCardModal" class="btn-close">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="cardForm">
+            <input type="hidden" id="cardPositionIndex">
+
+            <div class="form-group">
+              <label for="cardPositionName">Position</label>
+              <input type="text" id="cardPositionName" readonly>
+            </div>
+
+            <div class="form-group">
+              <label for="cardName">Card Name</label>
+              <input type="text" id="cardName" list="cardList" placeholder="Start typing card name..." required>
+              <datalist id="cardList">
+                <!-- Populated by JavaScript -->
+              </datalist>
+            </div>
+
+            <div class="form-group">
+              <label for="cardInterpretation">Interpretation</label>
+              <textarea id="cardInterpretation" rows="4" placeholder="Your interpretation of this card..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Save Card</button>
+              <button type="button" id="removeCardBtn" class="btn btn-danger hidden">Remove Card</button>
+              <button type="button" id="cancelCardBtn" class="btn btn-secondary">Cancel</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
