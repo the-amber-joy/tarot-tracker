@@ -527,8 +527,18 @@ tbody tr:hover {
   z-index: 100;
 }
 
+.card-position:focus {
+  outline: 3px solid #764ba2;
+  outline-offset: 2px;
+  z-index: 100;
+}
+
 .card-position[style*="rotate"]:hover {
   transform: rotate(90deg) scale(1.05);
+}
+
+.card-position[style*="rotate"]:focus {
+  transform: rotate(90deg);
 }
 
 .card-position.filled {
