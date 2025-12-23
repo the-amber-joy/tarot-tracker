@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import CardModal from './CardModal.svelte';
   
   export let spreadTemplate: string = '';
   export let spreadCards: Record<number, any> = {};
@@ -22,6 +23,18 @@
   let canvasElement: HTMLDivElement;
   let justDragged: Record<number, boolean> = {};
   let preventCanvasClick = false;
+  
+  // Modal state
+  let isModalOpen = false;
+  let modalCardIndex: number | null = null;
+  let modalPositionLabel = '';
+  let modalExistingCard: any = null;
+  
+  // Get list of used card names (excluding current card being edited)
+  $: usedCardNames = Object.entries(spreadCards)
+    .filter(([indexStr]) => parseInt(indexStr) !== modalCardIndex)
+    .map(([_, card]) => card.card_name)
+    .filter(name => name && name.trim());
   
   onMount(async () => {
     await loadSpreadTemplates();
@@ -104,8 +117,68 @@
     }
     
     // Open card modal
-    // TODO: We'll implement the modal in Phase 7
-    console.log('Would open card modal for position', index);
+    openCardModal(index);
+  }
+  
+  function openCardModal(index: number) {
+    const existingCard = spreadCards[index];
+    
+    modalCardIndex = index;
+    modalExistingCard = existingCard;
+    
+    // Set position label
+    if (currentTemplate && currentTemplate.id !== 'custom' && currentTemplate.positions[index]) {
+      modalPositionLabel = existingCard?.position_label || currentTemplate.positions[index].label;
+    } else {
+      modalPositionLabel = existingCard?.position_label || `Card ${index + 1}`;
+    }
+    
+    isModalOpen = true;
+  }
+  
+  function handleModalSave(cardData: any) {
+    if (modalCardIndex === null) return;
+    
+    if (cardData === null) {
+      // Remove card
+      deleteCard(modalCardIndex);
+    } else {
+      // Save or update card
+      const newCards = { ...spreadCards };
+      const existingCard = newCards[modalCardIndex];
+      
+      newCards[modalCardIndex] = {
+        ...existingCard,
+        card_name: cardData.card_name,
+        interpretation: cardData.interpretation,
+        position_label: cardData.position_label
+      };
+      
+      onCardsUpdate(newCards);
+    }
+    
+    isModalOpen = false;
+    modalCardIndex = null;
+    modalExistingCard = null;
+  }
+  
+  function handleModalCancel() {
+    isModalOpen = false;
+    modalCardIndex = null;
+    modalExistingCard = null;
+  }
+  
+  function convertToCustomSpread() {
+    // Find and set Custom template
+    const customTemplate = spreadTemplates.find(t => t.id === 'custom');
+    if (customTemplate) {
+      spreadTemplate = 'custom';
+      currentTemplate = customTemplate;
+      
+      // Notify parent component
+      const selectEvent = new CustomEvent('templateAutoSelected', { detail: 'custom' });
+      canvasElement.dispatchEvent(selectEvent);
+    }
   }
   
   function deleteCard(index: number) {
@@ -173,7 +246,19 @@
       const deltaX = Math.abs(e.clientX - startX);
       const deltaY = Math.abs(e.clientY - startY);
       if (deltaX > 5 || deltaY > 5) {
-        // TODO: Phase 7 - Add conversion warning for predefined spreads
+        // Warn about conversion for predefined spreads
+        if (!hasMoved && currentTemplate && currentTemplate.id !== 'custom') {
+          if (!confirm('Moving cards will convert this to a custom spread. Continue?')) {
+            // Cancel the drag
+            isDragging = false;
+            element.style.cursor = 'grab';
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', dragEnd);
+            return;
+          }
+          // Convert to custom spread
+          convertToCustomSpread();
+        }
         hasMoved = true;
       }
       
@@ -223,7 +308,14 @@
     let currentRotation = spreadCards[index]?.rotation || 0;
     
     const rotateStart = (e: MouseEvent) => {
-      // TODO: Phase 7 - Add conversion warning for predefined spreads
+      // Warn about conversion for predefined spreads
+      if (currentTemplate && currentTemplate.id !== 'custom') {
+        if (!confirm('Rotating cards will convert this to a custom spread. Continue?')) {
+          return;
+        }
+        // Convert to custom spread
+        convertToCustomSpread();
+      }
       
       e.preventDefault();
       e.stopPropagation();
@@ -436,3 +528,13 @@
     {/each}
   {/if}
 </div>
+
+<CardModal 
+  bind:isOpen={isModalOpen}
+  cardIndex={modalCardIndex}
+  positionLabel={modalPositionLabel}
+  existingCard={modalExistingCard}
+  usedCards={usedCardNames}
+  onSave={handleModalSave}
+  onCancel={handleModalCancel}
+/>

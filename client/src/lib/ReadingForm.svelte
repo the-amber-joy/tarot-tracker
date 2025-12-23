@@ -69,9 +69,50 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     
-    // TODO: Add spread canvas and cards
-    // For now, we'll just show an alert
-    alert('Form submission coming soon! Canvas needs to be implemented.');
+    // Validate required fields
+    if (!date || !time || !deckName) {
+      alert('Please fill in all required fields (Date, Time, and Deck).');
+      return;
+    }
+    
+    // Prepare reading data
+    const readingData = {
+      date: date,
+      time: time,
+      deck_name: deckName,
+      spread_template: spreadTemplate || 'custom',
+      spread_name: spreadName || (spreadTemplate === 'celtic-cross' ? 'Celtic Cross' : 'Custom Spread'),
+      notes: notes,
+      cards: Object.entries(spreadCards).map(([indexStr, card]) => ({
+        card_order: parseInt(indexStr),
+        position: card.position_label,
+        card_name: card.card_name || '',
+        interpretation: card.interpretation || '',
+        position_x: card.position_x,
+        position_y: card.position_y,
+        rotation: card.rotation || 0
+      }))
+    };
+    
+    try {
+      const response = await fetch('/api/readings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(readingData)
+      });
+      
+      if (response.ok) {
+        onSaved();
+      } else {
+        const error = await response.text();
+        alert(`Failed to save reading: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error saving reading:', error);
+      alert('Error saving reading. Please try again.');
+    }
   }
 </script>
 
