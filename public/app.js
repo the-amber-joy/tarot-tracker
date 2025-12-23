@@ -251,8 +251,16 @@ function renderSpreadCanvas() {
     const positionBtn = document.createElement("button");
     positionBtn.type = "button";
     positionBtn.className = "card-position";
-    positionBtn.style.left = `${position.defaultX}px`;
-    positionBtn.style.top = `${position.defaultY}px`;
+
+    // Check if this position has a card
+    const cardData = spreadCards[index];
+
+    // Use stored position if available, otherwise use default
+    const xPos = cardData?.position_x ?? position.defaultX;
+    const yPos = cardData?.position_y ?? position.defaultY;
+
+    positionBtn.style.left = `${xPos}px`;
+    positionBtn.style.top = `${yPos}px`;
 
     // Apply rotation if specified
     if (position.rotation) {
@@ -261,9 +269,6 @@ function renderSpreadCanvas() {
 
     positionBtn.dataset.positionIndex = index;
 
-    // Check if this position has a card
-    const cardData = spreadCards[index];
-
     if (cardData) {
       positionBtn.classList.add("filled");
       positionBtn.innerHTML = `
@@ -271,12 +276,27 @@ function renderSpreadCanvas() {
         <div class="position-label">${position.label}</div>
         <div class="card-name">${cardData.card_name}</div>
       `;
+
+      // Make filled cards draggable
+      positionBtn.style.cursor = "grab";
+      makeDraggable(positionBtn, index);
+
+      // Prevent modal opening after drag
+      positionBtn.addEventListener("click", (e) => {
+        if (positionBtn.dataset.justDragged) {
+          e.stopPropagation();
+          return;
+        }
+        openCardModal(index);
+      });
     } else {
       positionBtn.innerHTML = `
         <div class="position-number">${position.order}</div>
         <div class="position-label">${position.label}</div>
         <div class="empty-card">+</div>
       `;
+
+      positionBtn.addEventListener("click", () => openCardModal(index));
     }
 
     positionBtn.title = position.label;
@@ -284,8 +304,6 @@ function renderSpreadCanvas() {
       "aria-label",
       `${position.label} - ${cardData ? cardData.card_name : "Add card"}`,
     );
-
-    positionBtn.addEventListener("click", () => openCardModal(index));
 
     canvas.appendChild(positionBtn);
   });
@@ -352,8 +370,90 @@ function renderCustomCard(index) {
   canvas.appendChild(cardBtn);
 }
 
+// Make a card draggable
+function makeDraggable(cardElement, cardKey) {
+  let isDragging = false;
+  let hasMoved = false;
+  let currentX;
+  let currentY;
+  let initialX;
+  let initialY;
+  let startX;
+  let startY;
+
+  cardElement.addEventListener("mousedown", dragStart);
+
+  function dragStart(e) {
+    // Only start drag on left click
+    if (e.button !== 0) return;
+
+    startX = e.clientX;
+    startY = e.clientY;
+    initialX = e.clientX - cardElement.offsetLeft;
+    initialY = e.clientY - cardElement.offsetTop;
+    hasMoved = false;
+
+    if (e.target === cardElement || cardElement.contains(e.target)) {
+      isDragging = true;
+      cardElement.style.cursor = "grabbing";
+    }
+
+    document.addEventListener("mousemove", drag);
+    document.addEventListener("mouseup", dragEnd);
+  }
+
+  function drag(e) {
+    if (!isDragging) return;
+
+    e.preventDefault();
+
+    // Check if mouse has moved more than 5 pixels (threshold for drag vs click)
+    const deltaX = Math.abs(e.clientX - startX);
+    const deltaY = Math.abs(e.clientY - startY);
+    if (deltaX > 5 || deltaY > 5) {
+      hasMoved = true;
+    }
+
+    currentX = e.clientX - initialX;
+    currentY = e.clientY - initialY;
+
+    cardElement.style.left = `${currentX}px`;
+    cardElement.style.top = `${currentY}px`;
+  }
+
+  function dragEnd(e) {
+    if (!isDragging) return;
+
+    isDragging = false;
+    cardElement.style.cursor = "grab";
+
+    // Update position in spreadCards if moved
+    if (hasMoved) {
+      spreadCards[cardKey].position_x = currentX;
+      spreadCards[cardKey].position_y = currentY;
+
+      // Store that we just dragged to prevent click handlers
+      cardElement.dataset.justDragged = "true";
+
+      // Clear the flag after a short delay
+      setTimeout(() => {
+        delete cardElement.dataset.justDragged;
+        hasMoved = false;
+      }, 50);
+    }
+
+    document.removeEventListener("mousemove", drag);
+    document.removeEventListener("mouseup", dragEnd);
+  }
+}
+
 // Custom spread functions
 function handleCanvasClick(event) {
+  // Don't add card if clicking on an existing card
+  if (event.target.closest(".card-position")) {
+    return;
+  }
+
   const canvas = document.getElementById("spreadCanvas");
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left - 50; // Center the card (100px width / 2)
@@ -398,6 +498,12 @@ function renderCustomCard(cardKey) {
 
   // Add click to edit
   cardBtn.addEventListener("click", (e) => {
+    // Don't open modal if card was just dragged
+    if (cardBtn.dataset.justDragged) {
+      e.stopPropagation();
+      return;
+    }
+
     e.stopPropagation();
     openCustomCardModal(
       cardKey,
@@ -407,8 +513,9 @@ function renderCustomCard(cardKey) {
     );
   });
 
-  // TODO: Make draggable (Step 2)
-  // makeDraggable(cardBtn, cardKey);
+  // Make draggable
+  cardBtn.style.cursor = "grab";
+  makeDraggable(cardBtn, cardKey);
 
   canvas.appendChild(cardBtn);
 }
@@ -569,28 +676,30 @@ function saveCard(event) {
     .value.trim();
   const interpretation = document.getElementById("cardInterpretation").value;
 
-  // Handle custom spread vs predefined spread
+  // Determine position coordinates
+  let x, y;
+
   if (currentSpreadTemplate.id === "custom") {
-    // For custom spreads, use the pending position from canvas click
-    spreadCards[positionIndex] = {
-      card_name: cardName,
-      position_label: positionLabel,
-      interpretation: interpretation,
-      position_x: pendingCardPosition.x,
-      position_y: pendingCardPosition.y,
-    };
+    // For custom spreads, get coordinates from either pendingCardPosition or dataset
+    const positionIndexElement = document.getElementById("cardPositionIndex");
+    x = pendingCardPosition?.x ?? parseFloat(positionIndexElement.dataset.x);
+    y = pendingCardPosition?.y ?? parseFloat(positionIndexElement.dataset.y);
     pendingCardPosition = null; // Clear pending position
   } else {
-    // For predefined spreads, use template positions
+    // For predefined spreads, use existing position or default from template
+    const existingCard = spreadCards[positionIndex];
     const position = currentSpreadTemplate.positions[positionIndex];
-    spreadCards[positionIndex] = {
-      card_name: cardName,
-      position_label: positionLabel,
-      interpretation: interpretation,
-      position_x: position.defaultX,
-      position_y: position.defaultY,
-    };
+    x = existingCard?.position_x ?? position.defaultX;
+    y = existingCard?.position_y ?? position.defaultY;
   }
+
+  spreadCards[positionIndex] = {
+    card_name: cardName,
+    position_label: positionLabel,
+    interpretation: interpretation,
+    position_x: x,
+    position_y: y,
+  };
 
   renderSpreadCanvas();
   hideCardModal();
