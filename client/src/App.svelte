@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import ReadingDetail from './lib/ReadingDetail.svelte';
   
   type Reading = {
     id: number;
@@ -7,6 +8,7 @@
     time: string;
     spread_name: string;
     deck_name: string;
+    is_incomplete?: boolean;
     cards?: any[];
   };
   
@@ -14,6 +16,8 @@
   
   let currentView: View = 'summary';
   let readings: Reading[] = [];
+  let selectedReadingId: number | null = null;
+  let sortAscending: boolean = false;
   
   onMount(async () => {
     await loadReadings();
@@ -23,9 +27,41 @@
     try {
       const response = await fetch('/api/readings');
       readings = await response.json();
+      sortReadings();
     } catch (error) {
       console.error('Error loading readings:', error);
     }
+  }
+  
+  function toggleDateSort() {
+    sortAscending = !sortAscending;
+    sortReadings();
+  }
+  
+  function sortReadings() {
+    readings = readings.sort((a, b) => {
+      const dateA = new Date(a.date + ' ' + a.time);
+      const dateB = new Date(b.date + ' ' + b.time);
+      return sortAscending 
+        ? dateA.getTime() - dateB.getTime()
+        : dateB.getTime() - dateA.getTime();
+    });
+  }
+  
+  function formatDateTime(date: string, time: string): string {
+    const dateObj = new Date(date + ' ' + time);
+    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const formattedTime = dateObj.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return `${dayOfWeek}, ${formattedDate} at ${formattedTime}`;
   }
   
   function showSummaryView() {
@@ -39,6 +75,7 @@
   
   function showDetailView(id: number) {
     currentView = 'detail';
+    selectedReadingId = id;
   }
 </script>
 
@@ -51,37 +88,42 @@
   {#if currentView === 'summary'}
     <div class="view">
       <div class="view-header">
-        <h2>Your Readings</h2>
+        <h2>Past Readings</h2>
         <button class="btn btn-primary" on:click={showFormView}>
           + New Reading
         </button>
       </div>
       
-      <div class="readings-list">
-        {#if readings.length === 0}
-          <div class="empty-state">
-            <p>No readings yet. Create your first reading to get started!</p>
-          </div>
-        {:else}
-          {#each readings as reading}
-            <div class="reading-card">
-              <div class="reading-header">
-                <h3>{reading.spread_name}</h3>
-                <span class="reading-date">{reading.date} at {reading.time}</span>
-              </div>
-              <div class="reading-info">
-                <span class="badge">{reading.deck_name}</span>
-                <span class="badge">{reading.cards?.length || 0} cards</span>
-              </div>
-              <div class="reading-actions">
-                <button class="btn btn-secondary" on:click={() => showDetailView(reading.id)}>
-                  View
-                </button>
-              </div>
-            </div>
-          {/each}
-        {/if}
-      </div>
+      <table class="readings-table">
+        <thead>
+          <tr>
+            <th on:click={toggleDateSort} style="cursor: pointer;">
+              Date {sortAscending ? '↑' : '↓'}
+            </th>
+            <th>Spread Name</th>
+            <th>Deck</th>
+            <th style="text-align: center;">Incomplete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#if readings.length === 0}
+            <tr>
+              <td colspan="4" class="empty-message">
+                No readings yet. Click "New Reading" to get started!
+              </td>
+            </tr>
+          {:else}
+            {#each readings as reading}
+              <tr on:click={() => showDetailView(reading.id)} style="cursor: pointer;">
+                <td>{formatDateTime(reading.date, reading.time)}</td>
+                <td>{reading.spread_name}</td>
+                <td>{reading.deck_name}</td>
+                <td style="text-align: center;">{reading.is_incomplete ? '⚠️' : ''}</td>
+              </tr>
+            {/each}
+          {/if}
+        </tbody>
+      </table>
     </div>
   {/if}
 
@@ -99,17 +141,11 @@
     </div>
   {/if}
 
-  <!-- Detail View (placeholder) -->
-  {#if currentView === 'detail'}
-    <div class="view">
-      <div class="view-header">
-        <h2>Reading Details</h2>
-        <button class="btn btn-secondary" on:click={showSummaryView}>
-          ← Back to Summary
-        </button>
-      </div>
-      
-      <p>Detail view coming soon...</p>
-    </div>
+  <!-- Detail View -->
+  {#if currentView === 'detail' && selectedReadingId}
+    <ReadingDetail 
+      readingId={selectedReadingId} 
+      onBack={showSummaryView}
+    />
   {/if}
 </div>
