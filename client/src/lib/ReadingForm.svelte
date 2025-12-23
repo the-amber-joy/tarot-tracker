@@ -1,0 +1,160 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  
+  export let onBack: () => void;
+  export let onSaved: () => void;
+  
+  type Deck = {
+    id: number;
+    name: string;
+  };
+  
+  type SpreadTemplate = {
+    id: string;
+    name: string;
+    description: string;
+    positions: any[];
+  };
+  
+  let decks: Deck[] = [];
+  let spreadTemplates: SpreadTemplate[] = [];
+  
+  let date = new Date().toISOString().split('T')[0];
+  let time = new Date().toTimeString().slice(0, 5);
+  let deckName = '';
+  let spreadTemplate = '';
+  let spreadName = '';
+  let notes = '';
+  
+  onMount(async () => {
+    await Promise.all([loadDecks(), loadSpreadTemplates()]);
+  });
+  
+  async function loadDecks() {
+    try {
+      const response = await fetch('/api/decks');
+      decks = await response.json();
+    } catch (error) {
+      console.error('Error loading decks:', error);
+    }
+  }
+  
+  async function loadSpreadTemplates() {
+    try {
+      const response = await fetch('/api/spreads');
+      spreadTemplates = await response.json();
+    } catch (error) {
+      console.error('Error loading spread templates:', error);
+    }
+  }
+  
+  function setToday() {
+    date = new Date().toISOString().split('T')[0];
+  }
+  
+  function setNow() {
+    time = new Date().toTimeString().slice(0, 5);
+  }
+  
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    
+    // TODO: Add spread canvas and cards
+    // For now, we'll just show an alert
+    alert('Form submission coming soon! Canvas needs to be implemented.');
+  }
+</script>
+
+<div class="view">
+  <div class="view-header">
+    <h2>New Reading</h2>
+    <button class="btn btn-primary" on:click={onBack}>
+      ← Back to Summary
+    </button>
+  </div>
+  
+  <form on:submit={handleSubmit}>
+    <div class="form-section">
+      <h3>Reading Details</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date">Date<span class="required">*</span></label>
+          <div class="input-with-button">
+            <input type="date" id="date" bind:value={date} required />
+            <button type="button" class="btn btn-primary" on:click={setToday}>
+              Today
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="time">Time<span class="required">*</span></label>
+          <div class="input-with-button">
+            <input type="time" id="time" bind:value={time} required />
+            <button type="button" class="btn btn-primary" on:click={setNow}>
+              Now
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="deckName">Deck Used<span class="required">*</span></label>
+        <div class="input-with-button">
+          <select id="deckName" bind:value={deckName} required>
+            <option value="" disabled>Select a deck...</option>
+            {#each decks as deck}
+              <option value={deck.name}>{deck.name}</option>
+            {/each}
+          </select>
+          <button type="button" class="btn btn-primary">Manage Decks</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="spreadTemplate">Spread Template</label>
+        <select id="spreadTemplate" bind:value={spreadTemplate}>
+          <option value="">Click the canvas to start a custom spread...</option>
+          {#each spreadTemplates as template}
+            <option value={template.id}>{template.name}</option>
+          {/each}
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="spreadName">Spread Name</label>
+        <input 
+          type="text" 
+          id="spreadName" 
+          bind:value={spreadName}
+          placeholder="e.g., Three Card Spread, Celtic Cross"
+        />
+      </div>
+      
+      <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea 
+          id="notes" 
+          bind:value={notes}
+          placeholder="Summary notes about the reading..."
+          rows="4"
+        ></textarea>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Spread Layout</h3>
+      <p class="hint">Click on a card position to add a card</p>
+      
+      <div class="spread-canvas-placeholder" style="min-height: 400px; background: #f8f9fa; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+        <p style="color: #666;">Spread canvas coming in Phase 5!</p>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save Reading</button>
+      <button type="button" class="btn btn-secondary" on:click={onBack}>Cancel</button>
+    </div>
+  </form>
+</div>

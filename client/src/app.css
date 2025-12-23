@@ -221,6 +221,11 @@ tbody tr:hover {
   color: #495057;
 }
 
+.form-group label .required {
+  color: #dc3545;
+  margin-left: 3px;
+}
+
 .form-group input[type="text"],
 .form-group input[type="date"],
 .form-group input[type="time"],

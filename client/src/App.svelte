@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ReadingDetail from './lib/ReadingDetail.svelte';
+  import ReadingForm from './lib/ReadingForm.svelte';
   
   type Reading = {
     id: number;
@@ -127,18 +128,12 @@
     </div>
   {/if}
 
-  <!-- Form View (placeholder) -->
+  <!-- Form View -->
   {#if currentView === 'form'}
-    <div class="view">
-      <div class="view-header">
-        <h2>New Reading</h2>
-        <button class="btn btn-secondary" on:click={showSummaryView}>
-          ← Back to Summary
-        </button>
-      </div>
-      
-      <p>Form coming soon...</p>
-    </div>
+    <ReadingForm 
+      onBack={showSummaryView}
+      onSaved={showSummaryView}
+    />
   {/if}
 
   <!-- Detail View -->
