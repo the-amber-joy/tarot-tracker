@@ -54,6 +54,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   populateCardDatalist();
   loadReadings();
+
+  // Initialize canvas for custom spread (no template selected initially)
+  renderSpreadCanvas();
 });
 
 // Load all tarot cards from the server
@@ -300,13 +303,16 @@ function onSpreadTemplateChange(event) {
       .sort((a, b) => parseInt(a) - parseInt(b))
       .forEach((key, index) => {
         const card = spreadCards[key];
-        const newPosition = newTemplate.positions[index];
-        remappedCards[index] = {
-          ...card,
-          position_x: newPosition.defaultX,
-          position_y: newPosition.defaultY,
-          rotation: newPosition.rotation || 0,
-        };
+        // Only remap cards that have a card_name (skip empty placeholders)
+        if (card.card_name) {
+          const newPosition = newTemplate.positions[index];
+          remappedCards[index] = {
+            ...card,
+            position_x: newPosition.defaultX,
+            position_y: newPosition.defaultY,
+            rotation: newPosition.rotation || 0,
+          };
+        }
       });
     spreadCards = remappedCards;
   }
@@ -372,7 +378,7 @@ function renderSpreadCanvas() {
 
     positionBtn.dataset.positionIndex = index;
 
-    if (cardData) {
+    if (cardData && cardData.card_name) {
       positionBtn.classList.add("filled");
       positionBtn.innerHTML = `
         <button class="delete-card-btn" title="Delete card" aria-label="Delete card">×</button>
@@ -436,6 +442,15 @@ function handleCanvasClick(event) {
   // Don't add card if clicking on an existing card
   if (event.target.closest(".card-position")) {
     return;
+  }
+
+  // If no template selected, set it to Custom
+  if (!currentSpreadTemplate) {
+    const customTemplate = spreadTemplates.find((t) => t.id === "custom");
+    if (customTemplate) {
+      currentSpreadTemplate = customTemplate;
+      document.getElementById("spreadTemplate").value = "custom";
+    }
   }
 
   const canvas = document.getElementById("spreadCanvas");
