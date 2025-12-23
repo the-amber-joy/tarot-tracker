@@ -20,6 +20,8 @@
   let spreadTemplates: SpreadTemplate[] = [];
   let currentTemplate: SpreadTemplate | null = null;
   let canvasElement: HTMLDivElement;
+  let justDragged: Record<number, boolean> = {};
+  let preventCanvasClick = false;
   
   onMount(async () => {
     await loadSpreadTemplates();
@@ -49,6 +51,11 @@
       return;
     }
     
+    // Don't add card if we just finished rotating
+    if (preventCanvasClick) {
+      return;
+    }
+    
     // Don't add card if clicking on an existing card
     if ((event.target as HTMLElement).closest('.card-position')) {
       return;
@@ -70,7 +77,7 @@
     const x = event.clientX - rect.left - 50; // Center the card (100px width / 2)
     const y = event.clientY - rect.top - 70; // Center the card (140px height / 2)
     
-    // Find next available index
+    // Find next available index (just use the count since we renumber on delete)
     const nextIndex = Object.keys(spreadCards).length;
     
     // Add empty card at this position
@@ -91,14 +98,33 @@
   }
   
   function handleCardClick(index: number) {
+    // Don't open modal if card was just dragged
+    if (justDragged[index]) {
+      return;
+    }
+    
     // Open card modal
     // TODO: We'll implement the modal in Phase 7
     console.log('Would open card modal for position', index);
   }
   
   function deleteCard(index: number) {
-    const newCards = { ...spreadCards };
-    delete newCards[index];
+    const newCards: Record<number, any> = {};
+    
+    // Rebuild the cards object, skipping the deleted card and renumbering
+    let newIndex = 0;
+    Object.keys(spreadCards).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
+      const oldIndex = parseInt(key);
+      if (oldIndex !== index) {
+        // Keep this card but renumber it
+        newCards[newIndex] = {
+          ...spreadCards[oldIndex],
+          position_label: `Card ${newIndex + 1}`
+        };
+        newIndex++;
+      }
+    });
+    
     onCardsUpdate(newCards);
   }
   
@@ -108,6 +134,156 @@
       event.stopPropagation();
       deleteCard(index);
     }
+  }
+  
+  // Drag functionality
+  function makeDraggable(element: HTMLButtonElement, index: number) {
+    let isDragging = false;
+    let hasMoved = false;
+    let currentX: number;
+    let currentY: number;
+    let initialX: number;
+    let initialY: number;
+    let startX: number;
+    let startY: number;
+    
+    const dragStart = (e: MouseEvent) => {
+      if (e.button !== 0) return; // Only left click
+      
+      e.stopPropagation();
+      startX = e.clientX;
+      startY = e.clientY;
+      initialX = e.clientX - element.offsetLeft;
+      initialY = e.clientY - element.offsetTop;
+      hasMoved = false;
+      
+      isDragging = true;
+      element.style.cursor = 'grabbing';
+      
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', dragEnd);
+    };
+    
+    const drag = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      e.preventDefault();
+      
+      // Check if moved more than 5px threshold
+      const deltaX = Math.abs(e.clientX - startX);
+      const deltaY = Math.abs(e.clientY - startY);
+      if (deltaX > 5 || deltaY > 5) {
+        // TODO: Phase 7 - Add conversion warning for predefined spreads
+        hasMoved = true;
+      }
+      
+      currentX = e.clientX - initialX;
+      currentY = e.clientY - initialY;
+      
+      element.style.left = `${currentX}px`;
+      element.style.top = `${currentY}px`;
+    };
+    
+    const dragEnd = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      element.style.cursor = 'grab';
+      
+      if (hasMoved) {
+        // Update position in spreadCards
+        const newCards = { ...spreadCards };
+        newCards[index] = {
+          ...newCards[index],
+          position_x: currentX,
+          position_y: currentY
+        };
+        onCardsUpdate(newCards);
+        
+        // Mark as just dragged to prevent modal opening
+        justDragged[index] = true;
+        setTimeout(() => {
+          justDragged[index] = false;
+        }, 200);
+      }
+      
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('mouseup', dragEnd);
+    };
+    
+    element.addEventListener('mousedown', dragStart);
+  }
+  
+  // Rotation functionality
+  function makeRotatable(element: HTMLButtonElement, index: number) {
+    const handle = element.querySelector('.rotation-handle') as HTMLElement;
+    if (!handle) return;
+    
+    let isRotating = false;
+    let currentRotation = spreadCards[index]?.rotation || 0;
+    
+    const rotateStart = (e: MouseEvent) => {
+      // TODO: Phase 7 - Add conversion warning for predefined spreads
+      
+      e.preventDefault();
+      e.stopPropagation();
+      isRotating = true;
+      preventCanvasClick = true;
+      
+      // Prevent card click while rotating
+      justDragged[index] = true;
+      
+      document.addEventListener('mousemove', rotate);
+      document.addEventListener('mouseup', rotateEnd);
+    };
+    
+    const rotate = (e: MouseEvent) => {
+      if (!isRotating) return;
+      
+      e.preventDefault();
+      
+      // Get card center
+      const rect = element.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // Calculate angle from center to mouse
+      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+      const degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
+      
+      currentRotation = Math.round(degrees);
+      
+      // Apply rotation
+      element.style.transform = `rotate(${currentRotation}deg)`;
+    };
+    
+    const rotateEnd = (e: MouseEvent) => {
+      if (!isRotating) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      isRotating = false;
+      
+      // Update rotation in spreadCards
+      const newCards = { ...spreadCards };
+      newCards[index] = {
+        ...newCards[index],
+        rotation: currentRotation
+      };
+      onCardsUpdate(newCards);
+      
+      // Keep justDragged and preventCanvasClick flags longer to prevent modal/card creation
+      setTimeout(() => {
+        justDragged[index] = false;
+        preventCanvasClick = false;
+      }, 200);
+      
+      document.removeEventListener('mousemove', rotate);
+      document.removeEventListener('mouseup', rotateEnd);
+    };
+    
+    handle.addEventListener('mousedown', rotateStart);
   }
   
   function handleCanvasKeydown(event: KeyboardEvent) {
@@ -128,6 +304,26 @@
   $: if (spreadTemplate !== undefined) {
     updateCurrentTemplate();
   }
+  
+  // Svelte action for making cards draggable
+  function draggable(node: HTMLButtonElement, index: number) {
+    makeDraggable(node, index);
+    return {
+      destroy() {
+        // Cleanup handled by removeEventListener in dragEnd
+      }
+    };
+  }
+  
+  // Svelte action for making cards rotatable
+  function rotatable(node: HTMLButtonElement, index: number) {
+    makeRotatable(node, index);
+    return {
+      destroy() {
+        // Cleanup handled by removeEventListener in rotateEnd
+      }
+    };
+  }
 </script>
 
 <div 
@@ -145,8 +341,10 @@
       <button
         type="button"
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
-        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}"
+        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; cursor: grab;"
         on:click|stopPropagation={() => handleCardClick(index)}
+        use:draggable={index}
+        use:rotatable={index}
         data-position-index={index}
       >
         <div 
@@ -174,8 +372,10 @@
       <button
         type="button"
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
-        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}"
+        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; cursor: grab;"
         on:click|stopPropagation={() => handleCardClick(index)}
+        use:draggable={index}
+        use:rotatable={index}
         data-position-index={index}
       >
         <div 
@@ -206,8 +406,10 @@
       <button
         type="button"
         class="card-position {cardData?.card_name ? 'filled' : ''}"
-        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}"
+        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; {cardData?.card_name ? 'cursor: grab;' : ''}"
         on:click|stopPropagation={() => handleCardClick(index)}
+        use:draggable={index}
+        use:rotatable={index}
         data-position-index={index}
         title={position.label}
         aria-label="{position.label} - {cardData?.card_name || 'Add card'}"
