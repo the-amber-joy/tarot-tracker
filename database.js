@@ -29,6 +29,7 @@ function initDatabase() {
         date TEXT NOT NULL,
         time TEXT NOT NULL,
         spread_name TEXT NOT NULL,
+        spread_template_id TEXT,
         deck_name TEXT NOT NULL,
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -44,6 +45,8 @@ function initDatabase() {
         position TEXT NOT NULL,
         interpretation TEXT,
         card_order INTEGER NOT NULL,
+        position_x REAL,
+        position_y REAL,
         FOREIGN KEY (reading_id) REFERENCES readings(id) ON DELETE CASCADE
       )
     `);

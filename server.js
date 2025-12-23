@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const db = require("./database");
 const { TAROT_CARDS } = require("./cards");
+const { SPREAD_TEMPLATES } = require("./spreads");
 
 const app = express();
 const PORT = 3000;
@@ -15,6 +16,11 @@ app.use(express.static("public"));
 // Get all tarot cards
 app.get("/api/cards", (req, res) => {
   res.json(TAROT_CARDS);
+});
+
+// Get all spread templates
+app.get("/api/spreads", (req, res) => {
+  res.json(Object.values(SPREAD_TEMPLATES));
 });
 
 // Deck management endpoints
@@ -122,11 +128,19 @@ app.get("/api/readings/:id", (req, res) => {
 
 // Create a new reading
 app.post("/api/readings", (req, res) => {
-  const { date, time, spread_name, deck_name, notes, cards } = req.body;
+  const {
+    date,
+    time,
+    spread_name,
+    spread_template_id,
+    deck_name,
+    notes,
+    cards,
+  } = req.body;
 
   db.run(
-    "INSERT INTO readings (date, time, spread_name, deck_name, notes) VALUES (?, ?, ?, ?, ?)",
-    [date, time, spread_name, deck_name, notes],
+    "INSERT INTO readings (date, time, spread_name, spread_template_id, deck_name, notes) VALUES (?, ?, ?, ?, ?, ?)",
+    [date, time, spread_name, spread_template_id, deck_name, notes],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -136,7 +150,7 @@ app.post("/api/readings", (req, res) => {
 
       // Insert cards
       const stmt = db.prepare(
-        "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y) VALUES (?, ?, ?, ?, ?, ?, ?)",
       );
 
       cards.forEach((card, index) => {
@@ -146,6 +160,8 @@ app.post("/api/readings", (req, res) => {
           card.position,
           card.interpretation,
           index,
+          card.position_x || null,
+          card.position_y || null,
         );
       });
 
@@ -161,11 +177,27 @@ app.post("/api/readings", (req, res) => {
 
 // Update a reading
 app.put("/api/readings/:id", (req, res) => {
-  const { date, time, spread_name, deck_name, notes, cards } = req.body;
+  const {
+    date,
+    time,
+    spread_name,
+    spread_template_id,
+    deck_name,
+    notes,
+    cards,
+  } = req.body;
 
   db.run(
-    "UPDATE readings SET date = ?, time = ?, spread_name = ?, deck_name = ?, notes = ? WHERE id = ?",
-    [date, time, spread_name, deck_name, notes, req.params.id],
+    "UPDATE readings SET date = ?, time = ?, spread_name = ?, spread_template_id = ?, deck_name = ?, notes = ? WHERE id = ?",
+    [
+      date,
+      time,
+      spread_name,
+      spread_template_id,
+      deck_name,
+      notes,
+      req.params.id,
+    ],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -182,7 +214,7 @@ app.put("/api/readings/:id", (req, res) => {
 
           // Insert updated cards
           const stmt = db.prepare(
-            "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y) VALUES (?, ?, ?, ?, ?, ?, ?)",
           );
 
           cards.forEach((card, index) => {
@@ -192,6 +224,8 @@ app.put("/api/readings/:id", (req, res) => {
               card.position,
               card.interpretation,
               index,
+              card.position_x || null,
+              card.position_y || null,
             );
           });
 
