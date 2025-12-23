@@ -243,6 +243,34 @@ function convertToCustomSpread() {
   }
 }
 
+function deleteCardFromSpread(cardIndex) {
+  // Warn if deleting from predefined spread
+  if (currentSpreadTemplate && currentSpreadTemplate.id !== "custom") {
+    if (
+      !confirm("Deleting cards will convert this to a custom spread. Continue?")
+    ) {
+      return;
+    }
+    convertToCustomSpread();
+  }
+
+  // Remove the card
+  delete spreadCards[cardIndex];
+
+  // Re-number remaining cards
+  const sortedKeys = Object.keys(spreadCards)
+    .map((k) => parseInt(k))
+    .sort((a, b) => a - b);
+  const renumberedCards = {};
+
+  sortedKeys.forEach((oldKey, newIndex) => {
+    renumberedCards[newIndex] = spreadCards[oldKey];
+  });
+
+  spreadCards = renumberedCards;
+  renderSpreadCanvas();
+}
+
 function onSpreadTemplateChange(event) {
   const templateId = event.target.value;
   const newTemplate = spreadTemplates.find((t) => t.id === templateId);
@@ -347,6 +375,7 @@ function renderSpreadCanvas() {
     if (cardData) {
       positionBtn.classList.add("filled");
       positionBtn.innerHTML = `
+        <button class="delete-card-btn" title="Delete card" aria-label="Delete card">×</button>
         <div class="position-number">${position.order}</div>
         <div class="position-label">${position.label}</div>
         <div class="card-name">${cardData.card_name}</div>
@@ -367,6 +396,15 @@ function renderSpreadCanvas() {
 
       // Append to canvas first
       canvas.appendChild(positionBtn);
+
+      // Add delete button handler
+      const deleteBtn = positionBtn.querySelector(".delete-card-btn");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteCardFromSpread(index);
+        });
+      }
 
       // Then make draggable and rotatable
       makeDraggable(positionBtn, index);
@@ -422,8 +460,8 @@ function renderCustomCard(index) {
   const cardBtn = document.createElement("button");
   cardBtn.type = "button";
 
-  // Check if this is an empty placeholder
-  const isEmpty = cardData.isEmpty || !cardData.card_name;
+  // Check if this is an empty placeholder (only based on card_name)
+  const isEmpty = !cardData.card_name;
 
   cardBtn.className = isEmpty
     ? "card-position custom-card"
@@ -443,15 +481,18 @@ function renderCustomCard(index) {
   if (isEmpty) {
     // Render as empty placeholder
     cardBtn.innerHTML = `
+      <button class="delete-card-btn" title="Delete card" aria-label="Delete card">×</button>
       <div class="position-number">${positionNumber}</div>
       <div class="position-label">${
         cardData.position_label || "Card " + positionNumber
       }</div>
       <div class="empty-card">+</div>
+      <div class="rotation-handle" title="Drag to rotate">↻</div>
     `;
   } else {
     // Render as filled card
     cardBtn.innerHTML = `
+      <button class="delete-card-btn" title="Delete card" aria-label="Delete card">×</button>
       <div class="position-number">${positionNumber}</div>
       <div class="position-label">${
         cardData.position_label || "Card " + positionNumber
@@ -481,14 +522,19 @@ function renderCustomCard(index) {
   // Append to canvas first
   canvas.appendChild(cardBtn);
 
+  // Add delete button handler
+  const deleteBtn = cardBtn.querySelector(".delete-card-btn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteCardFromSpread(index);
+    });
+  }
+
   // Make all cards draggable and rotatable (both empty and filled)
   cardBtn.style.cursor = "grab";
   makeDraggable(cardBtn, index);
-
-  // Only add rotation handle to filled cards
-  if (!isEmpty) {
-    makeRotatable(cardBtn, index);
-  }
+  makeRotatable(cardBtn, index);
 }
 
 // Make a card draggable
@@ -872,10 +918,21 @@ function saveCard(event) {
   let x, y;
 
   if (currentSpreadTemplate.id === "custom") {
-    // For custom spreads, get coordinates from either pendingCardPosition or dataset
-    const positionIndexElement = document.getElementById("cardPositionIndex");
-    x = pendingCardPosition?.x ?? parseFloat(positionIndexElement.dataset.x);
-    y = pendingCardPosition?.y ?? parseFloat(positionIndexElement.dataset.y);
+    // For custom spreads, preserve existing coordinates or use new click position
+    const existingCard = spreadCards[positionIndex];
+    if (existingCard) {
+      // Editing existing card - keep its position
+      x = existingCard.position_x;
+      y = existingCard.position_y;
+    } else if (pendingCardPosition) {
+      // New card from click
+      x = pendingCardPosition.x;
+      y = pendingCardPosition.y;
+    } else {
+      // Fallback (shouldn't happen)
+      x = 0;
+      y = 0;
+    }
     pendingCardPosition = null; // Clear pending position
   } else {
     // For predefined spreads, use existing position or default from template
@@ -938,7 +995,12 @@ function removeCard() {
   const positionIndex = parseInt(
     document.getElementById("cardPositionIndex").value,
   );
-  delete spreadCards[positionIndex];
+  // Only clear the card name, keep the position
+  if (spreadCards[positionIndex]) {
+    spreadCards[positionIndex].card_name = "";
+    spreadCards[positionIndex].interpretation = "";
+    spreadCards[positionIndex].isEmpty = true;
+  }
   renderSpreadCanvas();
   hideCardModal();
 }
