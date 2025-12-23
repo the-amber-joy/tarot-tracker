@@ -47,6 +47,7 @@ function initDatabase() {
         card_order INTEGER NOT NULL,
         position_x REAL,
         position_y REAL,
+        rotation REAL DEFAULT 0,
         FOREIGN KEY (reading_id) REFERENCES readings(id) ON DELETE CASCADE
       )
     `);

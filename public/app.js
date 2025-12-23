@@ -1042,6 +1042,7 @@ function getFormData() {
       interpretation: cardData.interpretation || "",
       position_x: cardData.position_x,
       position_y: cardData.position_y,
+      rotation: cardData.rotation || 0,
     });
   });
 
@@ -1241,6 +1242,49 @@ function renderDetailSpreadLayout(reading) {
   canvas.innerHTML = "";
   canvas.className = "spread-canvas-readonly";
 
+  // For custom spreads, render cards at their saved positions
+  if (template.id === "custom") {
+    reading.cards.forEach((card, index) => {
+      const cardDiv = document.createElement("div");
+      cardDiv.className = card.card_name
+        ? "card-position readonly filled"
+        : "card-position readonly";
+      cardDiv.style.left = `${card.position_x || 0}px`;
+      cardDiv.style.top = `${card.position_y || 0}px`;
+
+      // Apply rotation if specified
+      if (card.rotation) {
+        cardDiv.style.transform = `rotate(${card.rotation}deg)`;
+      }
+
+      if (card.card_name) {
+        cardDiv.innerHTML = `
+          <div class="position-number">${index + 1}</div>
+          <div class="position-label">${card.position}</div>
+          <div class="card-name">${card.card_name}</div>
+        `;
+
+        // Add interpretation tooltip if available
+        if (card.interpretation) {
+          cardDiv.title = `${card.position}\n${card.card_name}\n\n${card.interpretation}`;
+        } else {
+          cardDiv.title = `${card.position}\n${card.card_name}`;
+        }
+      } else {
+        cardDiv.innerHTML = `
+          <div class="position-number">${index + 1}</div>
+          <div class="position-label">${card.position}</div>
+          <div class="empty-card">+</div>
+        `;
+        cardDiv.title = card.position;
+      }
+
+      canvas.appendChild(cardDiv);
+    });
+    return;
+  }
+
+  // For predefined spreads, use template positions
   // Create a map of cards by position label
   const cardsByPosition = {};
   reading.cards.forEach((card) => {
@@ -1251,17 +1295,20 @@ function renderDetailSpreadLayout(reading) {
   template.positions.forEach((position, index) => {
     const positionDiv = document.createElement("div");
     positionDiv.className = "card-position readonly";
-    positionDiv.style.left = `${position.defaultX}px`;
-    positionDiv.style.top = `${position.defaultY}px`;
-
-    // Apply rotation if specified
-    if (position.rotation) {
-      positionDiv.style.transform = `rotate(${position.rotation}deg)`;
-    }
 
     const cardData = cardsByPosition[position.label];
 
-    if (cardData) {
+    // Use stored position if available, otherwise use template default
+    positionDiv.style.left = `${cardData?.position_x ?? position.defaultX}px`;
+    positionDiv.style.top = `${cardData?.position_y ?? position.defaultY}px`;
+
+    // Apply rotation - use stored rotation if available, otherwise use template rotation
+    const rotation = cardData?.rotation ?? position.rotation ?? 0;
+    if (rotation) {
+      positionDiv.style.transform = `rotate(${rotation}deg)`;
+    }
+
+    if (cardData && cardData.card_name) {
       positionDiv.classList.add("filled");
       positionDiv.innerHTML = `
         <div class="position-number">${position.order}</div>
@@ -1312,24 +1359,39 @@ async function loadReadingForEdit(id) {
     // Load cards into spreadCards
     spreadCards = {};
     reading.cards.forEach((card, index) => {
-      // Find position index by label
-      const positionIndex =
-        currentSpreadTemplate?.positions.findIndex(
+      // Find position index by label (for predefined spreads) or use array index (for custom spreads)
+      let positionIndex = index; // Default to array index
+
+      if (
+        currentSpreadTemplate?.positions &&
+        currentSpreadTemplate.positions.length > 0
+      ) {
+        // For predefined spreads, find by position label
+        const foundIndex = currentSpreadTemplate.positions.findIndex(
           (p) => p.label === card.position,
-        ) ?? index;
+        );
+        if (foundIndex !== -1) {
+          positionIndex = foundIndex;
+        }
+      }
 
       spreadCards[positionIndex] = {
         card_name: card.card_name,
         position_label: card.position, // Store the saved position label
         interpretation: card.interpretation,
         position_x:
-          card.position_x ||
-          currentSpreadTemplate?.positions[positionIndex]?.defaultX ||
+          card.position_x ??
+          currentSpreadTemplate?.positions[positionIndex]?.defaultX ??
           0,
         position_y:
-          card.position_y ||
-          currentSpreadTemplate?.positions[positionIndex]?.defaultY ||
+          card.position_y ??
+          currentSpreadTemplate?.positions[positionIndex]?.defaultY ??
           0,
+        rotation:
+          card.rotation ??
+          currentSpreadTemplate?.positions[positionIndex]?.rotation ??
+          0,
+        isEmpty: !card.card_name,
       };
     });
 

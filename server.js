@@ -150,7 +150,7 @@ app.post("/api/readings", (req, res) => {
 
       // Insert cards
       const stmt = db.prepare(
-        "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       );
 
       cards.forEach((card, index) => {
@@ -162,6 +162,7 @@ app.post("/api/readings", (req, res) => {
           index,
           card.position_x || null,
           card.position_y || null,
+          card.rotation || 0,
         );
       });
 
@@ -214,7 +215,7 @@ app.put("/api/readings/:id", (req, res) => {
 
           // Insert updated cards
           const stmt = db.prepare(
-            "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
           );
 
           cards.forEach((card, index) => {
@@ -226,6 +227,7 @@ app.put("/api/readings/:id", (req, res) => {
               index,
               card.position_x || null,
               card.position_y || null,
+              card.rotation || 0,
             );
           });
 
