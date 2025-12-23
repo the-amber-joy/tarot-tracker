@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let onBack: () => void;
   export let onSaved: () => void;
@@ -25,6 +26,7 @@
   let spreadTemplate = '';
   let spreadName = '';
   let notes = '';
+  let spreadCards: Record<number, any> = {};
   
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -54,6 +56,14 @@
   
   function setNow() {
     time = new Date().toTimeString().slice(0, 5);
+  }
+  
+  function handleCardsUpdate(cards: Record<number, any>) {
+    spreadCards = cards;
+  }
+  
+  function handleTemplateAutoSelected(event: CustomEvent) {
+    spreadTemplate = event.detail;
   }
   
   async function handleSubmit(e: Event) {
@@ -147,9 +157,12 @@
       <h3>Spread Layout</h3>
       <p class="hint">Click on a card position to add a card</p>
       
-      <div class="spread-canvas-placeholder" style="min-height: 400px; background: #f8f9fa; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-        <p style="color: #666;">Spread canvas coming in Phase 5!</p>
-      </div>
+      <SpreadCanvas 
+        bind:spreadTemplate={spreadTemplate}
+        spreadCards={spreadCards}
+        onCardsUpdate={handleCardsUpdate}
+        on:templateAutoSelected={handleTemplateAutoSelected}
+      />
     </div>
     
     <div class="form-actions">
