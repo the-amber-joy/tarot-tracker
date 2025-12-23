@@ -13,15 +13,15 @@ let focusTrapHandler = null;
 
 // Focus trap utility functions
 function trapFocus(modalElement) {
-  focusTrapHandler = function(e) {
-    if (e.key !== 'Tab') return;
-    
+  focusTrapHandler = function (e) {
+    if (e.key !== "Tab") return;
+
     const focusableElements = modalElement.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
     const firstFocusable = focusableElements[0];
     const lastFocusable = focusableElements[focusableElements.length - 1];
-    
+
     if (e.shiftKey) {
       if (document.activeElement === firstFocusable) {
         e.preventDefault();
@@ -34,13 +34,13 @@ function trapFocus(modalElement) {
       }
     }
   };
-  
-  document.addEventListener('keydown', focusTrapHandler);
+
+  document.addEventListener("keydown", focusTrapHandler);
 }
 
 function removeFocusTrap(modalElement) {
   if (focusTrapHandler) {
-    document.removeEventListener('keydown', focusTrapHandler);
+    document.removeEventListener("keydown", focusTrapHandler);
     focusTrapHandler = null;
   }
 }
@@ -212,6 +212,8 @@ function setNow() {
 }
 
 // Spread template management
+let pendingCardPosition = null; // Stores click coordinates for custom spread
+
 function onSpreadTemplateChange(event) {
   const templateId = event.target.value;
   currentSpreadTemplate = spreadTemplates.find((t) => t.id === templateId);
@@ -231,7 +233,20 @@ function renderSpreadCanvas() {
   canvas.innerHTML = "";
   canvas.className = "spread-canvas";
 
-  // Render each position
+  // For custom spreads, add click-to-add functionality
+  if (currentSpreadTemplate.id === "custom") {
+    canvas.classList.add("custom-spread");
+    canvas.addEventListener("click", handleCanvasClick);
+
+    // Render existing cards
+    Object.keys(spreadCards).forEach((key) => {
+      renderCustomCard(parseInt(key));
+    });
+
+    return;
+  }
+
+  // Render pre-defined spread positions
   currentSpreadTemplate.positions.forEach((position, index) => {
     const positionBtn = document.createElement("button");
     positionBtn.type = "button";
@@ -276,20 +291,183 @@ function renderSpreadCanvas() {
   });
 }
 
+// Handle canvas click for custom spreads
+function handleCanvasClick(event) {
+  // Don't add card if clicking on an existing card
+  if (event.target.closest(".card-position")) {
+    return;
+  }
+
+  const canvas = document.getElementById("spreadCanvas");
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left - 50; // Center the card (100px width / 2)
+  const y = event.clientY - rect.top - 70; // Center the card (140px height / 2)
+
+  pendingCardPosition = { x, y };
+
+  // Find next available index
+  const nextIndex = Object.keys(spreadCards).length;
+  openCardModal(nextIndex, true);
+}
+
+// Render a custom spread card
+function renderCustomCard(index) {
+  const canvas = document.getElementById("spreadCanvas");
+  const cardData = spreadCards[index];
+
+  if (!cardData) return;
+
+  const cardBtn = document.createElement("button");
+  cardBtn.type = "button";
+  cardBtn.className = "card-position filled custom-card";
+  cardBtn.style.left = `${cardData.position_x}px`;
+  cardBtn.style.top = `${cardData.position_y}px`;
+
+  if (cardData.rotation) {
+    cardBtn.style.transform = `rotate(${cardData.rotation}deg)`;
+  }
+
+  cardBtn.dataset.positionIndex = index;
+
+  const positionNumber = index + 1;
+  cardBtn.innerHTML = `
+    <div class="position-number">${positionNumber}</div>
+    <div class="position-label">${
+      cardData.position_label || "Card " + positionNumber
+    }</div>
+    <div class="card-name">${cardData.card_name}</div>
+  `;
+
+  cardBtn.title = cardData.position_label || `Card ${positionNumber}`;
+  cardBtn.setAttribute(
+    "aria-label",
+    `${cardData.position_label} - ${cardData.card_name}`,
+  );
+
+  cardBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openCardModal(index, true);
+  });
+
+  canvas.appendChild(cardBtn);
+}
+
+// Custom spread functions
+function handleCanvasClick(event) {
+  const canvas = document.getElementById("spreadCanvas");
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left - 50; // Center the card (100px width / 2)
+  const y = event.clientY - rect.top - 70; // Center the card (140px height / 2)
+
+  // Generate a new unique key for this card
+  const newKey = Object.keys(spreadCards).length;
+
+  // Open modal with position set to click location
+  openCustomCardModal(newKey, x, y);
+}
+
+function renderCustomCard(cardKey) {
+  const canvas = document.getElementById("spreadCanvas");
+  const cardData = spreadCards[cardKey];
+
+  if (!cardData) return;
+
+  const cardBtn = document.createElement("button");
+  cardBtn.type = "button";
+  cardBtn.className = "card-position filled custom-card";
+  cardBtn.style.left = `${cardData.position_x}px`;
+  cardBtn.style.top = `${cardData.position_y}px`;
+
+  // Apply rotation if specified
+  if (cardData.rotation) {
+    cardBtn.style.transform = `rotate(${cardData.rotation}deg)`;
+  }
+
+  cardBtn.dataset.cardKey = cardKey;
+  cardBtn.innerHTML = `
+    <div class="position-label">${
+      cardData.position_label || "Card " + (cardKey + 1)
+    }</div>
+    <div class="card-name">${cardData.card_name}</div>
+  `;
+
+  cardBtn.setAttribute(
+    "aria-label",
+    `${cardData.position_label || "Card"} - ${cardData.card_name}`,
+  );
+
+  // Add click to edit
+  cardBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openCustomCardModal(
+      cardKey,
+      cardData.position_x,
+      cardData.position_y,
+      cardData,
+    );
+  });
+
+  // TODO: Make draggable (Step 2)
+  // makeDraggable(cardBtn, cardKey);
+
+  canvas.appendChild(cardBtn);
+}
+
+function openCustomCardModal(cardKey, x, y, existingCard = null) {
+  lastFocusedElement = document.activeElement;
+
+  document.getElementById("cardPositionIndex").value = cardKey;
+  document.getElementById("cardPositionName").value =
+    existingCard?.position_label || `Card ${cardKey + 1}`;
+  document.getElementById("cardModalTitle").textContent = existingCard
+    ? "Edit Card"
+    : "Add Card";
+
+  if (existingCard) {
+    document.getElementById("cardName").value = existingCard.card_name;
+    document.getElementById("cardInterpretation").value =
+      existingCard.interpretation || "";
+    document.getElementById("removeCardBtn").classList.remove("hidden");
+  } else {
+    document.getElementById("cardName").value = "";
+    document.getElementById("cardInterpretation").value = "";
+    document.getElementById("removeCardBtn").classList.remove("hidden"); // Show remove for custom cards
+  }
+
+  // Store position for later
+  document.getElementById("cardPositionIndex").dataset.x = x;
+  document.getElementById("cardPositionIndex").dataset.y = y;
+
+  updateAvailableCards(cardKey);
+
+  const modal = document.getElementById("cardModal");
+  modal.classList.remove("hidden");
+  trapFocus(modal);
+  document.getElementById("cardName").focus();
+}
+
 // Card modal management
 let lastFocusedElement = null;
 
-function openCardModal(positionIndex) {
-  const position = currentSpreadTemplate.positions[positionIndex];
+function openCardModal(positionIndex, isCustomSpread = false) {
   const existingCard = spreadCards[positionIndex];
 
   // Store currently focused element to restore later
   lastFocusedElement = document.activeElement;
 
   document.getElementById("cardPositionIndex").value = positionIndex;
-  // Use custom label if exists, otherwise use template label
-  document.getElementById("cardPositionName").value =
-    existingCard?.position_label || position.label;
+
+  // For custom spreads, use a default or existing position label
+  if (isCustomSpread || currentSpreadTemplate.id === "custom") {
+    document.getElementById("cardPositionName").value =
+      existingCard?.position_label || `Card ${positionIndex + 1}`;
+  } else {
+    // For pre-defined spreads, use template position
+    const position = currentSpreadTemplate.positions[positionIndex];
+    document.getElementById("cardPositionName").value =
+      existingCard?.position_label || position.label;
+  }
+
   document.getElementById("cardModalTitle").textContent = existingCard
     ? "Edit Card"
     : "Add Card";
@@ -310,10 +488,10 @@ function openCardModal(positionIndex) {
 
   const modal = document.getElementById("cardModal");
   modal.classList.remove("hidden");
-  
+
   // Add focus trap
   trapFocus(modal);
-  
+
   document.getElementById("cardName").focus();
 }
 
@@ -344,10 +522,10 @@ function hideCardModal() {
   const modal = document.getElementById("cardModal");
   modal.classList.add("hidden");
   document.getElementById("cardForm").reset();
-  
+
   // Remove focus trap
   removeFocusTrap(modal);
-  
+
   // Restore focus to previously focused element
   if (lastFocusedElement) {
     lastFocusedElement.focus();
@@ -386,24 +564,41 @@ function saveCard(event) {
     return;
   }
 
-  const position = currentSpreadTemplate.positions[positionIndex];
   const positionLabel = document
     .getElementById("cardPositionName")
     .value.trim();
+  const interpretation = document.getElementById("cardInterpretation").value;
 
-  spreadCards[positionIndex] = {
-    card_name: cardName,
-    position_label: positionLabel, // Store the custom position label
-    interpretation: document.getElementById("cardInterpretation").value,
-    position_x: position.defaultX,
-    position_y: position.defaultY,
-  };
+  // Handle custom spread vs predefined spread
+  if (currentSpreadTemplate.id === "custom") {
+    // For custom spreads, use the pending position from canvas click
+    spreadCards[positionIndex] = {
+      card_name: cardName,
+      position_label: positionLabel,
+      interpretation: interpretation,
+      position_x: pendingCardPosition.x,
+      position_y: pendingCardPosition.y,
+    };
+    pendingCardPosition = null; // Clear pending position
+  } else {
+    // For predefined spreads, use template positions
+    const position = currentSpreadTemplate.positions[positionIndex];
+    spreadCards[positionIndex] = {
+      card_name: cardName,
+      position_label: positionLabel,
+      interpretation: interpretation,
+      position_x: position.defaultX,
+      position_y: position.defaultY,
+    };
+  }
 
   renderSpreadCanvas();
   hideCardModal();
 
-  // Focus next position button
-  focusNextPosition(positionIndex);
+  // Focus next position button (for predefined spreads)
+  if (currentSpreadTemplate.id !== "custom") {
+    focusNextPosition(positionIndex);
+  }
 }
 
 function focusNextPosition(currentIndex) {
@@ -852,11 +1047,11 @@ function populateDeckSelect() {
 
 function showDeckModal() {
   lastFocusedElement = document.activeElement;
-  
+
   const modal = document.getElementById("deckModal");
   modal.classList.remove("hidden");
   displayDeckList();
-  
+
   trapFocus(modal);
   document.getElementById("newDeckName").focus();
 }
@@ -865,9 +1060,9 @@ function hideDeckModal() {
   const modal = document.getElementById("deckModal");
   modal.classList.add("hidden");
   document.getElementById("newDeckName").value = "";
-  
+
   removeFocusTrap(modal);
-  
+
   if (lastFocusedElement) {
     lastFocusedElement.focus();
     lastFocusedElement = null;
