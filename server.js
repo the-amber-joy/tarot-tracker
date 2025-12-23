@@ -80,9 +80,11 @@ app.get("/api/readings", (req, res) => {
       r.date,
       r.time,
       r.spread_name,
+      r.spread_template_id,
       r.deck_name,
       r.notes,
-      COUNT(rc.id) as card_count
+      COUNT(rc.id) as card_count,
+      SUM(CASE WHEN rc.card_name IS NULL OR rc.card_name = '' THEN 1 ELSE 0 END) as empty_positions
     FROM readings r
     LEFT JOIN reading_cards rc ON r.id = rc.reading_id
     GROUP BY r.id
@@ -93,7 +95,36 @@ app.get("/api/readings", (req, res) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      res.json(readings);
+
+      // Add is_incomplete flag based on spread template or empty positions
+      const enrichedReadings = readings.map((reading) => {
+        let isIncomplete = false;
+
+        // Check if spread has a template
+        if (reading.spread_template_id) {
+          const template = SPREAD_TEMPLATES[reading.spread_template_id];
+          if (template && template.cardCount) {
+            // For templated spreads, check if card count matches expected count
+            // and if there are any empty positions
+            isIncomplete =
+              reading.card_count < template.cardCount ||
+              reading.empty_positions > 0;
+          } else {
+            // For custom spreads, just check for empty positions
+            isIncomplete = reading.empty_positions > 0;
+          }
+        } else {
+          // For spreads without a template, check for empty positions
+          isIncomplete = reading.empty_positions > 0;
+        }
+
+        return {
+          ...reading,
+          is_incomplete: isIncomplete,
+        };
+      });
+
+      res.json(enrichedReadings);
     },
   );
 });

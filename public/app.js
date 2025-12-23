@@ -194,12 +194,19 @@ function showFormView(readingId = null) {
   }
 }
 
-function showDetailView(readingId) {
+function showDetailView(readingId, isIncomplete = false) {
+  currentReadingId = readingId;
+
+  // If incomplete, go directly to edit mode
+  if (isIncomplete) {
+    showFormView(readingId);
+    return;
+  }
+
   document.getElementById("summaryView").classList.add("hidden");
   document.getElementById("formView").classList.add("hidden");
   document.getElementById("detailView").classList.remove("hidden");
   currentView = "detail";
-  currentReadingId = readingId;
   loadReadingDetails(readingId);
 }
 
@@ -1127,6 +1134,7 @@ function displayReadingsTable(readings) {
   tbody.innerHTML = readings
     .map((reading) => {
       const dateObj = new Date(reading.date + " " + reading.time);
+      const dayOfWeek = getDayOfWeek(reading.date);
       const formattedDate = dateObj.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -1137,14 +1145,17 @@ function displayReadingsTable(readings) {
         minute: "2-digit",
         hour12: true,
       });
-      const timestamp = `${formattedDate} at ${formattedTime}`;
+      const timestamp = `${dayOfWeek}, ${formattedDate} at ${formattedTime}`;
+
+      // Show warning icon if spread is incomplete (has positions without card names)
+      const warningIcon = reading.is_incomplete ? "⚠️" : "";
 
       return `
-        <tr onclick="showDetailView(${reading.id})" style="cursor: pointer;">
+        <tr onclick="showDetailView(${reading.id}, ${reading.is_incomplete})" style="cursor: pointer;">
             <td>${timestamp}</td>
-            <td>${getDayOfWeek(reading.date)}</td>
             <td>${reading.spread_name}</td>
-            <td>${reading.card_count}</td>
+            <td>${reading.deck_name}</td>
+            <td style="text-align: center;">${warningIcon}</td>
         </tr>
     `;
     })
