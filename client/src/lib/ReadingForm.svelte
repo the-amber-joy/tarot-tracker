@@ -27,6 +27,7 @@
   let date = new Date().toISOString().split('T')[0];
   let time = new Date().toTimeString().slice(0, 5);
   let deckName = '';
+  let deckSelectElement: HTMLSelectElement;
   let spreadTemplate = '';
   let previousSpreadTemplate = '';
   let spreadName = '';
@@ -50,7 +51,7 @@
       // Populate form fields
       date = reading.date;
       time = reading.time;
-      deckName = reading.deck_name;
+      deckName = reading.deck_name === '-' ? '' : reading.deck_name;
       spreadTemplate = reading.spread_template_id || 'custom';
       previousSpreadTemplate = reading.spread_template_id || 'custom';
       spreadName = reading.spread_name;
@@ -77,7 +78,24 @@
   export async function loadDecks() {
     try {
       const response = await fetch('/api/decks');
-      decks = await response.json();
+      const updatedDecks = await response.json();
+      
+      // Save current selection
+      const currentDeckName = deckName;
+      
+      // Check if the deck still exists
+      const deckStillExists = currentDeckName && updatedDecks.find((d: Deck) => d.name === currentDeckName);
+      
+      // Update the decks array
+      decks = updatedDecks;
+      
+      // Manually restore the select value after DOM update
+      if (deckSelectElement && deckStillExists) {
+        deckSelectElement.value = currentDeckName;
+        deckName = currentDeckName;
+      } else if (currentDeckName && !deckStillExists) {
+        deckName = '';
+      }
     } catch (error) {
       console.error('Error loading decks:', error);
     }
@@ -233,7 +251,7 @@
       
       <div class="form-group">
         <label for="deckName">Deck Used</label>
-        <select id="deckName" bind:value={deckName}>
+        <select id="deckName" bind:this={deckSelectElement} bind:value={deckName}>
           <option value="">No deck specified</option>
           {#each decks as deck}
             <option value={deck.name}>{deck.name}</option>
