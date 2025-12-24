@@ -24,6 +24,9 @@ data/
 # Deployment info (generated at runtime)
 deploy.txt
 
+# Local test users
+test-users.md
+
 # Environment variables
 .env
 

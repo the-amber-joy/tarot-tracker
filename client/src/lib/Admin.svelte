@@ -220,7 +220,7 @@
   {/if}
 
   <div class="admin-header">
-    <button class="back-button" on:click={goBack}>← Back</button>
+    <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2>🔧 Admin Panel</h2>
     <button class="btn-danger nuke-button" on:click={openNukeConfirm}>
       ☢️ Nuclear Option

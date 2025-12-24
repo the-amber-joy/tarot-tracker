@@ -259,7 +259,7 @@
 
 <div class="profile-container">
   <div class="profile-header">
-    <button class="back-button" on:click={goBack}>← Back</button>
+    <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2>{display_name}'s Profile</h2>
   </div>
 
