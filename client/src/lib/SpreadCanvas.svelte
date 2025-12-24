@@ -302,6 +302,12 @@
         setTimeout(() => {
           justDragged[index] = false;
         }, 200);
+        
+        // Prevent canvas click after dragging
+        preventCanvasClick = true;
+        setTimeout(() => {
+          preventCanvasClick = false;
+        }, 200);
       }
       
       document.removeEventListener('mousemove', drag);
@@ -411,7 +417,9 @@
   
   // Svelte action for making cards draggable
   function draggable(node: HTMLButtonElement, index: number) {
-    if (!readonly) {
+    // Only allow dragging in custom spreads and when not readonly
+    const isCustomSpread = !currentTemplate || currentTemplate.id === 'custom';
+    if (!readonly && isCustomSpread) {
       makeDraggable(node, index);
     }
     return {
@@ -423,7 +431,9 @@
   
   // Svelte action for making cards rotatable
   function rotatable(node: HTMLButtonElement, index: number) {
-    if (!readonly) {
+    // Only allow rotating in custom spreads and when not readonly
+    const isCustomSpread = !currentTemplate || currentTemplate.id === 'custom';
+    if (!readonly && isCustomSpread) {
       makeRotatable(node, index);
     }
     return {
@@ -521,7 +531,7 @@
       <button
         type="button"
         class="card-position {cardData?.card_name ? 'filled' : ''}"
-        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; {readonly ? 'cursor: default;' : cardData?.card_name ? 'cursor: grab;' : ''}"
+        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; cursor: pointer;"
         on:click|stopPropagation={() => handleCardClick(index)}
         use:draggable={index}
         use:rotatable={index}
@@ -543,9 +553,6 @@
           <div class="position-number">{position.order}</div>
           <div class="position-label">{position.label}</div>
           <div class="card-name">{cardData.card_name}</div>
-          {#if !readonly}
-            <div class="rotation-handle" title="Drag to rotate">↻</div>
-          {/if}
         {:else}
           <div class="position-number">{position.order}</div>
           <div class="position-label">{position.label}</div>

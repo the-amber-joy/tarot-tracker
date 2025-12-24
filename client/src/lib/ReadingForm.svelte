@@ -28,6 +28,7 @@
   let time = new Date().toTimeString().slice(0, 5);
   let deckName = '';
   let spreadTemplate = '';
+  let previousSpreadTemplate = '';
   let spreadName = '';
   let notes = '';
   let spreadCards: Record<number, any> = {};
@@ -52,6 +53,7 @@
       time = reading.time;
       deckName = reading.deck_name;
       spreadTemplate = reading.spread_template_id || 'custom';
+      previousSpreadTemplate = reading.spread_template_id || 'custom';
       spreadName = reading.spread_name;
       notes = reading.notes || '';
       
@@ -103,8 +105,40 @@
     spreadCards = cards;
   }
   
+  function handleSpreadTemplateChange(event: Event) {
+    const newTemplate = (event.target as HTMLSelectElement).value;
+    
+    // Check if there are any cards and if template is actually changing
+    const hasCards = Object.keys(spreadCards).length > 0;
+    const isChanging = previousSpreadTemplate !== newTemplate;
+    
+    if (hasCards && isChanging && previousSpreadTemplate) {
+      const confirmed = confirm(
+        'Changing the spread layout will clear all previously selected cards. Are you sure you want to continue?'
+      );
+      
+      if (confirmed) {
+        // Clear all cards
+        spreadCards = {};
+        spreadTemplate = newTemplate;
+        previousSpreadTemplate = newTemplate;
+      } else {
+        // Revert to previous template
+        spreadTemplate = previousSpreadTemplate;
+        // Force the select to update
+        (event.target as HTMLSelectElement).value = previousSpreadTemplate;
+      }
+    } else if (isChanging) {
+      // Always clear cards when switching templates (even if no confirmation needed)
+      spreadCards = {};
+      spreadTemplate = newTemplate;
+      previousSpreadTemplate = newTemplate;
+    }
+  }
+  
   function handleTemplateAutoSelected(event: CustomEvent) {
     spreadTemplate = event.detail;
+    previousSpreadTemplate = event.detail;
   }
   
   function openDeckModal() {
@@ -124,8 +158,8 @@
     e.preventDefault();
     
     // Validate required fields
-    if (!date || !time || !deckName) {
-      alert('Please fill in all required fields (Date, Time, and Deck).');
+    if (!date || !time) {
+      alert('Please fill in all required fields (Date and Time).');
       return;
     }
     
@@ -133,7 +167,7 @@
     const readingData = {
       date: date,
       time: time,
-      deck_name: deckName,
+      deck_name: deckName || '-',
       spread_template_id: spreadTemplate || 'custom',
       spread_name: spreadName || (spreadTemplate === 'celtic-cross' ? 'Celtic Cross' : 'Custom Spread'),
       notes: notes,
@@ -208,10 +242,10 @@
       </div>
       
       <div class="form-group">
-        <label for="deckName">Deck Used<span class="required">*</span></label>
+        <label for="deckName">Deck Used</label>
         <div class="input-with-button">
-          <select id="deckName" bind:value={deckName} required>
-            <option value="" disabled>Select a deck...</option>
+          <select id="deckName" bind:value={deckName}>
+            <option value="">No deck specified</option>
             {#each decks as deck}
               <option value={deck.name}>{deck.name}</option>
             {/each}
@@ -222,8 +256,8 @@
       
       <div class="form-group">
         <label for="spreadTemplate">Spread Template</label>
-        <select id="spreadTemplate" bind:value={spreadTemplate}>
-          <option value="">Click the canvas to start a custom spread...</option>
+        <select id="spreadTemplate" value={spreadTemplate} on:change={handleSpreadTemplateChange}>
+          <option disabled value="">Selct one, or click the canvas to start a custom spread...</option>
           {#each spreadTemplates as template}
             <option value={template.id}>{template.name}</option>
           {/each}
