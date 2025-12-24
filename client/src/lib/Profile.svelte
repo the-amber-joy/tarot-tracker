@@ -9,7 +9,16 @@
     notes?: string;
   };
 
-  let activeTab: "profile" | "decks" = "profile";
+  type Reading = {
+    id: number;
+    date: string;
+    time: string;
+    spread_name: string;
+    deck_name: string;
+    is_incomplete?: boolean;
+  };
+
+  let activeTab: "profile" | "decks" | "readings" = "profile";
   let display_name = $authStore?.display_name || $authStore?.username || "";
   let currentPassword = "";
   let newPassword = "";
@@ -29,12 +38,10 @@
   let editDeckName = "";
   let editDeckNotes = "";
 
-  onMount(async () => {
-    await loadDecks();
-  });
+  let readings: Reading[] = [];
 
   onMount(async () => {
-    await loadDecks();
+    await Promise.all([loadDecks(), loadReadings()]);
   });
 
   async function loadDecks() {
@@ -43,6 +50,20 @@
       decks = await response.json();
     } catch (error) {
       console.error("Error loading decks:", error);
+    }
+  }
+
+  async function loadReadings() {
+    try {
+      const response = await fetch("/api/readings");
+      const allReadings = await response.json();
+      readings = allReadings.sort((a: Reading, b: Reading) => {
+        const dateA = new Date(a.date + ' ' + a.time);
+        const dateB = new Date(b.date + ' ' + b.time);
+        return dateB.getTime() - dateA.getTime();
+      });
+    } catch (error) {
+      console.error("Error loading readings:", error);
     }
   }
 
@@ -145,6 +166,44 @@
     }
   }
 
+  async function handleDeleteReading(readingId: number, spreadName: string) {
+    if (!confirm(`Are you sure you want to delete "${spreadName}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/readings/${readingId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await loadReadings();
+      } else {
+        const error = await response.text();
+        alert(`Failed to delete reading: ${error}`);
+      }
+    } catch (error) {
+      console.error("Error deleting reading:", error);
+      alert("Error deleting reading. Please try again.");
+    }
+  }
+
+  function formatDateTime(date: string, time: string): string {
+    const dateObj = new Date(date + ' ' + time);
+    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const formattedTime = dateObj.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return `${dayOfWeek}, ${formattedDate} at ${formattedTime}`;
+  }
+
   async function handleProfileUpdate(e: Event) {
     e.preventDefault();
     profileError = "";
@@ -218,6 +277,13 @@
       on:click={() => activeTab = "decks"}
     >
       My Decks
+    </button>
+    <button 
+      class="tab" 
+      class:active={activeTab === "readings"}
+      on:click={() => activeTab = "readings"}
+    >
+      My Readings
     </button>
   </div>
 
@@ -400,6 +466,54 @@
             </ul>
           {/if}
         </div>
+      </section>
+    {:else if activeTab === "readings"}
+      <!-- Readings List Section -->
+      <section class="profile-section">
+        <h3>My Readings ({readings.length})</h3>
+        
+        {#if readings.length === 0}
+          <p class="empty-message">No readings yet. Create your first reading from the home page!</p>
+        {:else}
+          <ul class="readings-list">
+            {#each readings as reading}
+              <li class="reading-item">
+                <button 
+                  class="reading-info"
+                  on:click={() => navigate(`/reading/${reading.id}`)}
+                >
+                  <div>
+                    <span class="reading-spread">
+                      {#if reading.is_incomplete}
+                        <span class="incomplete-icon" title="Incomplete">⚠️</span>
+                      {/if}
+                      {reading.spread_name}
+                    </span>
+                    <p class="reading-details">{formatDateTime(reading.date, reading.time)}</p>
+                    <p class="reading-deck">{reading.deck_name}</p>
+                  </div>
+                </button>
+                <div class="reading-actions">
+                  <button 
+                    class="btn-edit" 
+                    on:click={() => navigate(`/reading/${reading.id}/edit`)}
+                    aria-label="Edit {reading.spread_name}"
+                    title="Edit"
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    class="btn-remove" 
+                    on:click={() => handleDeleteReading(reading.id, reading.spread_name)}
+                    aria-label="Delete {reading.spread_name}"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </section>
     {/if}
   </div>
@@ -744,6 +858,74 @@
     padding: 2rem;
   }
 
+  .readings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .reading-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    transition: box-shadow 0.2s;
+    overflow: hidden;
+  }
+
+  .reading-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .reading-info {
+    flex: 1;
+    text-align: left;
+    padding: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .reading-info:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+
+  .reading-spread {
+    font-size: 1rem;
+    color: #333;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .incomplete-icon {
+    margin-right: 0.25rem;
+  }
+
+  .reading-details {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .reading-deck {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  .reading-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    flex-shrink: 0;
+  }
+
   .error-message {
     background-color: #fee;
     color: #c33;
@@ -815,6 +997,26 @@
     .btn-save,
     .btn-cancel {
       width: 100%;
+    }
+
+    .reading-item {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .reading-info {
+      padding: 1rem;
+    }
+
+    .reading-actions {
+      width: 100%;
+      padding: 0.75rem 1rem 1rem 1rem;
+      border-top: 1px solid #eee;
+    }
+
+    .btn-edit,
+    .btn-remove {
+      flex: 1;
     }
   }
 </style>
