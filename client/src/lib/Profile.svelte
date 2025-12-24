@@ -659,15 +659,6 @@
     font-size: 0.875rem;
   }
 
-  .input-with-button {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .input-with-button input {
-    flex: 1;
-  }
-
   .btn-add {
     padding: 10px 20px;
     background-color: #28a745;
@@ -965,10 +956,6 @@
       flex: 1;
       padding: 0.75rem 0.5rem;
       font-size: 0.9rem;
-    }
-
-    .input-with-button {
-      flex-direction: column;
     }
 
     .btn-add {

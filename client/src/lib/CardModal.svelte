@@ -54,18 +54,11 @@
       position_label: positionLabel
     });
     
-    // Reset form
-    cardName = '';
-    searchInput = '';
-    cardInterpretation = '';
-    showDropdown = false;
+    resetForm();
   }
   
   function handleCancel() {
-    cardName = '';
-    searchInput = '';
-    cardInterpretation = '';
-    showDropdown = false;
+    resetForm();
     onCancel();
   }
   
@@ -129,6 +122,29 @@
     }, 0);
   }
   
+  function resetForm() {
+    cardName = '';
+    searchInput = '';
+    cardInterpretation = '';
+    showDropdown = false;
+    highlightedIndex = -1;
+  }
+  
+  function validateAndSetCard() {
+    showDropdown = false;
+    
+    // Check for exact match (case-insensitive)
+    const exactMatch = tarotCards.find(card => card.name.toLowerCase() === searchInput.toLowerCase());
+    if (exactMatch) {
+      cardName = exactMatch.name;
+      searchInput = exactMatch.name;
+    } else if (searchInput.trim() !== '') {
+      // Text doesn't match any valid card, clear it
+      searchInput = '';
+      cardName = '';
+    }
+  }
+  
   function handleSearchFocus() {
     if (searchInput.length > 0) {
       showDropdown = true;
@@ -136,18 +152,22 @@
   }
   
   function handleSearchBlur(event: FocusEvent) {
-    // Don't hide dropdown if focus moved to a dropdown item
+    // Don't hide dropdown if focus moved to a dropdown item or clear button
     const relatedTarget = event.relatedTarget as HTMLElement;
-    if (relatedTarget && relatedTarget.classList.contains('dropdown-item')) {
+    if (relatedTarget && (relatedTarget.classList.contains('dropdown-item') || relatedTarget.classList.contains('btn-clear-search'))) {
       return;
     }
     
     // Delay hiding dropdown to allow click events to register
     setTimeout(() => {
-      showDropdown = false;
-      // If search input doesn't match a valid card, clear it
-      if (!tarotCards.some(card => card.name === searchInput)) {
-        searchInput = cardName; // Revert to last valid selection
+      // If an item is highlighted, select it (user tabbed away with item highlighted)
+      if (highlightedIndex >= 0 && highlightedIndex < filteredCards.length) {
+        selectCard(filteredCards[highlightedIndex]);
+      } else if (filteredCards.length === 1) {
+        // Only one option available, select it automatically
+        selectCard(filteredCards[0]);
+      } else {
+        validateAndSetCard();
       }
     }, 200);
   }
@@ -262,6 +282,9 @@
                   type="button" 
                   class="btn-clear-search"
                   on:click={clearSearch}
+                  on:blur={() => { 
+                    validateAndSetCard();
+                  }}
                   aria-label="Clear search"
                   title="Clear"
                 >

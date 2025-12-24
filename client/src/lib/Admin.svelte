@@ -313,7 +313,6 @@
                       bind:value={newPassword}
                       placeholder="New password (6+ chars)"
                       class="reset-input"
-                      autofocus
                     />
                     <button
                       type="submit"
@@ -558,16 +557,6 @@
   .stat-cell {
     font-weight: 600;
     color: #4a90e2;
-  }
-
-  .badge {
-    display: inline-block;
-    background: #4a90e2;
-    color: white;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    margin-left: 0.5rem;
   }
 
   .muted {
