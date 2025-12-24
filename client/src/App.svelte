@@ -19,7 +19,7 @@
   let isDeckModalOpen: boolean = false;
   
   // Show FAB on home, profile, and reading pages
-  $: showFab = currentPath === '/' || currentPath === '/profile' || currentPath.startsWith('/reading/') && currentPath !== '/reading/new';
+  $: showFab = currentPath === '/' || currentPath === '/profile' || (currentPath.startsWith('/reading/') && currentPath !== '/reading/new');
   // When in edit mode, only show Manage Decks option
   $: isEditMode = currentPath.includes('/edit');
   
