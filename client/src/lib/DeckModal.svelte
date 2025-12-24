@@ -59,10 +59,6 @@
   }
   
   async function handleDeleteDeck(deckId: number, deckName: string) {
-    if (!confirm(`Delete deck "${deckName}"?`)) {
-      return;
-    }
-    
     try {
       const response = await fetch(`/api/decks/${deckId}`, {
         method: 'DELETE'

@@ -132,11 +132,15 @@
 
   <!-- Summary View -->
   {#if currentView === 'summary'}
-    <div class="view">
+    <div class="view summary-view">
       <div class="view-header">
         <h2>Past Readings</h2>
+        <button class="mobile-sort-btn" on:click={toggleDateSort}>
+          Date {sortAscending ? '↑' : '↓'}
+        </button>
       </div>
       
+      <!-- Table layout for larger screens -->
       <table class="readings-table">
         <thead>
           <tr>
@@ -159,10 +163,10 @@
               <tr on:click={() => handleReadingClick(reading)} on:keydown={(e) => handleRowKeydown(e, reading)} tabindex="0" style="cursor: pointer;">
                 <td>{formatDateTime(reading.date, reading.time)}</td>
                 <td>
-                  {reading.spread_name}
                   {#if reading.is_incomplete}
                     <span class="incomplete-icon" title="Incomplete">⚠️</span>
                   {/if}
+                  {reading.spread_name}
                 </td>
                 <td>{reading.deck_name}</td>
               </tr>
@@ -170,6 +174,32 @@
           {/if}
         </tbody>
       </table>
+      
+      <!-- Card layout for mobile -->
+      <div class="readings-cards" aria-live="polite">
+        {#if readings.length === 0}
+          <p class="empty-message">No readings yet. Click "New Reading" to get started!</p>
+        {:else}
+          {#each readings as reading}
+            <button 
+              class="reading-card"
+              on:click={() => handleReadingClick(reading)} 
+              on:keydown={(e) => handleRowKeydown(e, reading)}
+            >
+              <div class="reading-card-header">
+                <span class="reading-spread">
+                  {#if reading.is_incomplete}
+                    <span class="incomplete-icon" title="Incomplete">⚠️</span>
+                  {/if}
+                  {reading.spread_name}
+                </span>
+                <span class="reading-deck">{reading.deck_name}</span>
+              </div>
+              <div class="reading-date">{formatDateTime(reading.date, reading.time)}</div>
+            </button>
+          {/each}
+        {/if}
+      </div>
     </div>
   {/if}
 
@@ -192,3 +222,107 @@
     />
   {/if}
 </div>
+
+<style>
+  .summary-view {
+    container-type: inline-size;
+  }
+  
+  /* Hide mobile sort button on desktop */
+  .mobile-sort-btn {
+    display: none;
+  }
+  
+  /* Default: hide cards, show table */
+  .readings-cards {
+    display: none;
+  }
+  
+  .readings-table {
+    display: table;
+  }
+  
+  /* Container query: show cards on narrow screens, hide table */
+  @container (max-width: 700px) {
+    .mobile-sort-btn {
+      display: block;
+      padding: 0.5rem 1rem;
+      background: transparent;
+      color: #666;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    
+    .mobile-sort-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: #333;
+    }
+    
+    .mobile-sort-btn:focus {
+      outline: 2px solid var(--color-primary, #7b2cbf);
+      outline-offset: 2px;
+    }
+    
+    .mobile-sort-btn:active {
+      background: rgba(0, 0, 0, 0.1);
+      transform: scale(0.98);
+    }
+    
+    .readings-table {
+      display: none;
+    }
+    
+    .readings-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .reading-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #333;
+    }
+    
+    .reading-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--color-primary, #7b2cbf);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .reading-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .reading-spread {
+      font-weight: 600;
+      font-size: 1.1rem;
+      flex: 1;
+      color: #333;
+    }
+    
+    .reading-deck {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    
+    .reading-date {
+      color: #666;
+      font-size: 0.9rem;
+    }
+  }
+</style>
