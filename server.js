@@ -26,6 +26,10 @@ if (process.env.NODE_ENV === "production") {
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// Trust proxy for Fly.io
+app.set("trust proxy", 1);
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "dev-secret-not-for-production",
@@ -35,6 +39,7 @@ app.use(
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   }),
 );
