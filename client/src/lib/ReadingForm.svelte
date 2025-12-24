@@ -3,8 +3,11 @@
   import DeckModal from './DeckModal.svelte';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
+  export let readingId: number | null = null;
   export let onBack: () => void;
   export let onSaved: () => void;
+  
+  $: isEditMode = readingId !== null;
   
   type Deck = {
     id: number;
@@ -32,7 +35,43 @@
   
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
+    if (isEditMode) {
+      await loadReadingData();
+    }
   });
+  
+  async function loadReadingData() {
+    if (!readingId) return;
+    
+    try {
+      const response = await fetch(`/api/readings/${readingId}`);
+      const reading = await response.json();
+      
+      // Populate form fields
+      date = reading.date;
+      time = reading.time;
+      deckName = reading.deck_name;
+      spreadTemplate = reading.spread_template_id || 'custom';
+      spreadName = reading.spread_name;
+      notes = reading.notes || '';
+      
+      // Transform cards into spreadCards format
+      spreadCards = reading.cards.reduce((acc: Record<number, any>, card: any, idx: number) => {
+        acc[idx] = {
+          card_name: card.card_name,
+          position_label: card.position,
+          interpretation: card.interpretation,
+          position_x: card.position_x,
+          position_y: card.position_y,
+          rotation: card.rotation
+        };
+        return acc;
+      }, {});
+    } catch (error) {
+      console.error('Error loading reading:', error);
+      alert('Error loading reading data.');
+    }
+  }
   
   async function loadDecks() {
     try {
@@ -95,7 +134,7 @@
       date: date,
       time: time,
       deck_name: deckName,
-      spread_template: spreadTemplate || 'custom',
+      spread_template_id: spreadTemplate || 'custom',
       spread_name: spreadName || (spreadTemplate === 'celtic-cross' ? 'Celtic Cross' : 'Custom Spread'),
       notes: notes,
       cards: Object.entries(spreadCards).map(([indexStr, card]) => ({
@@ -110,8 +149,11 @@
     };
     
     try {
-      const response = await fetch('/api/readings', {
-        method: 'POST',
+      const url = isEditMode ? `/api/readings/${readingId}` : '/api/readings';
+      const method = isEditMode ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -133,8 +175,8 @@
 
 <div class="view">
   <div class="view-header">
-    <h2>New Reading</h2>
-    <button class="btn btn-primary" on:click={onBack}>
+    <h2>{isEditMode ? 'Edit Reading' : 'New Reading'}</h2>
+    <button class="btn btn-secondary" on:click={onBack}>
       ← Back to Summary
     </button>
   </div>
@@ -222,7 +264,7 @@
     </div>
     
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Save Reading</button>
+      <button type="submit" class="btn btn-primary">{isEditMode ? 'Update Reading' : 'Save Reading'}</button>
       <button type="button" class="btn btn-secondary" on:click={onBack}>Cancel</button>
     </div>
   </form>

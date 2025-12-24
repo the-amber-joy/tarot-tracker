@@ -4,6 +4,7 @@
   
   export let readingId: number;
   export let onBack: () => void;
+  export let onEdit: (id: number) => void;
   
   type Card = {
     card_name: string;
@@ -65,9 +66,14 @@
   <div class="view">
     <div class="view-header">
       <h2>Reading Details</h2>
-      <button class="btn btn-secondary" on:click={onBack}>
-        ← Back to Summary
-      </button>
+      <div>
+        <button class="btn btn-primary" on:click={() => onEdit(readingId)}>
+          Edit
+        </button>
+        <button class="btn btn-secondary" on:click={onBack}>
+          ← Back to Summary
+        </button>
+      </div>
     </div>
     
     <div class="detail-section">

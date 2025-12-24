@@ -117,6 +117,12 @@
   }
   
   function handleCardClick(index: number) {
+    // In readonly mode, always open modal to view
+    if (readonly) {
+      openCardModal(index);
+      return;
+    }
+    
     // Don't open modal if card was just dragged
     if (justDragged[index]) {
       return;
@@ -428,13 +434,12 @@
   }
 </script>
 
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div 
   class="spread-canvas {currentTemplate?.id === 'custom' || !currentTemplate ? 'custom-spread' : ''} {readonly ? 'readonly' : ''}"
   bind:this={canvasElement}
   on:click={handleCanvasClick}
   on:keydown={handleCanvasKeydown}
-  role={readonly ? undefined : 'button'}
-  tabindex={readonly ? undefined : 0}
 >
   {#if !currentTemplate}
     <!-- No template selected - empty canvas waiting for clicks -->
@@ -479,7 +484,7 @@
         type="button"
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
         style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
-        on:click|stopPropagation={() => !readonly && handleCardClick(index)}
+        on:click|stopPropagation={() => handleCardClick(index)}
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
@@ -517,7 +522,7 @@
         type="button"
         class="card-position {cardData?.card_name ? 'filled' : ''}"
         style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; {readonly ? 'cursor: default;' : cardData?.card_name ? 'cursor: grab;' : ''}"
-        on:click|stopPropagation={() => !readonly && handleCardClick(index)}
+        on:click|stopPropagation={() => handleCardClick(index)}
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
@@ -551,14 +556,13 @@
   {/if}
 </div>
 
-{#if !readonly}
-  <CardModal 
-    bind:isOpen={isModalOpen}
-    cardIndex={modalCardIndex}
-    positionLabel={modalPositionLabel}
-    existingCard={modalExistingCard}
-    usedCards={usedCardNames}
-    onSave={handleModalSave}
-    onCancel={handleModalCancel}
-  />
-{/if}
+<CardModal 
+  bind:isOpen={isModalOpen}
+  cardIndex={modalCardIndex}
+  positionLabel={modalPositionLabel}
+  existingCard={modalExistingCard}
+  usedCards={usedCardNames}
+  {readonly}
+  onSave={handleModalSave}
+  onCancel={handleModalCancel}
+/>

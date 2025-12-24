@@ -18,6 +18,7 @@
   let currentView: View = 'summary';
   let readings: Reading[] = [];
   let selectedReadingId: number | null = null;
+  let editingReadingId: number | null = null;
   let sortAscending: boolean = false;
   
   onMount(async () => {
@@ -67,16 +68,22 @@
   
   function showSummaryView() {
     currentView = 'summary';
+    editingReadingId = null;
     loadReadings();
   }
   
-  function showFormView() {
+  function showFormView(readingId?: number) {
     currentView = 'form';
+    editingReadingId = readingId || null;
   }
   
   function showDetailView(id: number) {
     currentView = 'detail';
     selectedReadingId = id;
+  }
+  
+  function handleEdit(id: number) {
+    showFormView(id);
   }
 </script>
 
@@ -90,7 +97,7 @@
     <div class="view">
       <div class="view-header">
         <h2>Past Readings</h2>
-        <button class="btn btn-primary" on:click={showFormView}>
+        <button class="btn btn-primary" on:click={() => showFormView()}>
           + New Reading
         </button>
       </div>
@@ -131,6 +138,7 @@
   <!-- Form View -->
   {#if currentView === 'form'}
     <ReadingForm 
+      readingId={editingReadingId}
       onBack={showSummaryView}
       onSaved={showSummaryView}
     />
@@ -141,6 +149,7 @@
     <ReadingDetail 
       readingId={selectedReadingId} 
       onBack={showSummaryView}
+      onEdit={handleEdit}
     />
   {/if}
 </div>

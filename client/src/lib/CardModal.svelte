@@ -6,6 +6,7 @@
   export let positionLabel = '';
   export let existingCard: any = null;
   export let usedCards: string[] = [];
+  export let readonly: boolean = false;
   export let onSave: (cardData: any) => void;
   export let onCancel: () => void;
   
@@ -103,7 +104,7 @@
   <div class="modal" bind:this={modalElement}>
     <div class="modal-content">
       <div class="modal-header">
-        <h2>{existingCard ? 'Edit Card' : 'Add Card'}</h2>
+        <h2>{readonly ? 'View Card' : existingCard ? 'Edit Card' : 'Add Card'}</h2>
         <button class="btn-close" on:click={handleCancel}>&times;</button>
       </div>
       
@@ -115,6 +116,7 @@
               type="text" 
               id="cardPositionName" 
               bind:value={positionLabel}
+              readonly={readonly}
             />
           </div>
           
@@ -126,6 +128,7 @@
               list="cardList"
               bind:value={cardName}
               placeholder="Start typing card name..."
+              readonly={readonly}
             />
             <datalist id="cardList">
               {#each availableCards as card}
@@ -141,19 +144,26 @@
               bind:value={cardInterpretation}
               rows="4"
               placeholder="Your interpretation of this card..."
+              readonly={readonly}
             ></textarea>
           </div>
           
           <div class="modal-actions">
-            <button type="submit" class="btn btn-primary">Save Card</button>
-            {#if existingCard}
-              <button type="button" class="btn btn-danger" on:click={handleRemove}>
-                Remove Card
+            {#if !readonly}
+              <button type="submit" class="btn btn-primary">Save Card</button>
+              {#if existingCard}
+                <button type="button" class="btn btn-danger" on:click={handleRemove}>
+                  Remove Card
+                </button>
+              {/if}
+              <button type="button" class="btn btn-secondary" on:click={handleCancel}>
+                Cancel
+              </button>
+            {:else}
+              <button type="button" class="btn btn-secondary" on:click={handleCancel}>
+                Close
               </button>
             {/if}
-            <button type="button" class="btn btn-secondary" on:click={handleCancel}>
-              Cancel
-            </button>
           </div>
         </form>
       </div>
