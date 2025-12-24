@@ -202,6 +202,7 @@
 <div class="view">
   <div class="view-header">
     <h2>{isEditMode ? 'Edit Reading' : 'New Reading'}</h2>
+    <button type="button" class="btn btn-secondary" on:click={() => isEditMode ? navigate(`/reading/${readingId}`) : navigate('/')}>Cancel</button>
   </div>
   
   <form on:submit={handleSubmit}>
@@ -284,7 +285,7 @@
     </div>
     
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary" on:click={() => navigate('/')}>Cancel</button>
+      <button type="button" class="btn btn-secondary" on:click={() => isEditMode ? navigate(`/reading/${readingId}`) : navigate('/')}>Cancel</button>
       <button type="submit" class="btn btn-primary">{isEditMode ? 'Update Reading' : 'Save Reading'}</button>
     </div>
   </form>
