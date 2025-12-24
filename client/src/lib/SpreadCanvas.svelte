@@ -44,6 +44,11 @@
   let dragStartPanX = 0;
   let dragStartPanY = 0;
   
+  // Pinch zoom state
+  let isPinching = false;
+  let initialPinchDistance = 0;
+  let initialPinchZoom = 1;
+  
   // Modal state
   let isModalOpen = false;
   let modalCardIndex: number | null = null;
@@ -65,9 +70,9 @@
     
     // Add drag event listeners
     canvasElement.addEventListener('mousedown', handleDragStart);
-    canvasElement.addEventListener('touchstart', handleDragStart, { passive: true });
+    canvasElement.addEventListener('touchstart', handleDragStart, { passive: false });
     window.addEventListener('mousemove', handleDragMove);
-    window.addEventListener('touchmove', handleDragMove, { passive: true });
+    window.addEventListener('touchmove', handleDragMove, { passive: false });
     window.addEventListener('mouseup', handleDragEnd);
     window.addEventListener('touchend', handleDragEnd);
     
@@ -164,6 +169,12 @@
     userPanX -= 50;
   }
   
+  function getDistance(touch1: Touch, touch2: Touch): number {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  
   function handleDragStart(e: MouseEvent | TouchEvent) {
     // Only enable dragging for predefined spreads
     if (!currentTemplate || currentTemplate.id === 'custom') return;
@@ -174,21 +185,46 @@
       return;
     }
     
-    isDragging = true;
-    dragStartPanX = userPanX;
-    dragStartPanY = userPanY;
-    
-    if (e instanceof MouseEvent) {
+    if (e instanceof TouchEvent) {
+      if (e.touches.length === 2) {
+        // Two fingers - start pinch zoom
+        e.preventDefault(); // Prevent page zoom
+        isPinching = true;
+        isDragging = false;
+        initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+        initialPinchZoom = userZoom;
+        return;
+      } else if (e.touches.length === 1) {
+        // One finger - start drag
+        isDragging = true;
+        isPinching = false;
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
+        dragStartPanX = userPanX;
+        dragStartPanY = userPanY;
+      }
+    } else if (e instanceof MouseEvent) {
+      // Mouse - start drag
+      isDragging = true;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
+      dragStartPanX = userPanX;
+      dragStartPanY = userPanY;
       canvasElement.style.cursor = 'grabbing';
-    } else if (e instanceof TouchEvent && e.touches.length === 1) {
-      dragStartX = e.touches[0].clientX;
-      dragStartY = e.touches[0].clientY;
     }
   }
   
   function handleDragMove(e: MouseEvent | TouchEvent) {
+    if (e instanceof TouchEvent && e.touches.length === 2 && isPinching) {
+      // Handle pinch zoom
+      e.preventDefault(); // Prevent page zoom
+      const currentDistance = getDistance(e.touches[0], e.touches[1]);
+      const scale = currentDistance / initialPinchDistance;
+      userZoom = Math.max(0.3, Math.min(3, initialPinchZoom * scale));
+      updateCanvasScale();
+      return;
+    }
+    
     if (!isDragging) return;
     
     let clientX: number, clientY: number;
@@ -214,6 +250,10 @@
     if (isDragging) {
       isDragging = false;
       canvasElement.style.cursor = '';
+    }
+    if (isPinching) {
+      isPinching = false;
+      initialPinchDistance = 0;
     }
   }
   

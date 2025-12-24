@@ -500,6 +500,7 @@ tbody tr:hover {
 /* Cursor for draggable predefined spreads */
 .spread-canvas:not(.custom-spread) {
   cursor: grab;
+  touch-action: none; /* Prevent default touch behaviors like page zoom */
 }
 
 .spread-canvas:not(.custom-spread):active {
