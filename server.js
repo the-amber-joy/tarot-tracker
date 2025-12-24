@@ -7,6 +7,9 @@ const { SPREAD_TEMPLATES } = require("./spreads");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log("Environment PORT:", process.env.PORT);
+console.log("Using PORT:", PORT);
+
 // Middleware
 app.use(express.json());
 
