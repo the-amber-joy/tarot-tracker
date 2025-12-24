@@ -33,6 +33,9 @@
   let displayScale = 1; // Scale for fitting predefined spreads in viewport
   let translateX = 0; // X offset to center cards
   let translateY = 0; // Y offset to center cards
+  let userZoom = 1; // User-controlled zoom multiplier
+  let userPanX = 0; // User-controlled pan offset X
+  let userPanY = 0; // User-controlled pan offset Y
   
   // Modal state
   let isModalOpen = false;
@@ -87,22 +90,56 @@
         displayScale = Math.min(scaleX, scaleY, 1) * 0.85; // 0.85 for comfortable margin
         
         // Calculate where the scaled bounding box should be positioned to center it
-        const scaledSpreadWidth = spreadWidth * displayScale;
-        const scaledSpreadHeight = spreadHeight * displayScale;
+        const totalScale = displayScale * userZoom;
+        const scaledSpreadWidth = spreadWidth * totalScale;
+        const scaledSpreadHeight = spreadHeight * totalScale;
         
         // Offset to center the spread in the viewport
         const centerOffsetX = (currentWidth - scaledSpreadWidth) / 2;
         const centerOffsetY = (currentHeight - scaledSpreadHeight) / 2;
         
         // Calculate final translation: move to center, accounting for where cards start (minX, minY)
-        translateX = centerOffsetX - (minX * displayScale);
-        translateY = centerOffsetY - (minY * displayScale);
+        translateX = centerOffsetX - (minX * totalScale);
+        translateY = centerOffsetY - (minY * totalScale);
       } else {
         displayScale = 1;
         translateX = 0;
         translateY = 0;
       }
     }
+  }
+  
+  function zoomIn() {
+    userZoom = Math.min(3, userZoom + 0.2);
+    updateCanvasScale();
+  }
+  
+  function zoomOut() {
+    userZoom = Math.max(0.3, userZoom - 0.2);
+    updateCanvasScale();
+  }
+  
+  function centerView() {
+    userZoom = 1;
+    userPanX = 0;
+    userPanY = 0;
+    updateCanvasScale();
+  }
+  
+  function panUp() {
+    userPanY += 50;
+  }
+  
+  function panDown() {
+    userPanY -= 50;
+  }
+  
+  function panLeft() {
+    userPanX += 50;
+  }
+  
+  function panRight() {
+    userPanX -= 50;
   }
   
   // Helper to scale positions from stored values
@@ -578,7 +615,7 @@
     class="canvas-inner"
     on:click={handleCanvasClick}
     on:keydown={handleCanvasKeydown}
-    style={currentTemplate && currentTemplate.id !== 'custom' ? `transform: translate(${translateX}px, ${translateY}px) scale(${displayScale})` : ''}
+    style={currentTemplate && currentTemplate.id !== 'custom' ? `transform: translate(${translateX + userPanX}px, ${translateY + userPanY}px) scale(${displayScale * userZoom})` : ''}
   >
   {#if !currentTemplate}
     <!-- No template selected - empty canvas waiting for clicks -->
@@ -717,6 +754,22 @@
     {/each}
   {/if}
   </div>
+  
+  {#if currentTemplate && currentTemplate.id !== 'custom'}
+    <div class="zoom-controls">
+      <button type="button" class="zoom-btn" on:click={zoomOut} title="Zoom out" aria-label="Zoom out">−</button>
+      <button type="button" class="zoom-btn" on:click={centerView} title="Reset zoom" aria-label="Reset zoom">⊡</button>
+      <button type="button" class="zoom-btn" on:click={zoomIn} title="Zoom in" aria-label="Zoom in">+</button>
+    </div>
+    <div class="pan-controls">
+      <button type="button" class="pan-btn pan-up" on:click={panUp} title="Pan up" aria-label="Pan up">▲</button>
+      <div class="pan-middle">
+        <button type="button" class="pan-btn" on:click={panLeft} title="Pan left" aria-label="Pan left">◀</button>
+        <button type="button" class="pan-btn" on:click={panRight} title="Pan right" aria-label="Pan right">▶</button>
+      </div>
+      <button type="button" class="pan-btn pan-down" on:click={panDown} title="Pan down" aria-label="Pan down">▼</button>
+    </div>
+  {/if}
 </div>
 
 <CardModal 
