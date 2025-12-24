@@ -28,6 +28,9 @@
   let showToast = false;
   let sortField: SortField = 'username';
   let sortDirection: SortDirection = 'asc';
+  let showNukeConfirm = false;
+  let nukeConfirmText = "";
+  let nukeLoading = false;
 
   $: adminUser = users.find(u => u.id === $authStore?.id);
   $: otherUsers = users.filter(u => u.id !== $authStore?.id).sort((a, b) => {
@@ -172,6 +175,41 @@
     if (sortField !== field) return '⇅';
     return sortDirection === 'asc' ? '↑' : '↓';
   }
+
+  function openNukeConfirm() {
+    showNukeConfirm = true;
+    nukeConfirmText = "";
+  }
+
+  function closeNukeConfirm() {
+    showNukeConfirm = false;
+    nukeConfirmText = "";
+  }
+
+  async function handleNuke() {
+    if (nukeConfirmText !== "DELETE EVERYTHING") {
+      return;
+    }
+
+    nukeLoading = true;
+    try {
+      const response = await fetch("/api/admin/nuke", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to clear data");
+      }
+
+      displayToast("All data cleared successfully!");
+      closeNukeConfirm();
+      await loadUsers();
+    } catch (e: any) {
+      displayToast("Error: " + e.message);
+    } finally {
+      nukeLoading = false;
+    }
+  }
 </script>
 
 <div class="admin-container">
@@ -184,6 +222,9 @@
   <div class="admin-header">
     <button class="back-button" on:click={goBack}>← Back</button>
     <h2>🔧 Admin Panel</h2>
+    <button class="btn-danger nuke-button" on:click={openNukeConfirm}>
+      ☢️ Nuclear Option
+    </button>
   </div>
 
   {#if loading}
@@ -313,7 +354,50 @@
   {:else}
     <div class="empty-state">No other users found</div>
   {/if}
-{/if}</div>
+{/if}
+
+{#if showNukeConfirm}
+  <div class="modal-overlay" on:click={closeNukeConfirm}>
+    <div class="nuke-modal" on:click|stopPropagation>
+      <div class="nuke-header">
+        <h3>☢️ Nuclear Option</h3>
+        <button class="modal-close" on:click={closeNukeConfirm}>&times;</button>
+      </div>
+      <div class="nuke-body">
+        <p class="nuke-warning">⚠️ <strong>WARNING:</strong> This will permanently delete:</p>
+        <ul class="nuke-list">
+          <li>All users (except you)</li>
+          <li>All readings from all users</li>
+          <li>All decks from all users</li>
+          <li>Your own readings and decks</li>
+        </ul>
+        <p class="nuke-warning">Only your admin account will remain.</p>
+        <p class="nuke-instruction">Type <strong>DELETE EVERYTHING</strong> to confirm:</p>
+        <input 
+          type="text" 
+          class="nuke-input" 
+          bind:value={nukeConfirmText}
+          placeholder="DELETE EVERYTHING"
+          autofocus
+        />
+      </div>
+      <div class="nuke-actions">
+        <button 
+          class="btn-small btn-danger" 
+          on:click={handleNuke}
+          disabled={nukeConfirmText !== "DELETE EVERYTHING" || nukeLoading}
+        >
+          {nukeLoading ? "Deleting..." : "☢️ Delete Everything"}
+        </button>
+        <button class="btn-small btn-secondary" on:click={closeNukeConfirm}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+</div>
 
 <style>
   .admin-container {
@@ -584,6 +668,109 @@
     text-align: center;
     padding: 3rem;
     color: #999;
+  }
+
+  /* Nuclear option modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  .nuke-modal {
+    background: white;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .nuke-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .nuke-header h3 {
+    margin: 0;
+    color: #dc3545;
+    font-size: 1.5rem;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    color: #333;
+  }
+
+  .nuke-body {
+    padding: 1.5rem;
+  }
+
+  .nuke-warning {
+    margin: 0 0 1rem 0;
+    color: #856404;
+    background: #fff3cd;
+    padding: 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #ffc107;
+  }
+
+  .nuke-list {
+    margin: 1rem 0;
+    padding-left: 2rem;
+    color: #666;
+  }
+
+  .nuke-list li {
+    margin: 0.5rem 0;
+  }
+
+  .nuke-instruction {
+    margin: 1.5rem 0 0.5rem 0;
+    font-weight: 500;
+  }
+
+  .nuke-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #dc3545;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: monospace;
+  }
+
+  .nuke-input:focus {
+    outline: none;
+    border-color: #c82333;
+  }
+
+  .nuke-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 1px solid #ddd;
+  }
+
+  .nuke-button {
+    align-self: flex-start;
   }
 
   @media (max-width: 768px) {

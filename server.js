@@ -340,6 +340,69 @@ app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   });
 });
 
+// Nuclear option: Delete all data except current admin
+app.post("/api/admin/nuke", requireAdmin, (req, res) => {
+  const adminId = req.user.id;
+
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION");
+
+    // Delete all users except the current admin
+    db.run("DELETE FROM users WHERE id != ?", [adminId], function (err) {
+      if (err) {
+        db.run("ROLLBACK");
+        return res.status(500).json({ error: err.message });
+      }
+
+      // Delete all data for the admin user too (but keep the user account)
+      db.run(
+        "DELETE FROM reading_cards WHERE reading_id IN (SELECT id FROM readings WHERE user_id = ?)",
+        [adminId],
+        function (err) {
+          if (err) {
+            db.run("ROLLBACK");
+            return res.status(500).json({ error: err.message });
+          }
+
+          db.run(
+            "DELETE FROM readings WHERE user_id = ?",
+            [adminId],
+            function (err) {
+              if (err) {
+                db.run("ROLLBACK");
+                return res.status(500).json({ error: err.message });
+              }
+
+              db.run(
+                "DELETE FROM decks WHERE user_id = ?",
+                [adminId],
+                function (err) {
+                  if (err) {
+                    db.run("ROLLBACK");
+                    return res.status(500).json({ error: err.message });
+                  }
+
+                  db.run("COMMIT", function (err) {
+                    if (err) {
+                      db.run("ROLLBACK");
+                      return res.status(500).json({ error: err.message });
+                    }
+                    res.json({
+                      message:
+                        "All data cleared. Only your admin account remains.",
+                      adminId: adminId,
+                    });
+                  });
+                },
+              );
+            },
+          );
+        },
+      );
+    });
+  });
+});
+
 // Get all tarot cards (public)
 app.get("/api/cards", (req, res) => {
   res.json(TAROT_CARDS);
