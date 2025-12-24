@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   
   export let isOpen = false;
-  export let cardIndex: number | null = null;
   export let positionLabel = '';
   export let existingCard: any = null;
   export let usedCards: string[] = [];

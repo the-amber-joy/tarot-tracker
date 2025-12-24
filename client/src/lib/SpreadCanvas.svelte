@@ -25,6 +25,11 @@
   let canvasElement: HTMLDivElement;
   let justDragged: Record<number, boolean> = {};
   let preventCanvasClick = false;
+  let mobileActiveCard: number | null = null; // Track which card shows controls on mobile
+  
+  // Canvas scaling for responsiveness
+  const BASE_CANVAS_SIZE = 750; // Base size for card positions
+  let canvasScale = 1;
   
   // Modal state
   let isModalOpen = false;
@@ -38,9 +43,29 @@
     .map(([_, card]) => card.card_name)
     .filter(name => name && name.trim());
   
-  onMount(async () => {
-    await loadSpreadTemplates();
+  onMount(() => {
+    loadSpreadTemplates();
+    updateCanvasScale();
+    
+    // Update scale on window resize
+    window.addEventListener('resize', updateCanvasScale);
+    
+    return () => {
+      window.removeEventListener('resize', updateCanvasScale);
+    };
   });
+  
+  function updateCanvasScale() {
+    if (canvasElement) {
+      const currentWidth = canvasElement.clientWidth;
+      canvasScale = currentWidth / BASE_CANVAS_SIZE;
+    }
+  }
+  
+  // Helper to scale positions from stored values
+  function scalePosition(value: number): number {
+    return value * canvasScale;
+  }
   
   async function loadSpreadTemplates() {
     try {
@@ -61,6 +86,9 @@
   }
   
   function handleCanvasClick(event: MouseEvent) {
+    // Clear mobile active card when clicking canvas
+    mobileActiveCard = null;
+    
     // Don't handle clicks in readonly mode
     if (readonly) {
       return;
@@ -94,8 +122,8 @@
     }
     
     const rect = canvasElement.getBoundingClientRect();
-    const x = event.clientX - rect.left - 50; // Center the card (100px width / 2)
-    const y = event.clientY - rect.top - 70; // Center the card (140px height / 2)
+    const x = (event.clientX - rect.left - 50) / canvasScale; // Center the card, store at base scale
+    const y = (event.clientY - rect.top - 70) / canvasScale; // Center the card, store at base scale
     
     // Find next available index (just use the count since we renumber on delete)
     const nextIndex = Object.keys(spreadCards).length;
@@ -125,8 +153,24 @@
       return;
     }
     
-    // Open card modal
-    openCardModal(index);
+    // On mobile, first tap shows controls, doesn't open modal
+    // Check if device is touch-enabled
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice) {
+      if (mobileActiveCard === index) {
+        // Already active, do nothing (user should tap + button)
+        return;
+      } else {
+        // Deactivate any other card and activate this one
+        mobileActiveCard = index;
+        return;
+      }
+    } else {
+      // Desktop: clear mobile active card in case it was somehow set
+      mobileActiveCard = null;
+    }
+    
+    // Desktop: shouldn't reach here, + button handles modal opening
   }
   
   function openCardModal(index: number) {
@@ -142,7 +186,15 @@
       modalPositionLabel = existingCard?.position_label || `Card ${index + 1}`;
     }
     
+    // Clear mobile active card when opening modal
+    mobileActiveCard = null;
+    
     isModalOpen = true;
+  }
+  
+  function handleAddButtonClick(event: Event, index: number) {
+    event.stopPropagation();
+    openCardModal(index);
   }
   
   function handleModalSave(cardData: any) {
@@ -238,6 +290,8 @@
     // Setup draggable
     const interactable = interact(element)
       .draggable({
+        inertia: false,
+        autoScroll: false,
         listeners: {
           start(event) {
             hasMoved = false;
@@ -260,26 +314,53 @@
             hasMoved = true;
             
             const target = event.target;
-            const x = parseFloat(target.style.left) || spreadCards[index]?.position_x || 0;
-            const y = parseFloat(target.style.top) || spreadCards[index]?.position_y || 0;
             
-            // Update position
-            target.style.left = `${x + event.dx}px`;
-            target.style.top = `${y + event.dy}px`;
+            // Get current position (or start from stored card position)
+            const currentX = (parseFloat(target.getAttribute('data-x')) || 0);
+            const currentY = (parseFloat(target.getAttribute('data-y')) || 0);
+            
+            // Add the delta to the current position
+            const newX = currentX + event.dx;
+            const newY = currentY + event.dy;
+            
+            // Store the accumulated position
+            target.setAttribute('data-x', newX.toString());
+            target.setAttribute('data-y', newY.toString());
+            
+            // Calculate display position: base position + scaled accumulated delta
+            const baseX = spreadCards[index]?.position_x || 0;
+            const baseY = spreadCards[index]?.position_y || 0;
+            const displayX = scalePosition(baseX) + newX;
+            const displayY = scalePosition(baseY) + newY;
+            
+            // Update display position
+            target.style.left = `${displayX}px`;
+            target.style.top = `${displayY}px`;
           },
           end(event) {
             event.target.style.cursor = 'grab';
             
             if (hasMoved) {
-              // Update position in spreadCards
-              const x = parseFloat(event.target.style.left);
-              const y = parseFloat(event.target.style.top);
+              const target = event.target;
+              // Get the accumulated deltas
+              const deltaX = parseFloat(target.getAttribute('data-x') || '0');
+              const deltaY = parseFloat(target.getAttribute('data-y') || '0');
+              
+              // Calculate final position in base scale
+              const baseX = spreadCards[index]?.position_x || 0;
+              const baseY = spreadCards[index]?.position_y || 0;
+              const finalX = baseX + (deltaX / canvasScale);
+              const finalY = baseY + (deltaY / canvasScale);
+              
+              // Clean up data attributes
+              target.removeAttribute('data-x');
+              target.removeAttribute('data-y');
               
               const newCards = { ...spreadCards };
               newCards[index] = {
                 ...newCards[index],
-                position_x: x,
-                position_y: y
+                position_x: finalX,
+                position_y: finalY
               };
               onCardsUpdate(newCards);
               
@@ -410,6 +491,11 @@
     updateCurrentTemplate();
   }
   
+  // Update scale when canvas element changes
+  $: if (canvasElement) {
+    updateCanvasScale();
+  }
+  
   // Svelte action for setting up interact.js on cards
   function interactCard(node: HTMLButtonElement, index: number) {
     let interactable: any = null;
@@ -446,8 +532,8 @@
       {@const index = parseInt(indexStr)}
       <button
         type="button"
-        class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
-        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
+        class="card-position custom-card {cardData.card_name ? 'filled' : ''} {mobileActiveCard === index ? 'mobile-active' : ''}"
+        style="left: {scalePosition(cardData.position_x)}px; top: {scalePosition(cardData.position_y)}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
         on:click|stopPropagation={() => !readonly && handleCardClick(index)}
         use:interactCard={index}
         data-position-index={index}
@@ -469,7 +555,15 @@
         {#if cardData.card_name}
           <div class="card-name">{cardData.card_name}</div>
         {:else}
-          <div class="empty-card">+</div>
+          <div 
+            class="empty-card-btn" 
+            on:click={(e) => handleAddButtonClick(e, index)}
+            on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? handleAddButtonClick(e, index) : null}
+            role="button"
+            tabindex="0"
+            title="Add card"
+            aria-label="Add card to this position"
+          >+</div>
         {/if}
         {#if !readonly}
           <div class="rotation-handle" title="Drag to rotate">↻</div>
@@ -482,8 +576,8 @@
       {@const index = parseInt(indexStr)}
       <button
         type="button"
-        class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
-        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
+        class="card-position custom-card {cardData.card_name ? 'filled' : ''} {mobileActiveCard === index ? 'mobile-active' : ''}"
+        style="left: {scalePosition(cardData.position_x)}px; top: {scalePosition(cardData.position_y)}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
         on:click|stopPropagation={() => handleCardClick(index)}
         use:interactCard={index}
         data-position-index={index}
@@ -505,7 +599,15 @@
         {#if cardData.card_name}
           <div class="card-name">{cardData.card_name}</div>
         {:else}
-          <div class="empty-card">+</div>
+          <div 
+            class="empty-card-btn" 
+            on:click={(e) => handleAddButtonClick(e, index)}
+            on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? handleAddButtonClick(e, index) : null}
+            role="button"
+            tabindex="0"
+            title="Add card"
+            aria-label="Add card to this position"
+          >+</div>
         {/if}
         {#if !readonly}
           <div class="rotation-handle" title="Drag to rotate">↻</div>
@@ -521,8 +623,8 @@
       {@const rotation = cardData?.rotation ?? position.rotation ?? 0}
       <button
         type="button"
-        class="card-position {cardData?.card_name ? 'filled' : ''}"
-        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; cursor: pointer;"
+        class="card-position {cardData?.card_name ? 'filled' : ''} {mobileActiveCard === index ? 'mobile-active' : ''}"
+        style="left: {scalePosition(xPos)}px; top: {scalePosition(yPos)}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; cursor: pointer;"
         on:click|stopPropagation={() => handleCardClick(index)}
         use:interactCard={index}
         data-position-index={index}
@@ -547,7 +649,15 @@
         {:else}
           <div class="position-number">{position.order}</div>
           <div class="position-label">{position.label}</div>
-          <div class="empty-card">+</div>
+          <div 
+            class="empty-card-btn" 
+            on:click={(e) => handleAddButtonClick(e, index)}
+            on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? handleAddButtonClick(e, index) : null}
+            role="button"
+            tabindex="0"
+            title="Add card"
+            aria-label="Add card to this position"
+          >+</div>
         {/if}
       </button>
     {/each}
@@ -556,7 +666,6 @@
 
 <CardModal 
   bind:isOpen={isModalOpen}
-  cardIndex={modalCardIndex}
   positionLabel={modalPositionLabel}
   existingCard={modalExistingCard}
   usedCards={usedCardNames}

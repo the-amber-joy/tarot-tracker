@@ -487,13 +487,20 @@ tbody tr:hover {
 /* Spread Canvas Styles */
 .spread-canvas {
   position: relative;
-  min-height: 750px;
-  min-width: 750px;
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 1;
   background: #f8f9fa;
   border: 2px dashed #ddd;
   border-radius: 8px;
   margin-top: 10px;
   padding: 40px;
+  overflow: auto;
+}
+
+/* Prevent touch scroll on custom spread canvas */
+.spread-canvas.custom-spread {
+  touch-action: none;
 }
 
 .placeholder-text {
@@ -522,6 +529,11 @@ tbody tr:hover {
   padding: 8px;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Prevent touch scroll on draggable cards */
+.card-position.custom-card {
+  touch-action: none;
 }
 
 .card-position:hover {
@@ -571,6 +583,56 @@ tbody tr:hover {
   font-size: 2rem;
   color: #667eea;
   opacity: 0.5;
+}
+
+/* New clickable + button */
+.empty-card-btn {
+  font-size: 2.5rem;
+  color: #667eea;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  transition: all 0.2s ease;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.card-position:hover .empty-card-btn {
+  opacity: 1;
+}
+
+.empty-card-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  transform: scale(1.1);
+  color: #764ba2;
+}
+
+.empty-card-btn:active {
+  transform: scale(0.95);
+}
+
+/* Show controls on mobile when card is tapped */
+.card-position.mobile-active .rotation-handle,
+.card-position.mobile-active .delete-card-btn,
+.card-position.mobile-active .empty-card-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hide + button on touch devices until card is activated */
+@media (hover: none) and (pointer: coarse) {
+  .empty-card-btn {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .card-position.filled .empty-card {
@@ -679,13 +741,15 @@ tbody tr:hover {
 /* Read-only spread canvas for detail view */
 .spread-canvas-readonly {
   position: relative;
-  min-height: 750px;
-  min-width: 750px;
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 1;
   background: #f8f9fa;
   border: 2px solid #ddd;
   border-radius: 8px;
   margin-top: 10px;
   padding: 40px;
+  overflow: auto;
 }
 
 .card-position.readonly {
