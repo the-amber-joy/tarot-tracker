@@ -6,6 +6,7 @@
   type Deck = {
     id: number;
     name: string;
+    notes?: string;
   };
 
   let activeTab: "profile" | "decks" = "profile";
@@ -23,6 +24,10 @@
 
   let decks: Deck[] = [];
   let newDeckName = "";
+  let newDeckNotes = "";
+  let editingDeckId: number | null = null;
+  let editDeckName = "";
+  let editDeckNotes = "";
 
   onMount(async () => {
     await loadDecks();
@@ -53,11 +58,15 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: newDeckName.trim() }),
+        body: JSON.stringify({ 
+          name: newDeckName.trim(),
+          notes: newDeckNotes.trim() || null
+        }),
       });
 
       if (response.ok) {
         newDeckName = "";
+        newDeckNotes = "";
         await loadDecks();
       } else {
         const error = await response.text();
@@ -88,6 +97,51 @@
     } catch (error) {
       console.error("Error deleting deck:", error);
       alert("Error deleting deck. Please try again.");
+    }
+  }
+
+  function startEditDeck(deck: Deck) {
+    editingDeckId = deck.id;
+    editDeckName = deck.name;
+    editDeckNotes = deck.notes || "";
+  }
+
+  function cancelEditDeck() {
+    editingDeckId = null;
+    editDeckName = "";
+    editDeckNotes = "";
+  }
+
+  async function handleUpdateDeck(deckId: number) {
+    if (!editDeckName.trim()) {
+      alert("Please enter a deck name.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/decks/${deckId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          name: editDeckName.trim(),
+          notes: editDeckNotes.trim() || null
+        }),
+      });
+
+      if (response.ok) {
+        editingDeckId = null;
+        editDeckName = "";
+        editDeckNotes = "";
+        await loadDecks();
+      } else {
+        const error = await response.text();
+        alert(`Failed to update deck: ${error}`);
+      }
+    } catch (error) {
+      console.error("Error updating deck:", error);
+      alert("Error updating deck. Please try again.");
     }
   }
 
@@ -147,7 +201,7 @@
 <div class="profile-container">
   <div class="profile-header">
     <button class="back-button" on:click={goBack}>← Back</button>
-    <h2>Profile Settings</h2>
+    <h2>{display_name}'s Profile</h2>
   </div>
 
   <div class="tabs">
@@ -156,7 +210,7 @@
       class:active={activeTab === "profile"}
       on:click={() => activeTab = "profile"}
     >
-      Profile
+      Account
     </button>
     <button 
       class="tab" 
@@ -169,9 +223,8 @@
 
   <div class="profile-content">
     {#if activeTab === "profile"}
-      <!-- Profile Information Section -->
       <section class="profile-section">
-        <h3>Profile Information</h3>
+        <h3>Login & Display Name</h3>
         <form on:submit={handleProfileUpdate}>
           <div class="form-group">
             <label for="username">Username (Login)</label>
@@ -272,16 +325,21 @@
         
         <div class="form-group">
           <label for="newDeckName">Add New Deck</label>
-          <div class="input-with-button">
-            <input 
-              type="text" 
-              id="newDeckName" 
-              bind:value={newDeckName}
-              placeholder="Enter deck name..."
-              on:keydown={(e) => e.key === "Enter" && handleAddDeck()}
-            />
-            <button class="btn-add" on:click={handleAddDeck}>Add Deck</button>
-          </div>
+          <input 
+            type="text" 
+            id="newDeckName" 
+            bind:value={newDeckName}
+            placeholder="Enter deck name..."
+            on:keydown={(e) => e.key === "Enter" && !e.shiftKey && handleAddDeck()}
+          />
+          <label for="newDeckNotes" style="margin-top: 0.75rem;">Notes (optional)</label>
+          <textarea
+            id="newDeckNotes"
+            bind:value={newDeckNotes}
+            placeholder="Add notes about this deck..."
+            rows="2"
+          ></textarea>
+          <button class="btn-add" on:click={handleAddDeck} style="margin-top: 0.5rem; width: 100%;">Add Deck</button>
         </div>
         
         <div class="deck-list">
@@ -292,14 +350,51 @@
             <ul>
               {#each decks as deck}
                 <li class="deck-item">
-                  <span class="deck-name">{deck.name}</span>
-                  <button 
-                    class="btn-remove" 
-                    on:click={() => handleDeleteDeck(deck.id, deck.name)}
-                    aria-label="Delete {deck.name}"
-                  >
-                    Delete
-                  </button>
+                  {#if editingDeckId === deck.id}
+                    <div class="deck-edit-form">
+                      <input 
+                        type="text" 
+                        bind:value={editDeckName}
+                        placeholder="Deck name"
+                        class="deck-edit-input"
+                      />
+                      <textarea
+                        bind:value={editDeckNotes}
+                        placeholder="Notes (optional)"
+                        rows="2"
+                        class="deck-edit-textarea"
+                      ></textarea>
+                      <div class="deck-edit-actions">
+                        <button class="btn-save" on:click={() => handleUpdateDeck(deck.id)}>Save</button>
+                        <button class="btn-cancel" on:click={cancelEditDeck}>Cancel</button>
+                      </div>
+                    </div>
+                  {:else}
+                    <div class="deck-info">
+                      <div>
+                        <span class="deck-name">{deck.name}</span>
+                        {#if deck.notes}
+                          <p class="deck-notes">{deck.notes}</p>
+                        {/if}
+                      </div>
+                      <div class="deck-actions">
+                        <button 
+                          class="btn-edit" 
+                          on:click={() => startEditDeck(deck)}
+                          aria-label="Edit {deck.name}"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          class="btn-remove" 
+                          on:click={() => handleDeleteDeck(deck.id, deck.name)}
+                          aria-label="Delete {deck.name}"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  {/if}
                 </li>
               {/each}
             </ul>
@@ -419,7 +514,19 @@
     box-sizing: border-box;
   }
 
-  input:focus {
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  input:focus,
+  textarea:focus {
     outline: none;
     border-color: #4a90e2;
   }
@@ -498,8 +605,7 @@
 
   .deck-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     padding: 1rem;
     background: white;
     border: 1px solid #ddd;
@@ -512,10 +618,108 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
+  .deck-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .deck-info > div:first-child {
+    flex: 1;
+  }
+
   .deck-name {
     font-size: 1rem;
     color: #333;
     font-weight: 500;
+    display: block;
+  }
+
+  .deck-notes {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.9rem;
+    color: #666;
+    white-space: pre-wrap;
+  }
+
+  .deck-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .deck-edit-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .deck-edit-input,
+  .deck-edit-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .deck-edit-textarea {
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  .deck-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-save {
+    padding: 0.5rem 1rem;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-save:hover {
+    background-color: #218838;
+  }
+
+  .btn-cancel {
+    padding: 0.5rem 1rem;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-cancel:hover {
+    background-color: #5a6268;
+  }
+
+  .btn-edit {
+    padding: 0.5rem 1rem;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-edit:hover {
+    background-color: #357abd;
   }
 
   .btn-remove {
@@ -589,13 +793,27 @@
       width: 100%;
     }
 
-    .deck-item {
+    .deck-info {
       flex-direction: column;
       align-items: stretch;
-      gap: 0.75rem;
     }
 
+    .deck-actions {
+      width: 100%;
+      margin-top: 0.75rem;
+    }
+
+    .btn-edit,
     .btn-remove {
+      flex: 1;
+    }
+
+    .deck-edit-actions {
+      flex-direction: column;
+    }
+
+    .btn-save,
+    .btn-cancel {
       width: 100%;
     }
   }

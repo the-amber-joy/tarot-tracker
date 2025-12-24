@@ -438,15 +438,15 @@ app.get("/api/decks", requireAuth, (req, res) => {
 
 // Add a new deck
 app.post("/api/decks", requireAuth, (req, res) => {
-  const { name } = req.body;
+  const { name, notes } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: "Deck name is required" });
   }
 
   db.run(
-    "INSERT INTO decks (name, user_id) VALUES (?, ?)",
-    [name.trim(), req.user.id],
+    "INSERT INTO decks (name, notes, user_id) VALUES (?, ?, ?)",
+    [name.trim(), notes || null, req.user.id],
     function (err) {
       if (err) {
         if (err.message.includes("UNIQUE")) {
@@ -457,7 +457,39 @@ app.post("/api/decks", requireAuth, (req, res) => {
       res.json({
         id: this.lastID,
         name: name.trim(),
+        notes: notes || null,
         message: "Deck added successfully",
+      });
+    },
+  );
+});
+
+// Update a deck
+app.put("/api/decks/:id", requireAuth, (req, res) => {
+  const { name, notes } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: "Deck name is required" });
+  }
+
+  db.run(
+    "UPDATE decks SET name = ?, notes = ? WHERE id = ? AND user_id = ?",
+    [name.trim(), notes || null, req.params.id, req.user.id],
+    function (err) {
+      if (err) {
+        if (err.message.includes("UNIQUE")) {
+          return res.status(400).json({ error: "Deck name already exists" });
+        }
+        return res.status(500).json({ error: err.message });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Deck not found" });
+      }
+      res.json({
+        id: parseInt(req.params.id),
+        name: name.trim(),
+        notes: notes || null,
+        message: "Deck updated successfully",
       });
     },
   );
