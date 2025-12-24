@@ -5,12 +5,6 @@
   
   export let onNewReading: () => void;
   export let onHome: () => void;
-  export let onSave: (() => void) | null = null;
-  export let onCancel: (() => void) | null = null;
-  export let onEdit: (() => void) | null = null;
-  export let isFormView: boolean = false;
-  export let isEditMode: boolean = false;
-  export let isDetailView: boolean = false;
   
   const dispatch = createEventDispatcher();
   let isMenuOpen = false;
@@ -62,21 +56,6 @@
     {#if $authStore?.is_admin}
       <button class="btn btn-warning" on:click={handleAdminClick}>
         🔧 Admin
-      </button>
-    {/if}
-    {#if isFormView}
-      <button class="btn btn-secondary form-action-btn" on:click={onCancel}>
-        Cancel
-      </button>
-      <button class="btn btn-primary form-action-btn" on:click={onSave}>
-        {isEditMode ? 'Update Reading' : 'Save Reading'}
-      </button>
-    {:else if isDetailView}
-      <button class="btn btn-secondary form-action-btn" on:click={onCancel}>
-        Cancel
-      </button>
-      <button class="btn btn-primary form-action-btn" on:click={onEdit}>
-        Edit
       </button>
     {/if}
     {#if $authStore}
@@ -185,11 +164,6 @@
     
     .header-actions button {
       width: 100%;
-    }
-    
-    /* Hide save/cancel buttons in menu on mobile */
-    .form-action-btn {
-      display: none;
     }
   }
 </style>

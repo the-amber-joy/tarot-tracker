@@ -15,12 +15,6 @@
   let currentPath = '';
   let authInitialized = false;
   
-  // Track if we're in form view for header
-  $: isFormView = currentPath === '/reading/new' || currentPath.includes('/edit');
-  $: isEditMode = currentPath.includes('/edit');
-  $: isDetailView = currentPath.match(/^\/reading\/\d+$/) !== null;
-  $: detailReadingId = isDetailView ? currentPath.match(/\d+/)?.[0] : null;
-  
   onMount(() => {
     // Initialize auth
     authStore.init().then(() => {
@@ -50,24 +44,6 @@
     };
   });
   
-  function handleHeaderSave() {
-    if (formRef) {
-      formRef.triggerSubmit();
-    }
-  }
-  
-  function handleHeaderCancel() {
-    navigate('/');
-    setTimeout(() => currentPath = window.location.pathname, 0);
-  }
-  
-  function handleHeaderEdit() {
-    if (detailReadingId) {
-      navigate(`/reading/${detailReadingId}/edit`);
-      setTimeout(() => currentPath = window.location.pathname, 0);
-    }
-  }
-
   function handleDecksUpdated() {
     // Reload decks in the form if it's open
     if (formRef?.loadDecks) {
@@ -93,13 +69,7 @@
         navigate('/reading/new');
         setTimeout(() => currentPath = window.location.pathname, 0);
       }}
-      onSave={handleHeaderSave}
-      onCancel={handleHeaderCancel}
-      onEdit={handleHeaderEdit}
       on:decksUpdated={handleDecksUpdated}
-      {isFormView}
-      {isEditMode}
-      {isDetailView}
     />
 
     <Route path="/">

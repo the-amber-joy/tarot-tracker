@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { navigate } from 'svelte-routing';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let params: { id?: string } = { id: '' };
@@ -59,6 +60,7 @@
   <div class="view">
     <div class="view-header">
       <h2>Reading Details</h2>
+      <button type="button" class="btn btn-primary" on:click={() => navigate(`/reading/${readingId}/edit`)}>Edit</button>
     </div>
     
     <div class="detail-section">
@@ -107,6 +109,7 @@
         </div>
       {/each}
     </div>
+
   </div>
   {:else}
     <div class="view">
