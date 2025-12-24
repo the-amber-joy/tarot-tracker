@@ -148,7 +148,7 @@ app.put("/api/auth/profile", requireAuth, async (req, res) => {
 
         // Return updated user data
         db.get(
-          "SELECT id, username, display_name FROM users WHERE id = ?",
+          "SELECT id, username, display_name, is_admin FROM users WHERE id = ?",
           [req.user.id],
           (err, user) => {
             if (err) {
