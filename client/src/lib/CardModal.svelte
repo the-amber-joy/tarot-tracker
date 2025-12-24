@@ -19,6 +19,8 @@
   let cardName = '';
   let cardInterpretation = '';
   let modalElement: HTMLDivElement;
+  let showDropdown = false;
+  let searchInput = '';
   
   onMount(async () => {
     await loadTarotCards();
@@ -53,12 +55,16 @@
     
     // Reset form
     cardName = '';
+    searchInput = '';
     cardInterpretation = '';
+    showDropdown = false;
   }
   
   function handleCancel() {
     cardName = '';
+    searchInput = '';
     cardInterpretation = '';
+    showDropdown = false;
     onCancel();
   }
   
@@ -81,13 +87,44 @@
     return !usedCards.includes(card.name);
   });
   
+  // Filter cards based on search input
+  $: filteredCards = availableCards.filter(card => 
+    card.name.toLowerCase().includes(searchInput.toLowerCase())
+  ).slice(0, 50); // Limit to 50 results for performance
+  
   // Update form when existingCard changes
   $: if (existingCard) {
     cardName = existingCard.card_name || '';
+    searchInput = existingCard.card_name || '';
     cardInterpretation = existingCard.interpretation || '';
   } else {
     cardName = '';
+    searchInput = '';
     cardInterpretation = '';
+  }
+  
+  function handleSearchInput() {
+    showDropdown = searchInput.length > 0;
+    cardName = searchInput; // Update cardName as user types
+  }
+  
+  function selectCard(card: TarotCard) {
+    cardName = card.name;
+    searchInput = card.name;
+    showDropdown = false;
+  }
+  
+  function handleSearchFocus() {
+    if (searchInput.length > 0) {
+      showDropdown = true;
+    }
+  }
+  
+  function handleSearchBlur() {
+    // Delay hiding dropdown to allow click events to register
+    setTimeout(() => {
+      showDropdown = false;
+    }, 200);
   }
   
   // Focus on card name input when modal opens and trap focus
@@ -144,19 +181,37 @@
           
           <div class="form-group">
             <label for="cardName">Card Name</label>
-            <input 
-              type="text" 
-              id="cardName" 
-              list="cardList"
-              bind:value={cardName}
-              placeholder="Start typing card name..."
-              readonly={readonly}
-            />
-            <datalist id="cardList">
-              {#each availableCards as card}
-                <option value={card.name}>{card.name}</option>
-              {/each}
-            </datalist>
+            <div class="search-container">
+              <input 
+                type="text" 
+                id="cardName" 
+                bind:value={searchInput}
+                on:input={handleSearchInput}
+                on:focus={handleSearchFocus}
+                on:blur={handleSearchBlur}
+                placeholder="Start typing card name..."
+                readonly={readonly}
+                autocomplete="off"
+              />
+              {#if showDropdown && filteredCards.length > 0 && !readonly}
+                <div class="dropdown-list">
+                  {#each filteredCards as card}
+                    <button 
+                      type="button"
+                      class="dropdown-item"
+                      on:click={() => selectCard(card)}
+                    >
+                      {card.name}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+              {#if showDropdown && filteredCards.length === 0 && searchInput.length > 0 && !readonly}
+                <div class="dropdown-list">
+                  <div class="dropdown-item-empty">No matching cards found</div>
+                </div>
+              {/if}
+            </div>
           </div>
           
           <div class="form-group">
