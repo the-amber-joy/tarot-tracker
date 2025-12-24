@@ -153,22 +153,6 @@
     updateCanvasScale();
   }
   
-  function panUp() {
-    userPanY += 50;
-  }
-  
-  function panDown() {
-    userPanY -= 50;
-  }
-  
-  function panLeft() {
-    userPanX += 50;
-  }
-  
-  function panRight() {
-    userPanX -= 50;
-  }
-  
   function getDistance(touch1: Touch, touch2: Touch): number {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
@@ -181,7 +165,7 @@
     
     // Don't start drag if clicking on a card or control button
     const target = e.target as HTMLElement;
-    if (target.closest('.card-position') || target.closest('.zoom-controls') || target.closest('.pan-controls')) {
+    if (target.closest('.card-position') || target.closest('.zoom-controls')) {
       return;
     }
     
@@ -875,14 +859,6 @@
       <button type="button" class="zoom-btn" on:click={zoomOut} title="Zoom out" aria-label="Zoom out">−</button>
       <button type="button" class="zoom-btn" on:click={centerView} title="Reset zoom" aria-label="Reset zoom">⊡</button>
       <button type="button" class="zoom-btn" on:click={zoomIn} title="Zoom in" aria-label="Zoom in">+</button>
-    </div>
-    <div class="pan-controls">
-      <button type="button" class="pan-btn pan-up" on:click={panUp} title="Pan up" aria-label="Pan up">▲</button>
-      <div class="pan-middle">
-        <button type="button" class="pan-btn" on:click={panLeft} title="Pan left" aria-label="Pan left">◀</button>
-        <button type="button" class="pan-btn" on:click={panRight} title="Pan right" aria-label="Pan right">▶</button>
-      </div>
-      <button type="button" class="pan-btn pan-down" on:click={panDown} title="Pan down" aria-label="Pan down">▼</button>
     </div>
   {/if}
 </div>

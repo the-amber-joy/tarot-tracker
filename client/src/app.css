@@ -567,48 +567,6 @@ tbody tr:hover {
   transform: scale(0.95);
 }
 
-/* Pan controls */
-.pan-controls {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  z-index: 100;
-}
-
-.pan-middle {
-  display: flex;
-  gap: 2px;
-}
-
-.pan-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background: white;
-  color: #333;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
-
-.pan-btn:hover {
-  background: #f0f0f0;
-  border-color: #999;
-}
-
-.pan-btn:active {
-  transform: scale(0.95);
-}
-
 .placeholder-text {
   position: absolute;
   top: 50%;
