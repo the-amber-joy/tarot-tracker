@@ -5,11 +5,17 @@ const { TAROT_CARDS } = require("./cards");
 const { SPREAD_TEMPLATES } = require("./spreads");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(express.static("public"));
+
+// Serve static files from Vite build in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client/dist')));
+} else {
+  app.use(express.static("public"));
+}
 
 // API Routes
 
@@ -293,6 +299,13 @@ app.delete("/api/readings/:id", (req, res) => {
     },
   );
 });
+
+// Serve frontend for all other routes (SPA routing)
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Tarot Stats server running on http://localhost:${PORT}`);

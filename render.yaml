@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: tarot-tracker
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm run install-all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: tarot-data
+      mountPath: /opt/render/project/src
+      sizeGB: 1
