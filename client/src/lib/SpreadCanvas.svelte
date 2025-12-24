@@ -5,6 +5,7 @@
   export let spreadTemplate: string = '';
   export let spreadCards: Record<number, any> = {};
   export let onCardsUpdate: (cards: Record<number, any>) => void;
+  export let readonly: boolean = false;
   
   type SpreadTemplate = {
     id: string;
@@ -59,6 +60,11 @@
   }
   
   function handleCanvasClick(event: MouseEvent) {
+    // Don't handle clicks in readonly mode
+    if (readonly) {
+      return;
+    }
+    
     // Only handle canvas clicks for custom spreads or when no template selected
     if (currentTemplate && currentTemplate.id !== 'custom') {
       return;
@@ -399,7 +405,9 @@
   
   // Svelte action for making cards draggable
   function draggable(node: HTMLButtonElement, index: number) {
-    makeDraggable(node, index);
+    if (!readonly) {
+      makeDraggable(node, index);
+    }
     return {
       destroy() {
         // Cleanup handled by removeEventListener in dragEnd
@@ -409,7 +417,9 @@
   
   // Svelte action for making cards rotatable
   function rotatable(node: HTMLButtonElement, index: number) {
-    makeRotatable(node, index);
+    if (!readonly) {
+      makeRotatable(node, index);
+    }
     return {
       destroy() {
         // Cleanup handled by removeEventListener in rotateEnd
@@ -419,12 +429,12 @@
 </script>
 
 <div 
-  class="spread-canvas {currentTemplate?.id === 'custom' || !currentTemplate ? 'custom-spread' : ''}"
+  class="spread-canvas {currentTemplate?.id === 'custom' || !currentTemplate ? 'custom-spread' : ''} {readonly ? 'readonly' : ''}"
   bind:this={canvasElement}
   on:click={handleCanvasClick}
   on:keydown={handleCanvasKeydown}
-  role="button"
-  tabindex="0"
+  role={readonly ? undefined : 'button'}
+  tabindex={readonly ? undefined : 0}
 >
   {#if !currentTemplate}
     <!-- No template selected - empty canvas waiting for clicks -->
@@ -433,20 +443,22 @@
       <button
         type="button"
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
-        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; cursor: grab;"
-        on:click|stopPropagation={() => handleCardClick(index)}
+        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
+        on:click|stopPropagation={() => !readonly && handleCardClick(index)}
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
       >
-        <div 
-          class="delete-card-btn" 
-          title="Delete card" 
-          on:click|stopPropagation={() => deleteCard(index)}
-          on:keydown={(e) => handleDeleteKeydown(e, index)}
-          role="button"
-          tabindex="0"
-        >×</div>
+        {#if !readonly}
+          <div 
+            class="delete-card-btn" 
+            title="Delete card" 
+            on:click|stopPropagation={() => deleteCard(index)}
+            on:keydown={(e) => handleDeleteKeydown(e, index)}
+            role="button"
+            tabindex="0"
+          >×</div>
+        {/if}
         <div class="position-number">{index + 1}</div>
         <div class="position-label">{cardData.position_label || `Card ${index + 1}`}</div>
         {#if cardData.card_name}
@@ -454,7 +466,9 @@
         {:else}
           <div class="empty-card">+</div>
         {/if}
-        <div class="rotation-handle" title="Drag to rotate">↻</div>
+        {#if !readonly}
+          <div class="rotation-handle" title="Drag to rotate">↻</div>
+        {/if}
       </button>
     {/each}
   {:else if currentTemplate.id === 'custom'}
@@ -464,20 +478,22 @@
       <button
         type="button"
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
-        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; cursor: grab;"
-        on:click|stopPropagation={() => handleCardClick(index)}
+        style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
+        on:click|stopPropagation={() => !readonly && handleCardClick(index)}
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
       >
-        <div 
-          class="delete-card-btn" 
-          title="Delete card" 
-          on:click|stopPropagation={() => deleteCard(index)}
-          on:keydown={(e) => handleDeleteKeydown(e, index)}
-          role="button"
-          tabindex="0"
-        >×</div>
+        {#if !readonly}
+          <div 
+            class="delete-card-btn" 
+            title="Delete card" 
+            on:click|stopPropagation={() => deleteCard(index)}
+            on:keydown={(e) => handleDeleteKeydown(e, index)}
+            role="button"
+            tabindex="0"
+          >×</div>
+        {/if}
         <div class="position-number">{index + 1}</div>
         <div class="position-label">{cardData.position_label || `Card ${index + 1}`}</div>
         {#if cardData.card_name}
@@ -485,7 +501,9 @@
         {:else}
           <div class="empty-card">+</div>
         {/if}
-        <div class="rotation-handle" title="Drag to rotate">↻</div>
+        {#if !readonly}
+          <div class="rotation-handle" title="Drag to rotate">↻</div>
+        {/if}
       </button>
     {/each}
   {:else}
@@ -498,8 +516,8 @@
       <button
         type="button"
         class="card-position {cardData?.card_name ? 'filled' : ''}"
-        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; {cardData?.card_name ? 'cursor: grab;' : ''}"
-        on:click|stopPropagation={() => handleCardClick(index)}
+        style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; {readonly ? 'cursor: default;' : cardData?.card_name ? 'cursor: grab;' : ''}"
+        on:click|stopPropagation={() => !readonly && handleCardClick(index)}
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
@@ -507,18 +525,22 @@
         aria-label="{position.label} - {cardData?.card_name || 'Add card'}"
       >
         {#if cardData?.card_name}
-          <div 
-            class="delete-card-btn" 
-            title="Delete card" 
-            on:click|stopPropagation={() => deleteCard(index)}
-            on:keydown={(e) => handleDeleteKeydown(e, index)}
-            role="button"
-            tabindex="0"
-          >×</div>
+          {#if !readonly}
+            <div 
+              class="delete-card-btn" 
+              title="Delete card" 
+              on:click|stopPropagation={() => deleteCard(index)}
+              on:keydown={(e) => handleDeleteKeydown(e, index)}
+              role="button"
+              tabindex="0"
+            >×</div>
+          {/if}
           <div class="position-number">{position.order}</div>
           <div class="position-label">{position.label}</div>
           <div class="card-name">{cardData.card_name}</div>
-          <div class="rotation-handle" title="Drag to rotate">↻</div>
+          {#if !readonly}
+            <div class="rotation-handle" title="Drag to rotate">↻</div>
+          {/if}
         {:else}
           <div class="position-number">{position.order}</div>
           <div class="position-label">{position.label}</div>
@@ -529,12 +551,14 @@
   {/if}
 </div>
 
-<CardModal 
-  bind:isOpen={isModalOpen}
-  cardIndex={modalCardIndex}
-  positionLabel={modalPositionLabel}
-  existingCard={modalExistingCard}
-  usedCards={usedCardNames}
-  onSave={handleModalSave}
-  onCancel={handleModalCancel}
-/>
+{#if !readonly}
+  <CardModal 
+    bind:isOpen={isModalOpen}
+    cardIndex={modalCardIndex}
+    positionLabel={modalPositionLabel}
+    existingCard={modalExistingCard}
+    usedCards={usedCardNames}
+    onSave={handleModalSave}
+    onCancel={handleModalCancel}
+  />
+{/if}

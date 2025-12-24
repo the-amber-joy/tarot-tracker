@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let readingId: number;
   export let onBack: () => void;
@@ -26,6 +27,19 @@
   
   let reading: Reading | null = null;
   let loading = true;
+  
+  // Transform reading cards into spreadCards format
+  $: spreadCards = reading?.cards.reduce((acc, card, idx) => {
+    acc[idx] = {
+      card_name: card.card_name,
+      position_label: card.position,
+      interpretation: card.interpretation,
+      position_x: card.position_x,
+      position_y: card.position_y,
+      rotation: card.rotation
+    };
+    return acc;
+  }, {} as Record<number, any>) || {};
   
   onMount(async () => {
     await loadReading();
@@ -78,6 +92,16 @@
           <p>{reading.notes}</p>
         </div>
       {/if}
+    </div>
+    
+    <div class="detail-section">
+      <h3>Spread Layout</h3>
+      <SpreadCanvas 
+        spreadTemplate={reading.spread_template_id || 'custom'}
+        {spreadCards}
+        readonly={true}
+        onCardsUpdate={() => {}}
+      />
     </div>
     
     <div class="detail-section">
