@@ -84,10 +84,11 @@
         const spreadWidth = maxX - minX;
         const spreadHeight = maxY - minY;
         
-        // Calculate scale to fit with margin
+        // Calculate scale to fit with margin (more zoom on larger screens)
         const scaleX = currentWidth / spreadWidth;
         const scaleY = currentHeight / spreadHeight;
-        displayScale = Math.min(scaleX, scaleY, 1) * 0.85; // 0.85 for comfortable margin
+        const marginMultiplier = currentWidth < 600 ? 0.85 : 1.5; // Less margin on desktop
+        displayScale = Math.min(scaleX, scaleY, 1) * marginMultiplier;
         
         // Calculate where the scaled bounding box should be positioned to center it
         const totalScale = displayScale * userZoom;
