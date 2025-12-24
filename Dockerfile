@@ -20,6 +20,7 @@ RUN npm run build
 ARG BUILD_DATE="unknown"
 ARG GIT_COMMIT="unknown"
 ARG GIT_BRANCH="unknown"
+ARG GIT_MESSAGE="unknown"
 RUN GIT_SHORT_VAL="$(echo ${GIT_COMMIT} | cut -c1-7)" && \
     echo "🚀 Deployment Information" > deploy.txt && \
     echo "═══════════════════════════════════════" >> deploy.txt && \
@@ -28,6 +29,7 @@ RUN GIT_SHORT_VAL="$(echo ${GIT_COMMIT} | cut -c1-7)" && \
     echo "🔖 Commit: ${GIT_COMMIT}" >> deploy.txt && \
     echo "✨ Short: ${GIT_SHORT_VAL}" >> deploy.txt && \
     echo "🌿 Branch: ${GIT_BRANCH}" >> deploy.txt && \
+    echo "💬 Message: ${GIT_MESSAGE}" >> deploy.txt && \
     echo "" >> deploy.txt && \
     echo "🔮 Ready to read some cards! 🃏" >> deploy.txt
 
