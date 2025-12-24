@@ -1,4 +1,5 @@
 <script lang="ts">
+  import interact from 'interactjs';
   import { onMount } from 'svelte';
   import CardModal from './CardModal.svelte';
   
@@ -228,179 +229,166 @@
     }
   }
   
-  // Drag functionality
-  function makeDraggable(element: HTMLButtonElement, index: number) {
-    let isDragging = false;
+  // Setup interact.js for drag and rotate
+  function setupInteractions(element: HTMLButtonElement, index: number) {
+    const currentRotation = spreadCards[index]?.rotation || 0;
     let hasMoved = false;
-    let currentX: number;
-    let currentY: number;
-    let initialX: number;
-    let initialY: number;
-    let startX: number;
-    let startY: number;
+    let confirmedConversion = false;
     
-    const dragStart = (e: MouseEvent) => {
-      if (e.button !== 0) return; // Only left click
-      
-      e.stopPropagation();
-      startX = e.clientX;
-      startY = e.clientY;
-      initialX = e.clientX - element.offsetLeft;
-      initialY = e.clientY - element.offsetTop;
-      hasMoved = false;
-      
-      isDragging = true;
-      element.style.cursor = 'grabbing';
-      
-      document.addEventListener('mousemove', drag);
-      document.addEventListener('mouseup', dragEnd);
-    };
-    
-    const drag = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
-      e.preventDefault();
-      
-      // Check if moved more than 5px threshold
-      const deltaX = Math.abs(e.clientX - startX);
-      const deltaY = Math.abs(e.clientY - startY);
-      if (deltaX > 5 || deltaY > 5) {
-        // Warn about conversion for predefined spreads
-        if (!hasMoved && currentTemplate && currentTemplate.id !== 'custom') {
-          if (!confirm('Moving cards will convert this to a custom spread. Continue?')) {
-            // Cancel the drag
-            isDragging = false;
-            element.style.cursor = 'grab';
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('mouseup', dragEnd);
-            return;
+    // Setup draggable
+    const interactable = interact(element)
+      .draggable({
+        listeners: {
+          start(event) {
+            hasMoved = false;
+            confirmedConversion = false;
+            event.target.style.cursor = 'grabbing';
+          },
+          move(event) {
+            // Check if this is a predefined spread and needs confirmation
+            if (!hasMoved && !confirmedConversion && currentTemplate && currentTemplate.id !== 'custom') {
+              if (!confirm('Moving cards will convert this to a custom spread. Continue?')) {
+                // Cancel the interaction
+                interactable.draggable(false);
+                event.target.style.cursor = 'grab';
+                setTimeout(() => interactable.draggable(true), 0);
+                return;
+              }
+              convertToCustomSpread();
+              confirmedConversion = true;
+            }
+            hasMoved = true;
+            
+            const target = event.target;
+            const x = parseFloat(target.style.left) || spreadCards[index]?.position_x || 0;
+            const y = parseFloat(target.style.top) || spreadCards[index]?.position_y || 0;
+            
+            // Update position
+            target.style.left = `${x + event.dx}px`;
+            target.style.top = `${y + event.dy}px`;
+          },
+          end(event) {
+            event.target.style.cursor = 'grab';
+            
+            if (hasMoved) {
+              // Update position in spreadCards
+              const x = parseFloat(event.target.style.left);
+              const y = parseFloat(event.target.style.top);
+              
+              const newCards = { ...spreadCards };
+              newCards[index] = {
+                ...newCards[index],
+                position_x: x,
+                position_y: y
+              };
+              onCardsUpdate(newCards);
+              
+              // Mark as just dragged to prevent modal opening
+              justDragged[index] = true;
+              setTimeout(() => {
+                justDragged[index] = false;
+              }, 200);
+              
+              // Prevent canvas click after dragging
+              preventCanvasClick = true;
+              setTimeout(() => {
+                preventCanvasClick = false;
+              }, 200);
+            }
           }
-          // Convert to custom spread
-          convertToCustomSpread();
         }
-        hasMoved = true;
-      }
-      
-      currentX = e.clientX - initialX;
-      currentY = e.clientY - initialY;
-      
-      element.style.left = `${currentX}px`;
-      element.style.top = `${currentY}px`;
-    };
+      })
+      .styleCursor(false); // We manage cursor ourselves
     
-    const dragEnd = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
-      isDragging = false;
-      element.style.cursor = 'grab';
-      
-      if (hasMoved) {
-        // Update position in spreadCards
-        const newCards = { ...spreadCards };
-        newCards[index] = {
-          ...newCards[index],
-          position_x: currentX,
-          position_y: currentY
-        };
-        onCardsUpdate(newCards);
-        
-        // Mark as just dragged to prevent modal opening
-        justDragged[index] = true;
-        setTimeout(() => {
-          justDragged[index] = false;
-        }, 200);
-        
-        // Prevent canvas click after dragging
-        preventCanvasClick = true;
-        setTimeout(() => {
-          preventCanvasClick = false;
-        }, 200);
-      }
-      
-      document.removeEventListener('mousemove', drag);
-      document.removeEventListener('mouseup', dragEnd);
-    };
-    
-    element.addEventListener('mousedown', dragStart);
-  }
-  
-  // Rotation functionality
-  function makeRotatable(element: HTMLButtonElement, index: number) {
+    // Setup rotation gesture on the rotation handle
     const handle = element.querySelector('.rotation-handle') as HTMLElement;
-    if (!handle) return;
+    if (handle) {
+      let startAngle = 0;
+      let startRotation = 0;
+      
+      interact(handle)
+        .on('down', (event) => {
+          // Warn about conversion for predefined spreads
+          if (currentTemplate && currentTemplate.id !== 'custom') {
+            if (!confirm('Rotating cards will convert this to a custom spread. Continue?')) {
+              event.preventDefault();
+              event.stopPropagation();
+              return;
+            }
+            convertToCustomSpread();
+          }
+          
+          // Prevent card click while rotating
+          justDragged[index] = true;
+          preventCanvasClick = true;
+          
+          // Store the initial rotation
+          startRotation = spreadCards[index]?.rotation || 0;
+          
+          // Get card center
+          const cardRect = element.getBoundingClientRect();
+          const centerX = cardRect.left + cardRect.width / 2;
+          const centerY = cardRect.top + cardRect.height / 2;
+          
+          // Calculate initial angle from center to mouse
+          startAngle = Math.atan2(
+            event.clientY - centerY,
+            event.clientX - centerX
+          ) * (180 / Math.PI);
+        })
+        .draggable({
+          listeners: {
+            move(event) {
+              event.stopPropagation();
+              
+              // Get card center
+              const cardRect = element.getBoundingClientRect();
+              const centerX = cardRect.left + cardRect.width / 2;
+              const centerY = cardRect.top + cardRect.height / 2;
+              
+              // Calculate current angle from center to mouse
+              const currentAngle = Math.atan2(
+                event.clientY - centerY,
+                event.clientX - centerX
+              ) * (180 / Math.PI);
+              
+              // Calculate the delta rotation
+              const deltaAngle = currentAngle - startAngle;
+              const degrees = Math.round(startRotation + deltaAngle);
+              
+              // Apply rotation
+              element.style.transform = `rotate(${degrees}deg)`;
+              
+              // Store the current rotation temporarily
+              element.dataset.tempRotation = degrees.toString();
+            },
+            end(event) {
+              event.stopPropagation();
+              
+              const rotation = parseInt(element.dataset.tempRotation || '0');
+              
+              // Update rotation in spreadCards
+              const newCards = { ...spreadCards };
+              newCards[index] = {
+                ...newCards[index],
+                rotation
+              };
+              onCardsUpdate(newCards);
+              
+              // Keep justDragged and preventCanvasClick flags longer to prevent modal/card creation
+              setTimeout(() => {
+                justDragged[index] = false;
+                preventCanvasClick = false;
+              }, 200);
+              
+              delete element.dataset.tempRotation;
+            }
+          }
+        })
+        .styleCursor(false);
+    }
     
-    let isRotating = false;
-    let currentRotation = spreadCards[index]?.rotation || 0;
-    
-    const rotateStart = (e: MouseEvent) => {
-      // Warn about conversion for predefined spreads
-      if (currentTemplate && currentTemplate.id !== 'custom') {
-        if (!confirm('Rotating cards will convert this to a custom spread. Continue?')) {
-          return;
-        }
-        // Convert to custom spread
-        convertToCustomSpread();
-      }
-      
-      e.preventDefault();
-      e.stopPropagation();
-      isRotating = true;
-      preventCanvasClick = true;
-      
-      // Prevent card click while rotating
-      justDragged[index] = true;
-      
-      document.addEventListener('mousemove', rotate);
-      document.addEventListener('mouseup', rotateEnd);
-    };
-    
-    const rotate = (e: MouseEvent) => {
-      if (!isRotating) return;
-      
-      e.preventDefault();
-      
-      // Get card center
-      const rect = element.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
-      // Calculate angle from center to mouse
-      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      const degrees = angle * (180 / Math.PI) + 90; // +90 to start from top
-      
-      currentRotation = Math.round(degrees);
-      
-      // Apply rotation
-      element.style.transform = `rotate(${currentRotation}deg)`;
-    };
-    
-    const rotateEnd = (e: MouseEvent) => {
-      if (!isRotating) return;
-      
-      e.preventDefault();
-      e.stopPropagation();
-      
-      isRotating = false;
-      
-      // Update rotation in spreadCards
-      const newCards = { ...spreadCards };
-      newCards[index] = {
-        ...newCards[index],
-        rotation: currentRotation
-      };
-      onCardsUpdate(newCards);
-      
-      // Keep justDragged and preventCanvasClick flags longer to prevent modal/card creation
-      setTimeout(() => {
-        justDragged[index] = false;
-        preventCanvasClick = false;
-      }, 200);
-      
-      document.removeEventListener('mousemove', rotate);
-      document.removeEventListener('mouseup', rotateEnd);
-    };
-    
-    handle.addEventListener('mousedown', rotateStart);
+    return interactable;
   }
   
   function handleCanvasKeydown(event: KeyboardEvent) {
@@ -422,30 +410,21 @@
     updateCurrentTemplate();
   }
   
-  // Svelte action for making cards draggable
-  function draggable(node: HTMLButtonElement, index: number) {
-    // Only allow dragging in custom spreads and when not readonly
+  // Svelte action for setting up interact.js on cards
+  function interactCard(node: HTMLButtonElement, index: number) {
+    let interactable: any = null;
+    
+    // Only allow dragging/rotating in custom spreads and when not readonly
     const isCustomSpread = !currentTemplate || currentTemplate.id === 'custom';
     if (!readonly && isCustomSpread) {
-      makeDraggable(node, index);
+      interactable = setupInteractions(node, index);
     }
+    
     return {
       destroy() {
-        // Cleanup handled by removeEventListener in dragEnd
-      }
-    };
-  }
-  
-  // Svelte action for making cards rotatable
-  function rotatable(node: HTMLButtonElement, index: number) {
-    // Only allow rotating in custom spreads and when not readonly
-    const isCustomSpread = !currentTemplate || currentTemplate.id === 'custom';
-    if (!readonly && isCustomSpread) {
-      makeRotatable(node, index);
-    }
-    return {
-      destroy() {
-        // Cleanup handled by removeEventListener in rotateEnd
+        if (interactable) {
+          interactable.unset();
+        }
       }
     };
   }
@@ -470,8 +449,7 @@
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
         style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
         on:click|stopPropagation={() => !readonly && handleCardClick(index)}
-        use:draggable={index}
-        use:rotatable={index}
+        use:interactCard={index}
         data-position-index={index}
         aria-label="{cardData.position_label || `Position ${index + 1}`} - {cardData.card_name || 'Add card'}"
       >
@@ -507,8 +485,7 @@
         class="card-position custom-card {cardData.card_name ? 'filled' : ''}"
         style="left: {cardData.position_x}px; top: {cardData.position_y}px; {cardData.rotation ? `transform: rotate(${cardData.rotation}deg)` : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
         on:click|stopPropagation={() => handleCardClick(index)}
-        use:draggable={index}
-        use:rotatable={index}
+        use:interactCard={index}
         data-position-index={index}
         aria-label="{cardData.position_label || `Position ${index + 1}`} - {cardData.card_name || 'Add card'}"
       >
@@ -547,8 +524,7 @@
         class="card-position {cardData?.card_name ? 'filled' : ''}"
         style="left: {xPos}px; top: {yPos}px; {rotation ? `transform: rotate(${rotation}deg)` : ''}; cursor: pointer;"
         on:click|stopPropagation={() => handleCardClick(index)}
-        use:draggable={index}
-        use:rotatable={index}
+        use:interactCard={index}
         data-position-index={index}
         title={position.label}
         aria-label="{position.label} - {cardData?.card_name || 'Add card'}"
