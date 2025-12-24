@@ -103,6 +103,9 @@
   }
 
   async function handleDeleteUser(userId: number) {
+    const user = users.find((u) => u.id === userId);
+    const username = user?.username;
+    
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: "DELETE",
@@ -116,6 +119,7 @@
       // Remove user from list
       users = users.filter((u) => u.id !== userId);
       deleteUserId = null;
+      displayToast(`User ${username} has been deleted`);
     } catch (e: any) {
       alert(`Error: ${e.message}`);
       deleteUserId = null;
