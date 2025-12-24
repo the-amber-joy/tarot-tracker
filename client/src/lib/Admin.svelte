@@ -11,6 +11,7 @@
     created_at: string;
     deck_count: number;
     reading_count: number;
+    storage_bytes: number;
   };
 
   let users: UserStats[] = [];
@@ -128,6 +129,14 @@
   function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString();
   }
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
 </script>
 
 <div class="admin-container">
@@ -157,6 +166,7 @@
             <th>Created</th>
             <th>Decks</th>
             <th>Readings</th>
+            <th>Storage</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -174,6 +184,7 @@
               <td>{formatDate(user.created_at)}</td>
               <td class="stat-cell">{user.deck_count}</td>
               <td class="stat-cell">{user.reading_count}</td>
+              <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
               <td>
                 {#if user.id === $authStore?.id}
                   <span class="muted">-</span>

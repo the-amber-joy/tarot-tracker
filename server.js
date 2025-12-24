@@ -232,7 +232,35 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
       u.email,
       u.created_at,
       (SELECT COUNT(*) FROM decks WHERE user_id = u.id) as deck_count,
-      (SELECT COUNT(*) FROM readings WHERE user_id = u.id) as reading_count
+      (SELECT COUNT(*) FROM readings WHERE user_id = u.id) as reading_count,
+      (
+        LENGTH(COALESCE(u.username, '')) +
+        LENGTH(COALESCE(u.display_name, '')) +
+        LENGTH(COALESCE(u.email, '')) +
+        LENGTH(COALESCE(u.password_hash, '')) +
+        COALESCE((
+          SELECT SUM(LENGTH(COALESCE(name, '')))
+          FROM decks WHERE user_id = u.id
+        ), 0) +
+        COALESCE((
+          SELECT SUM(
+            LENGTH(COALESCE(spread_name, '')) +
+            LENGTH(COALESCE(deck_name, '')) +
+            LENGTH(COALESCE(notes, ''))
+          )
+          FROM readings WHERE user_id = u.id
+        ), 0) +
+        COALESCE((
+          SELECT SUM(
+            LENGTH(COALESCE(card_name, '')) +
+            LENGTH(COALESCE(position, '')) +
+            LENGTH(COALESCE(interpretation, ''))
+          )
+          FROM reading_cards rc
+          JOIN readings r ON rc.reading_id = r.id
+          WHERE r.user_id = u.id
+        ), 0)
+      ) as storage_bytes
     FROM users u
     ORDER BY u.username
   `,

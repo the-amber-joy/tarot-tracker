@@ -32,36 +32,54 @@ function createAuthStore() {
       initialized = true;
     },
     async login(username: string, password: string) {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Login failed");
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Login failed");
+        }
+
+        const user = await response.json();
+        set(user);
+        return user;
+      } catch (error: any) {
+        if (error.message === "Failed to fetch" || !navigator.onLine) {
+          throw new Error(
+            "Cannot connect to server. Please check your connection.",
+          );
+        }
+        throw error;
       }
-
-      const user = await response.json();
-      set(user);
-      return user;
     },
     async register(username: string, password: string, email?: string) {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, email }),
-      });
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password, email }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Registration failed");
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Registration failed");
+        }
+
+        const user = await response.json();
+        set(user);
+        return user;
+      } catch (error: any) {
+        if (error.message === "Failed to fetch" || !navigator.onLine) {
+          throw new Error(
+            "Cannot connect to server. Please check your connection.",
+          );
+        }
+        throw error;
       }
-
-      const user = await response.json();
-      set(user);
-      return user;
     },
     async updateProfile(display_name: string, email?: string) {
       const response = await fetch("/api/auth/profile", {
