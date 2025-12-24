@@ -29,6 +29,9 @@
   let reading: Reading | null = null;
   let loading = true;
   
+  // Check if reading has incomplete cards (any card with empty card_name)
+  $: isIncomplete = reading?.cards.some(card => !card.card_name || card.card_name.trim() === '') || false;
+  
   // Transform reading cards into spreadCards format
   $: spreadCards = reading?.cards.reduce((acc, card, idx) => {
     acc[idx] = {

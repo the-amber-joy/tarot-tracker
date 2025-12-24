@@ -85,6 +85,15 @@
   function handleEdit(id: number) {
     showFormView(id);
   }
+  
+  function handleReadingClick(reading: Reading) {
+    // If reading is incomplete, open directly in edit mode
+    if (reading.is_incomplete) {
+      showFormView(reading.id);
+    } else {
+      showDetailView(reading.id);
+    }
+  }
 </script>
 
 <div class="container">
@@ -122,7 +131,7 @@
             </tr>
           {:else}
             {#each readings as reading}
-              <tr on:click={() => showDetailView(reading.id)} style="cursor: pointer;">
+              <tr on:click={() => handleReadingClick(reading)} style="cursor: pointer;">
                 <td>{formatDateTime(reading.date, reading.time)}</td>
                 <td>{reading.spread_name}</td>
                 <td>{reading.deck_name}</td>

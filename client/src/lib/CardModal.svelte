@@ -153,7 +153,7 @@
               <button type="submit" class="btn btn-primary">Save Card</button>
               {#if existingCard}
                 <button type="button" class="btn btn-danger" on:click={handleRemove}>
-                  Remove Card
+                  Clear Card
                 </button>
               {/if}
               <button type="button" class="btn btn-secondary" on:click={handleCancel}>
