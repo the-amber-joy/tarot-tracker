@@ -1,0 +1,37 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    name: Deploy app
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for git metadata
+
+      - name: 📝 Generate build metadata
+        id: meta
+        run: |
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+          echo "git_commit=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "git_branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+      - name: 🛫 Deploy to Fly.io
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: 🚀 Deploy with metadata
+        run: |
+          flyctl deploy --remote-only \
+            --build-arg BUILD_DATE="${{ steps.meta.outputs.build_date }}" \
+            --build-arg GIT_COMMIT="${{ steps.meta.outputs.git_commit }}" \
+            --build-arg GIT_BRANCH="${{ steps.meta.outputs.git_branch }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

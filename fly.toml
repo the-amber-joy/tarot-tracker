@@ -7,10 +7,6 @@ app = 'tarot-tracker'
 primary_region = 'iad'
 
 [build]
-  [build.args]
-    BUILD_DATE = ""
-    GIT_COMMIT = ""
-    GIT_BRANCH = ""
 
 [env]
   PORT = "8080"
