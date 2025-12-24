@@ -30,22 +30,9 @@
   // Canvas scaling for responsiveness
   const BASE_CANVAS_SIZE = 750; // Base size for card positions
   let canvasScale = 1;
-  
-  // Zoom state
-  let zoomScale = 1;
-  let zoomOriginX = 0;
-  let zoomOriginY = 0;
-  let initialDistance = 0;
-  let initialZoom = 1;
-  
-  // Pan state
-  let panX = 0;
-  let panY = 0;
-  let isPanning = false;
-  let panStartX = 0;
-  let panStartY = 0;
-  let startPanX = 0;
-  let startPanY = 0;
+  let displayScale = 1; // Scale for fitting predefined spreads in viewport
+  let translateX = 0; // X offset to center cards
+  let translateY = 0; // Y offset to center cards
   
   // Modal state
   let isModalOpen = false;
@@ -66,159 +53,65 @@
     // Update scale on window resize
     window.addEventListener('resize', updateCanvasScale);
     
-    // Add touch event listeners for pinch zoom
-    canvasElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvasElement.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvasElement.addEventListener('touchend', handleTouchEnd);
-    
-    // Add mouse event listeners for panning
-    canvasElement.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    
     return () => {
       window.removeEventListener('resize', updateCanvasScale);
-      canvasElement.removeEventListener('touchstart', handleTouchStart);
-      canvasElement.removeEventListener('touchmove', handleTouchMove);
-      canvasElement.removeEventListener('touchend', handleTouchEnd);
-      canvasElement.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
     };
   });
-  
-  function getDistance(touch1: Touch, touch2: Touch): number {
-    const dx = touch1.clientX - touch2.clientX;
-    const dy = touch1.clientY - touch2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-  
-  function handleTouchStart(e: TouchEvent) {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      initialDistance = getDistance(e.touches[0], e.touches[1]);
-      initialZoom = zoomScale;
-      
-      // Calculate center point between two fingers
-      const rect = canvasElement.getBoundingClientRect();
-      zoomOriginX = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) / rect.width * 100;
-      zoomOriginY = ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top) / rect.height * 100;
-    }
-  }
-  
-  function handleTouchMove(e: TouchEvent) {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const currentDistance = getDistance(e.touches[0], e.touches[1]);
-      const scale = currentDistance / initialDistance;
-      zoomScale = Math.max(0.5, Math.min(3, initialZoom * scale));
-    }
-  }
-  
-  function handleTouchEnd(e: TouchEvent) {
-    if (e.touches.length < 2) {
-      initialDistance = 0;
-    }
-  }
-  
-  function handleMouseDown(e: MouseEvent) {
-    // Only pan on middle mouse button or when clicking directly on canvas background
-    if (e.button === 1 || (e.target === canvasElement || (e.target as HTMLElement).classList.contains('canvas-inner'))) {
-      isPanning = true;
-      panStartX = e.clientX;
-      panStartY = e.clientY;
-      startPanX = panX;
-      startPanY = panY;
-      canvasElement.style.cursor = 'grabbing';
-      e.preventDefault();
-    }
-  }
-  
-  function handleMouseMove(e: MouseEvent) {
-    if (!isPanning) return;
-    
-    const dx = e.clientX - panStartX;
-    const dy = e.clientY - panStartY;
-    panX = startPanX + dx;
-    panY = startPanY + dy;
-  }
-  
-  function handleMouseUp() {
-    if (isPanning) {
-      isPanning = false;
-      canvasElement.style.cursor = '';
-    }
-  }
-  
-  function zoomIn() {
-    zoomScale = Math.min(3, zoomScale + 0.2);
-  }
-  
-  function zoomOut() {
-    zoomScale = Math.max(0.5, zoomScale - 0.2);
-  }
-  
-  function zoomToFit() {
-    const cards = Object.values(spreadCards);
-    if (cards.length === 0) {
-      resetZoom();
-      return;
-    }
-    
-    // Find bounding box of all cards
-    const cardWidth = 100;
-    const cardHeight = 140;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    
-    cards.forEach(card => {
-      const x = card.position_x;
-      const y = card.position_y;
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x + cardWidth);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y + cardHeight);
-    });
-    
-    // Calculate the bounding box dimensions
-    const contentWidth = maxX - minX;
-    const contentHeight = maxY - minY;
-    
-    // Get canvas dimensions (accounting for padding)
-    const canvasWidth = canvasElement.clientWidth - 80; // subtract padding
-    const canvasHeight = canvasElement.clientHeight - 80;
-    
-    // Calculate zoom to fit (with some margin)
-    const scaleX = canvasWidth / contentWidth;
-    const scaleY = canvasHeight / contentHeight;
-    const newZoom = Math.min(scaleX, scaleY, 3) * 0.9; // 0.9 for margin
-    
-    // Set zoom
-    zoomScale = Math.max(0.5, newZoom);
-    
-    // Center on the content
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    zoomOriginX = (centerX / BASE_CANVAS_SIZE) * 100;
-    zoomOriginY = (centerY / BASE_CANVAS_SIZE) * 100;
-  }
-  
-  function resetZoom() {
-    zoomScale = 1;
-    zoomOriginX = 50;
-    zoomOriginY = 50;
-    panX = 0;
-    panY = 0;
-  }
   
   function updateCanvasScale() {
     if (canvasElement) {
       const currentWidth = canvasElement.clientWidth;
+      const currentHeight = canvasElement.clientHeight;
       canvasScale = currentWidth / BASE_CANVAS_SIZE;
+      
+      // For predefined spreads, calculate scale and position based on actual spread bounds
+      if (currentTemplate && currentTemplate.id !== 'custom') {
+        // Find bounding box of all cards
+        const cardWidth = 100;
+        const cardHeight = 140;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        
+        currentTemplate.positions.forEach(pos => {
+          minX = Math.min(minX, pos.defaultX);
+          maxX = Math.max(maxX, pos.defaultX + cardWidth);
+          minY = Math.min(minY, pos.defaultY);
+          maxY = Math.max(maxY, pos.defaultY + cardHeight);
+        });
+        
+        const spreadWidth = maxX - minX;
+        const spreadHeight = maxY - minY;
+        
+        // Calculate scale to fit with margin
+        const scaleX = currentWidth / spreadWidth;
+        const scaleY = currentHeight / spreadHeight;
+        displayScale = Math.min(scaleX, scaleY, 1) * 0.85; // 0.85 for comfortable margin
+        
+        // Calculate where the scaled bounding box should be positioned to center it
+        const scaledSpreadWidth = spreadWidth * displayScale;
+        const scaledSpreadHeight = spreadHeight * displayScale;
+        
+        // Offset to center the spread in the viewport
+        const centerOffsetX = (currentWidth - scaledSpreadWidth) / 2;
+        const centerOffsetY = (currentHeight - scaledSpreadHeight) / 2;
+        
+        // Calculate final translation: move to center, accounting for where cards start (minX, minY)
+        translateX = centerOffsetX - (minX * displayScale);
+        translateY = centerOffsetY - (minY * displayScale);
+      } else {
+        displayScale = 1;
+        translateX = 0;
+        translateY = 0;
+      }
     }
   }
   
   // Helper to scale positions from stored values
   function scalePosition(value: number): number {
+    // For predefined spreads, use positions as-is (zoom handles the scaling)
+    if (currentTemplate && currentTemplate.id !== 'custom') {
+      return value;
+    }
+    // For custom spreads, scale positions responsively
     return value * canvasScale;
   }
   
@@ -235,8 +128,10 @@
   function updateCurrentTemplate() {
     if (spreadTemplate) {
       currentTemplate = spreadTemplates.find(t => t.id === spreadTemplate) || null;
+      updateCanvasScale();
     } else {
       currentTemplate = null;
+      displayScale = 1;
     }
   }
   
@@ -683,7 +578,7 @@
     class="canvas-inner"
     on:click={handleCanvasClick}
     on:keydown={handleCanvasKeydown}
-    style="transform: translate({panX}px, {panY}px) scale({zoomScale}); transform-origin: {zoomOriginX}% {zoomOriginY}%;"
+    style={currentTemplate && currentTemplate.id !== 'custom' ? `transform: translate(${translateX}px, ${translateY}px) scale(${displayScale})` : ''}
   >
   {#if !currentTemplate}
     <!-- No template selected - empty canvas waiting for clicks -->
@@ -821,13 +716,6 @@
       </button>
     {/each}
   {/if}
-  </div>
-  
-  <!-- Zoom controls -->
-  <div class="zoom-controls">
-    <button type="button" class="zoom-btn" on:click|stopPropagation={zoomIn} title="Zoom in" aria-label="Zoom in">+</button>
-    <button type="button" class="zoom-btn" on:click|stopPropagation={zoomToFit} title="Fit all cards" aria-label="Fit all cards">⊡</button>
-    <button type="button" class="zoom-btn" on:click|stopPropagation={zoomOut} title="Zoom out" aria-label="Zoom out">−</button>
   </div>
 </div>
 
