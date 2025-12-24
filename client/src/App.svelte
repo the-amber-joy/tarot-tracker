@@ -106,6 +106,20 @@
   function handleHeaderCancel() {
     showSummaryView();
   }
+  
+  function handleSortKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleDateSort();
+    }
+  }
+  
+  function handleRowKeydown(event: KeyboardEvent, reading: Reading) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleReadingClick(reading);
+    }
+  }
 </script>
 
 <div class="container">
@@ -126,7 +140,7 @@
       <table class="readings-table">
         <thead>
           <tr>
-            <th on:click={toggleDateSort} style="cursor: pointer;">
+            <th on:click={toggleDateSort} on:keydown={handleSortKeydown} tabindex="0" style="cursor: pointer;">
               Date {sortAscending ? '↑' : '↓'}
             </th>
             <th>Spread Name</th>
@@ -143,7 +157,7 @@
             </tr>
           {:else}
             {#each readings as reading}
-              <tr on:click={() => handleReadingClick(reading)} style="cursor: pointer;">
+              <tr on:click={() => handleReadingClick(reading)} on:keydown={(e) => handleRowKeydown(e, reading)} tabindex="0" style="cursor: pointer;">
                 <td>{formatDateTime(reading.date, reading.time)}</td>
                 <td>{reading.spread_name}</td>
                 <td>{reading.deck_name}</td>
