@@ -1,101 +1,43 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { Route, Router, navigate } from 'svelte-routing';
   import Header from './lib/Header.svelte';
   import ReadingDetail from './lib/ReadingDetail.svelte';
   import ReadingForm from './lib/ReadingForm.svelte';
+  import ReadingsList from './lib/ReadingsList.svelte';
   
-  type Reading = {
-    id: number;
-    date: string;
-    time: string;
-    spread_name: string;
-    deck_name: string;
-    is_incomplete?: boolean;
-    cards?: any[];
-  };
-  
-  type View = 'summary' | 'form' | 'detail';
-  
-  let currentView: View = 'summary';
-  let readings: Reading[] = [];
   let formRef: any = null;
-  let selectedReadingId: number | null = null;
-  let editingReadingId: number | null = null;
-  let sortAscending: boolean = false;
+  let currentPath = '';
   
-  onMount(async () => {
-    await loadReadings();
+  // Track if we're in form view for header
+  $: isFormView = currentPath === '/reading/new' || currentPath.includes('/edit');
+  $: isEditMode = currentPath.includes('/edit');
+  $: isDetailView = currentPath.match(/^\/reading\/\d+$/) !== null;
+  $: detailReadingId = isDetailView ? currentPath.match(/\d+/)?.[0] : null;
+  
+  onMount(() => {
+    // Initial path
+    currentPath = window.location.pathname;
+    
+    // Listen for route changes
+    const updatePath = () => {
+      const newPath = window.location.pathname;
+      if (newPath !== currentPath) {
+        currentPath = newPath;
+      }
+    };
+    
+    // Listen to popstate for back/forward button
+    window.addEventListener('popstate', updatePath);
+    
+    // Poll for path changes (catches navigate() calls)
+    const intervalId = setInterval(updatePath, 100);
+    
+    return () => {
+      window.removeEventListener('popstate', updatePath);
+      clearInterval(intervalId);
+    };
   });
-  
-  async function loadReadings() {
-    try {
-      const response = await fetch('/api/readings');
-      readings = await response.json();
-      sortReadings();
-    } catch (error) {
-      console.error('Error loading readings:', error);
-    }
-  }
-  
-  function toggleDateSort() {
-    sortAscending = !sortAscending;
-    sortReadings();
-  }
-  
-  function sortReadings() {
-    readings = readings.sort((a, b) => {
-      const dateA = new Date(a.date + ' ' + a.time);
-      const dateB = new Date(b.date + ' ' + b.time);
-      return sortAscending 
-        ? dateA.getTime() - dateB.getTime()
-        : dateB.getTime() - dateA.getTime();
-    });
-  }
-  
-  function formatDateTime(date: string, time: string): string {
-    const dateObj = new Date(date + ' ' + time);
-    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-    const formattedDate = dateObj.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const formattedTime = dateObj.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-    return `${dayOfWeek}, ${formattedDate} at ${formattedTime}`;
-  }
-  
-  function showSummaryView() {
-    currentView = 'summary';
-    editingReadingId = null;
-    loadReadings();
-  }
-  
-  function showFormView(readingId?: number) {
-    currentView = 'form';
-    editingReadingId = readingId || null;
-  }
-  
-  function showDetailView(id: number) {
-    currentView = 'detail';
-    selectedReadingId = id;
-  }
-  
-  function handleEdit(id: number) {
-    showFormView(id);
-  }
-  
-  function handleReadingClick(reading: Reading) {
-    // If reading is incomplete, open directly in edit mode
-    if (reading.is_incomplete) {
-      showFormView(reading.id);
-    } else {
-      showDetailView(reading.id);
-    }
-  }
   
   function handleHeaderSave() {
     if (formRef) {
@@ -104,225 +46,49 @@
   }
   
   function handleHeaderCancel() {
-    showSummaryView();
+    navigate('/');
+    setTimeout(() => currentPath = window.location.pathname, 0);
   }
   
-  function handleSortKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      toggleDateSort();
+  function handleHeaderEdit() {
+    if (detailReadingId) {
+      navigate(`/reading/${detailReadingId}/edit`);
+      setTimeout(() => currentPath = window.location.pathname, 0);
     }
   }
-  
-  function handleRowKeydown(event: KeyboardEvent, reading: Reading) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleReadingClick(reading);
-    }
-  }
+
 </script>
 
-<div class="container">
-  <Header 
-    onNewReading={() => showFormView()}
-    onSave={handleHeaderSave}
-    onCancel={handleHeaderCancel}
-    isFormView={currentView === 'form'}
-  />
-
-  <!-- Summary View -->
-  {#if currentView === 'summary'}
-    <div class="view summary-view">
-      <div class="view-header">
-        <h2>Past Readings</h2>
-        <button class="mobile-sort-btn" on:click={toggleDateSort}>
-          Date {sortAscending ? '↑' : '↓'}
-        </button>
-      </div>
-      
-      <!-- Table layout for larger screens -->
-      <table class="readings-table">
-        <thead>
-          <tr>
-            <th on:click={toggleDateSort} on:keydown={handleSortKeydown} tabindex="0" style="cursor: pointer;">
-              Date {sortAscending ? '↑' : '↓'}
-            </th>
-            <th>Spread Name</th>
-            <th>Deck</th>
-          </tr>
-        </thead>
-        <tbody aria-live="polite">
-          {#if readings.length === 0}
-            <tr>
-              <td colspan="3" class="empty-message">
-                No readings yet. Click "New Reading" to get started!
-              </td>
-            </tr>
-          {:else}
-            {#each readings as reading}
-              <tr on:click={() => handleReadingClick(reading)} on:keydown={(e) => handleRowKeydown(e, reading)} tabindex="0" style="cursor: pointer;">
-                <td>{formatDateTime(reading.date, reading.time)}</td>
-                <td>
-                  {#if reading.is_incomplete}
-                    <span class="incomplete-icon" title="Incomplete">⚠️</span>
-                  {/if}
-                  {reading.spread_name}
-                </td>
-                <td>{reading.deck_name}</td>
-              </tr>
-            {/each}
-          {/if}
-        </tbody>
-      </table>
-      
-      <!-- Card layout for mobile -->
-      <div class="readings-cards" aria-live="polite">
-        {#if readings.length === 0}
-          <p class="empty-message">No readings yet. Click "New Reading" to get started!</p>
-        {:else}
-          {#each readings as reading}
-            <button 
-              class="reading-card"
-              on:click={() => handleReadingClick(reading)} 
-              on:keydown={(e) => handleRowKeydown(e, reading)}
-            >
-              <div class="reading-card-header">
-                <span class="reading-spread">
-                  {#if reading.is_incomplete}
-                    <span class="incomplete-icon" title="Incomplete">⚠️</span>
-                  {/if}
-                  {reading.spread_name}
-                </span>
-                <span class="reading-deck">{reading.deck_name}</span>
-              </div>
-              <div class="reading-date">{formatDateTime(reading.date, reading.time)}</div>
-            </button>
-          {/each}
-        {/if}
-      </div>
-    </div>
-  {/if}
-
-  <!-- Form View -->
-  {#if currentView === 'form'}
-    <ReadingForm 
-      bind:this={formRef}
-      readingId={editingReadingId}
-      onBack={showSummaryView}
-      onSaved={showSummaryView}
+<Router>
+  <div class="container">
+    <Header 
+      onHome={() => {
+        navigate('/');
+        setTimeout(() => currentPath = window.location.pathname, 0);
+      }}
+      onNewReading={() => {
+        navigate('/reading/new');
+        setTimeout(() => currentPath = window.location.pathname, 0);
+      }}
+      onSave={handleHeaderSave}
+      onCancel={handleHeaderCancel}
+      onEdit={handleHeaderEdit}
+      {isFormView}
+      {isEditMode}
+      {isDetailView}
     />
-  {/if}
 
-  <!-- Detail View -->
-  {#if currentView === 'detail' && selectedReadingId}
-    <ReadingDetail 
-      readingId={selectedReadingId} 
-      onBack={showSummaryView}
-      onEdit={handleEdit}
-    />
-  {/if}
-</div>
-
-<style>
-  .summary-view {
-    container-type: inline-size;
-  }
-  
-  /* Hide mobile sort button on desktop */
-  .mobile-sort-btn {
-    display: none;
-  }
-  
-  /* Default: hide cards, show table */
-  .readings-cards {
-    display: none;
-  }
-  
-  .readings-table {
-    display: table;
-  }
-  
-  /* Container query: show cards on narrow screens, hide table */
-  @container (max-width: 700px) {
-    .mobile-sort-btn {
-      display: block;
-      padding: 0.5rem 1rem;
-      background: transparent;
-      color: #666;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-    }
-    
-    .mobile-sort-btn:hover {
-      background: rgba(0, 0, 0, 0.05);
-      color: #333;
-    }
-    
-    .mobile-sort-btn:focus {
-      outline: 2px solid var(--color-primary, #7b2cbf);
-      outline-offset: 2px;
-    }
-    
-    .mobile-sort-btn:active {
-      background: rgba(0, 0, 0, 0.1);
-      transform: scale(0.98);
-    }
-    
-    .readings-table {
-      display: none;
-    }
-    
-    .readings-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .reading-card {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      padding: 1rem;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      text-align: left;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: #333;
-    }
-    
-    .reading-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--color-primary, #7b2cbf);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    .reading-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-    
-    .reading-spread {
-      font-weight: 600;
-      font-size: 1.1rem;
-      flex: 1;
-      color: #333;
-    }
-    
-    .reading-deck {
-      color: #666;
-      font-size: 0.9rem;
-    }
-    
-    .reading-date {
-      color: #666;
-      font-size: 0.9rem;
-    }
-  }
-</style>
+    <Route path="/">
+      <ReadingsList />
+    </Route>
+    <Route path="/reading/new">
+      <ReadingForm bind:this={formRef} />
+    </Route>
+    <Route path="/reading/:id" let:params>
+      <ReadingDetail {params} />
+    </Route>
+    <Route path="/reading/:id/edit" let:params>
+      <ReadingForm {params} bind:this={formRef} />
+    </Route>
+  </div>
+</Router>

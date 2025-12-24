@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { navigate } from 'svelte-routing';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
-  export let readingId: number | null = null;
-  export let onBack: () => void;
-  export let onSaved: () => void;
+  export let params: { id?: string } = {};
   
+  $: readingId = params.id ? parseInt(params.id) : null;
   $: isEditMode = readingId !== null;
   
   type Deck = {
@@ -185,7 +185,7 @@
       });
       
       if (response.ok) {
-        onSaved();
+        navigate('/');
       } else {
         const error = await response.text();
         alert(`Failed to save reading: ${error}`);
@@ -282,7 +282,7 @@
     </div>
     
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary" on:click={onBack}>Cancel</button>
+      <button type="button" class="btn btn-secondary" on:click={() => navigate('/')}>Cancel</button>
       <button type="submit" class="btn btn-primary">{isEditMode ? 'Update Reading' : 'Save Reading'}</button>
     </div>
   </form>

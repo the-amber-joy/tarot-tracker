@@ -3,9 +3,13 @@
   import DeckModal from './DeckModal.svelte';
   
   export let onNewReading: () => void;
+  export let onHome: () => void;
   export let onSave: (() => void) | null = null;
   export let onCancel: (() => void) | null = null;
+  export let onEdit: (() => void) | null = null;
   export let isFormView: boolean = false;
+  export let isEditMode: boolean = false;
+  export let isDetailView: boolean = false;
   
   const dispatch = createEventDispatcher();
   let isDeckModalOpen = false;
@@ -36,7 +40,7 @@
 </script>
 
 <header class="app-header">
-  <h1>🔮 Tarot Tracker</h1>
+  <h1 on:click={onHome} style="cursor: pointer;">🔮 Tarot Tracker</h1>
   
   <button class="hamburger" on:click={toggleMenu} aria-label="Menu" aria-expanded={isMenuOpen}>
     <span></span>
@@ -53,7 +57,14 @@
         Cancel
       </button>
       <button class="btn btn-primary form-action-btn" on:click={onSave}>
-        Save Reading
+        {isEditMode ? 'Update Reading' : 'Save Reading'}
+      </button>
+    {:else if isDetailView}
+      <button class="btn btn-secondary form-action-btn" on:click={onCancel}>
+        Cancel
+      </button>
+      <button class="btn btn-primary form-action-btn" on:click={onEdit}>
+        Edit
       </button>
     {:else}
       <button class="btn btn-primary" on:click={handleNewReading}>

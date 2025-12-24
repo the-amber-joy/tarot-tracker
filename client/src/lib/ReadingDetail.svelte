@@ -2,9 +2,9 @@
   import { onMount } from 'svelte';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
-  export let readingId: number;
-  export let onBack: () => void;
-  export let onEdit: (id: number) => void;
+  export let params: { id: string } = { id: '' };
+  
+  const readingId = parseInt(params.id);
   
   type Card = {
     card_name: string;
@@ -69,14 +69,6 @@
   <div class="view">
     <div class="view-header">
       <h2>Reading Details</h2>
-      <div>
-        <button class="btn btn-primary" on:click={() => onEdit(readingId)}>
-          Edit
-        </button>
-        <button class="btn btn-secondary" on:click={onBack}>
-          ← Back to Summary
-        </button>
-      </div>
     </div>
     
     <div class="detail-section">
@@ -129,8 +121,5 @@
 {:else}
   <div class="view">
     <p>Reading not found.</p>
-    <button class="btn btn-secondary" on:click={onBack}>
-      ← Back to Summary
-    </button>
   </div>
 {/if}
