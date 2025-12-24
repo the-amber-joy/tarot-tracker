@@ -7,8 +7,8 @@ COPY package*.json ./
 COPY client/package*.json ./client/
 
 # Install dependencies
-RUN npm ci --omit=dev
-RUN cd client && npm ci
+RUN npm install
+RUN cd client && npm install
 
 # Copy source code
 COPY . .
