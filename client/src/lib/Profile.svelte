@@ -1,7 +1,14 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
   import { authStore } from "../stores/authStore";
 
+  type Deck = {
+    id: number;
+    name: string;
+  };
+
+  let activeTab: "profile" | "decks" = "profile";
   let display_name = $authStore?.display_name || $authStore?.username || "";
   let currentPassword = "";
   let newPassword = "";
@@ -13,6 +20,76 @@
   let passwordSuccess = "";
   let profileLoading = false;
   let passwordLoading = false;
+
+  let decks: Deck[] = [];
+  let newDeckName = "";
+
+  onMount(async () => {
+    await loadDecks();
+  });
+
+  onMount(async () => {
+    await loadDecks();
+  });
+
+  async function loadDecks() {
+    try {
+      const response = await fetch("/api/decks");
+      decks = await response.json();
+    } catch (error) {
+      console.error("Error loading decks:", error);
+    }
+  }
+
+  async function handleAddDeck() {
+    if (!newDeckName.trim()) {
+      alert("Please enter a deck name.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/decks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newDeckName.trim() }),
+      });
+
+      if (response.ok) {
+        newDeckName = "";
+        await loadDecks();
+      } else {
+        const error = await response.text();
+        alert(`Failed to add deck: ${error}`);
+      }
+    } catch (error) {
+      console.error("Error adding deck:", error);
+      alert("Error adding deck. Please try again.");
+    }
+  }
+
+  async function handleDeleteDeck(deckId: number, deckName: string) {
+    if (!confirm(`Are you sure you want to delete "${deckName}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/decks/${deckId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await loadDecks();
+      } else {
+        const error = await response.text();
+        alert(`Failed to delete deck: ${error}`);
+      }
+    } catch (error) {
+      console.error("Error deleting deck:", error);
+      alert("Error deleting deck. Please try again.");
+    }
+  }
 
   async function handleProfileUpdate(e: Event) {
     e.preventDefault();
@@ -73,103 +150,163 @@
     <h2>Profile Settings</h2>
   </div>
 
+  <div class="tabs">
+    <button 
+      class="tab" 
+      class:active={activeTab === "profile"}
+      on:click={() => activeTab = "profile"}
+    >
+      Profile
+    </button>
+    <button 
+      class="tab" 
+      class:active={activeTab === "decks"}
+      on:click={() => activeTab = "decks"}
+    >
+      My Decks
+    </button>
+  </div>
+
   <div class="profile-content">
-    <!-- Profile Information Section -->
-    <section class="profile-section">
-      <h3>Profile Information</h3>
-      <form on:submit={handleProfileUpdate}>
+    {#if activeTab === "profile"}
+      <!-- Profile Information Section -->
+      <section class="profile-section">
+        <h3>Profile Information</h3>
+        <form on:submit={handleProfileUpdate}>
+          <div class="form-group">
+            <label for="username">Username (Login)</label>
+            <input
+              id="username"
+              type="text"
+              value={$authStore?.username}
+              disabled
+              class="disabled-input"
+            />
+            <small>Your username cannot be changed</small>
+          </div>
+
+          <div class="form-group">
+            <label for="display_name">Display Name</label>
+            <input
+              id="display_name"
+              type="text"
+              bind:value={display_name}
+              required
+              placeholder="Enter display name"
+              disabled={profileLoading}
+            />
+            <small>This is how your name will appear in the app</small>
+          </div>
+
+          {#if profileError}
+            <div class="error-message">{profileError}</div>
+          {/if}
+
+          {#if profileSuccess}
+            <div class="success-message">{profileSuccess}</div>
+          {/if}
+
+          <button type="submit" class="btn-primary" disabled={profileLoading}>
+            {profileLoading ? "Saving..." : "Save Profile"}
+          </button>
+        </form>
+      </section>
+
+      <!-- Password Change Section -->
+      <section class="profile-section">
+        <h3>Change Password</h3>
+        <form on:submit={handlePasswordUpdate}>
+          <div class="form-group">
+            <label for="currentPassword">Current Password</label>
+            <input
+              id="currentPassword"
+              type="password"
+              bind:value={currentPassword}
+              required
+              placeholder="Enter current password"
+              disabled={passwordLoading}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input
+              id="newPassword"
+              type="password"
+              bind:value={newPassword}
+              required
+              placeholder="At least 6 characters"
+              disabled={passwordLoading}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              bind:value={confirmPassword}
+              required
+              placeholder="Re-enter new password"
+              disabled={passwordLoading}
+            />
+          </div>
+
+          {#if passwordError}
+            <div class="error-message">{passwordError}</div>
+          {/if}
+
+          {#if passwordSuccess}
+            <div class="success-message">{passwordSuccess}</div>
+          {/if}
+
+          <button type="submit" class="btn-primary" disabled={passwordLoading}>
+            {passwordLoading ? "Updating..." : "Update Password"}
+          </button>
+        </form>
+      </section>
+    {:else if activeTab === "decks"}
+      <!-- Deck Management Section -->
+      <section class="profile-section">
+        <h3>Manage Your Decks</h3>
+        
         <div class="form-group">
-          <label for="username">Username (Login)</label>
-          <input
-            id="username"
-            type="text"
-            value={$authStore?.username}
-            disabled
-            class="disabled-input"
-          />
-          <small>Your username cannot be changed</small>
+          <label for="newDeckName">Add New Deck</label>
+          <div class="input-with-button">
+            <input 
+              type="text" 
+              id="newDeckName" 
+              bind:value={newDeckName}
+              placeholder="Enter deck name..."
+              on:keydown={(e) => e.key === "Enter" && handleAddDeck()}
+            />
+            <button class="btn-add" on:click={handleAddDeck}>Add Deck</button>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label for="display_name">Display Name</label>
-          <input
-            id="display_name"
-            type="text"
-            bind:value={display_name}
-            required
-            placeholder="Enter display name"
-            disabled={profileLoading}
-          />
-          <small>This is how your name will appear in the app</small>
+        
+        <div class="deck-list">
+          <h4>Your Decks ({decks.length})</h4>
+          {#if decks.length === 0}
+            <p class="empty-message">No decks added yet. Add your first deck above!</p>
+          {:else}
+            <ul>
+              {#each decks as deck}
+                <li class="deck-item">
+                  <span class="deck-name">{deck.name}</span>
+                  <button 
+                    class="btn-remove" 
+                    on:click={() => handleDeleteDeck(deck.id, deck.name)}
+                    aria-label="Delete {deck.name}"
+                  >
+                    Delete
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
         </div>
-
-        {#if profileError}
-          <div class="error-message">{profileError}</div>
-        {/if}
-
-        {#if profileSuccess}
-          <div class="success-message">{profileSuccess}</div>
-        {/if}
-
-        <button type="submit" class="btn-primary" disabled={profileLoading}>
-          {profileLoading ? "Saving..." : "Save Profile"}
-        </button>
-      </form>
-    </section>
-
-    <!-- Password Change Section -->
-    <section class="profile-section">
-      <h3>Change Password</h3>
-      <form on:submit={handlePasswordUpdate}>
-        <div class="form-group">
-          <label for="currentPassword">Current Password</label>
-          <input
-            id="currentPassword"
-            type="password"
-            bind:value={currentPassword}
-            required
-            placeholder="Enter current password"
-            disabled={passwordLoading}
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="newPassword">New Password</label>
-          <input
-            id="newPassword"
-            type="password"
-            bind:value={newPassword}
-            required
-            placeholder="At least 6 characters"
-            disabled={passwordLoading}
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="confirmPassword">Confirm New Password</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            bind:value={confirmPassword}
-            required
-            placeholder="Re-enter new password"
-            disabled={passwordLoading}
-          />
-        </div>
-
-        {#if passwordError}
-          <div class="error-message">{passwordError}</div>
-        {/if}
-
-        {#if passwordSuccess}
-          <div class="success-message">{passwordSuccess}</div>
-        {/if}
-
-        <button type="submit" class="btn-primary" disabled={passwordLoading}>
-          {passwordLoading ? "Updating..." : "Update Password"}
-        </button>
-      </form>
-    </section>
+      </section>
+    {/if}
   </div>
 </div>
 
@@ -205,6 +342,36 @@
     color: #333;
   }
 
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 2rem;
+  }
+
+  .tab {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+    top: 2px;
+  }
+
+  .tab:hover {
+    color: #4a90e2;
+  }
+
+  .tab.active {
+    color: #4a90e2;
+    border-bottom-color: #4a90e2;
+  }
+
   .profile-content {
     display: flex;
     flex-direction: column;
@@ -224,6 +391,12 @@
     color: #555;
     border-bottom: 2px solid #ddd;
     padding-bottom: 0.5rem;
+  }
+
+  .profile-section h4 {
+    margin: 1.5rem 0 1rem 0;
+    font-size: 1.1rem;
+    color: #666;
   }
 
   .form-group {
@@ -265,6 +438,32 @@
     font-size: 0.875rem;
   }
 
+  .input-with-button {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .input-with-button input {
+    flex: 1;
+  }
+
+  .btn-add {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+  }
+
+  .btn-add:hover {
+    background-color: #218838;
+  }
+
   .btn-primary {
     width: 100%;
     padding: 12px;
@@ -285,6 +484,60 @@
   .btn-primary:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+  }
+
+  .deck-list {
+    margin-top: 1.5rem;
+  }
+
+  .deck-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .deck-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    transition: box-shadow 0.2s;
+  }
+
+  .deck-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .deck-name {
+    font-size: 1rem;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .btn-remove {
+    padding: 0.5rem 1rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-remove:hover {
+    background-color: #c82333;
+  }
+
+  .empty-message {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
   }
 
   .error-message {
@@ -316,6 +569,34 @@
 
     .profile-header h2 {
       font-size: 1.5rem;
+    }
+
+    .tabs {
+      gap: 0;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .input-with-button {
+      flex-direction: column;
+    }
+
+    .btn-add {
+      width: 100%;
+    }
+
+    .deck-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .btn-remove {
+      width: 100%;
     }
   }
 </style>

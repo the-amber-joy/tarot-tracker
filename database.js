@@ -13,6 +13,14 @@ const db = new sqlite3.Database(path.join(dataDir, "tarot.db"), (err) => {
     console.error("Error opening database:", err.message);
   } else {
     console.log("Connected to the SQLite database.");
+    // Enable foreign key constraints
+    db.run("PRAGMA foreign_keys = ON", (err) => {
+      if (err) {
+        console.error("Error enabling foreign keys:", err.message);
+      } else {
+        console.log("Foreign key constraints enabled.");
+      }
+    });
     initDatabase();
   }
 });

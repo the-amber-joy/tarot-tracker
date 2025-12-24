@@ -342,6 +342,13 @@ app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
 
 // Nuclear option: Delete all data except current admin
 app.post("/api/admin/nuke", requireAdmin, (req, res) => {
+  // Only allow nuclear option in non-production environments
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({
+      error: "Nuclear option is disabled in production for safety",
+    });
+  }
+
   const adminId = req.user.id;
 
   db.serialize(() => {
