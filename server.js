@@ -41,9 +41,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Serve static files from Vite build
-app.use(express.static(path.join(__dirname, "client/dist")));
-
 // API Routes
 
 // Authentication routes
@@ -108,7 +105,13 @@ app.post("/api/auth/logout", (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    res.json({ message: "Logged out successfully" });
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.clearCookie("connect.sid");
+      res.json({ message: "Logged out successfully" });
+    });
   });
 });
 
@@ -657,6 +660,9 @@ app.delete("/api/readings/:id", requireAuth, (req, res) => {
     },
   );
 });
+
+// Serve static files from Vite build
+app.use(express.static(path.join(__dirname, "client/dist")));
 
 // Serve frontend for all other routes (SPA routing)
 app.get("*", (req, res) => {
