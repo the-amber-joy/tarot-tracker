@@ -110,10 +110,6 @@
     };
     
     onCardsUpdate(newCards);
-    
-    // Open card modal for this position
-    // TODO: We'll implement the modal in Phase 7
-    console.log('Would open card modal for position', nextIndex);
   }
   
   function handleCardClick(index: number) {
@@ -151,23 +147,18 @@
   function handleModalSave(cardData: any) {
     if (modalCardIndex === null) return;
     
-    if (cardData === null) {
-      // Remove card
-      deleteCard(modalCardIndex);
-    } else {
-      // Save or update card
-      const newCards = { ...spreadCards };
-      const existingCard = newCards[modalCardIndex];
-      
-      newCards[modalCardIndex] = {
-        ...existingCard,
-        card_name: cardData.card_name,
-        interpretation: cardData.interpretation,
-        position_label: cardData.position_label
-      };
-      
-      onCardsUpdate(newCards);
-    }
+    // Save or update card
+    const newCards = { ...spreadCards };
+    const existingCard = newCards[modalCardIndex];
+    
+    newCards[modalCardIndex] = {
+      ...existingCard,
+      card_name: cardData.card_name,
+      interpretation: cardData.interpretation,
+      position_label: cardData.position_label
+    };
+    
+    onCardsUpdate(newCards);
     
     isModalOpen = false;
     modalCardIndex = null;
@@ -194,23 +185,39 @@
   }
   
   function deleteCard(index: number) {
-    const newCards: Record<number, any> = {};
+    const card = spreadCards[index];
+    const isCustomSpread = !currentTemplate || currentTemplate.id === 'custom';
     
-    // Rebuild the cards object, skipping the deleted card and renumbering
-    let newIndex = 0;
-    Object.keys(spreadCards).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
-      const oldIndex = parseInt(key);
-      if (oldIndex !== index) {
-        // Keep this card but renumber it
-        newCards[newIndex] = {
-          ...spreadCards[oldIndex],
-          position_label: `Card ${newIndex + 1}`
-        };
-        newIndex++;
-      }
-    });
-    
-    onCardsUpdate(newCards);
+    // If card has a name, just clear it
+    if (card?.card_name && card.card_name.trim()) {
+      const newCards = { ...spreadCards };
+      newCards[index] = {
+        ...newCards[index],
+        card_name: '',
+        interpretation: ''
+      };
+      onCardsUpdate(newCards);
+    } else if (isCustomSpread) {
+      // Card is already empty and it's a custom spread - delete the position entirely
+      const newCards: Record<number, any> = {};
+      
+      // Rebuild the cards object, skipping the deleted card and renumbering
+      let newIndex = 0;
+      Object.keys(spreadCards).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
+        const oldIndex = parseInt(key);
+        if (oldIndex !== index) {
+          // Keep this card but renumber it
+          newCards[newIndex] = {
+            ...spreadCards[oldIndex],
+            position_label: `Card ${newIndex + 1}`
+          };
+          newIndex++;
+        }
+      });
+      
+      onCardsUpdate(newCards);
+    }
+    // For predefined spreads with empty cards, do nothing (X won't be shown anyway)
   }
   
   function handleDeleteKeydown(event: KeyboardEvent, index: number) {
@@ -467,7 +474,7 @@
         {#if !readonly}
           <div 
             class="delete-card-btn" 
-            title="Delete card" 
+            title="{cardData.card_name ? 'Clear card' : 'Delete position'}" 
             on:click|stopPropagation={() => deleteCard(index)}
             on:keydown={(e) => handleDeleteKeydown(e, index)}
             role="button"
@@ -502,7 +509,7 @@
         {#if !readonly}
           <div 
             class="delete-card-btn" 
-            title="Delete card" 
+            title="{cardData.card_name ? 'Clear card' : 'Delete position'}" 
             on:click|stopPropagation={() => deleteCard(index)}
             on:keydown={(e) => handleDeleteKeydown(e, index)}
             role="button"
@@ -540,10 +547,10 @@
         aria-label="{position.label} - {cardData?.card_name || 'Add card'}"
       >
         {#if cardData?.card_name}
-          {#if !readonly}
+          {#if !readonly && cardData.card_name.trim()}
             <div 
               class="delete-card-btn" 
-              title="Delete card" 
+              title="Clear card" 
               on:click|stopPropagation={() => deleteCard(index)}
               on:keydown={(e) => handleDeleteKeydown(e, index)}
               role="button"
