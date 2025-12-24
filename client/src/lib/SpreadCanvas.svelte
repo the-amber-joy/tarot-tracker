@@ -37,6 +37,13 @@
   let userPanX = 0; // User-controlled pan offset X
   let userPanY = 0; // User-controlled pan offset Y
   
+  // Drag state for panning
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragStartPanX = 0;
+  let dragStartPanY = 0;
+  
   // Modal state
   let isModalOpen = false;
   let modalCardIndex: number | null = null;
@@ -56,8 +63,22 @@
     // Update scale on window resize
     window.addEventListener('resize', updateCanvasScale);
     
+    // Add drag event listeners
+    canvasElement.addEventListener('mousedown', handleDragStart);
+    canvasElement.addEventListener('touchstart', handleDragStart, { passive: true });
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('touchmove', handleDragMove, { passive: true });
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchend', handleDragEnd);
+    
     return () => {
       window.removeEventListener('resize', updateCanvasScale);
+      canvasElement.removeEventListener('mousedown', handleDragStart);
+      canvasElement.removeEventListener('touchstart', handleDragStart);
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('touchmove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchend', handleDragEnd);
     };
   });
   
@@ -87,7 +108,7 @@
         // Calculate scale to fit with margin (more zoom on larger screens)
         const scaleX = currentWidth / spreadWidth;
         const scaleY = currentHeight / spreadHeight;
-        const marginMultiplier = currentWidth < 600 ? 0.85 : 1.5; // Less margin on desktop
+        const marginMultiplier = currentWidth < 600 ? 0.95 : 1.5; // Less margin on desktop
         displayScale = Math.min(scaleX, scaleY, 1) * marginMultiplier;
         
         // Calculate where the scaled bounding box should be positioned to center it
@@ -141,6 +162,59 @@
   
   function panRight() {
     userPanX -= 50;
+  }
+  
+  function handleDragStart(e: MouseEvent | TouchEvent) {
+    // Only enable dragging for predefined spreads
+    if (!currentTemplate || currentTemplate.id === 'custom') return;
+    
+    // Don't start drag if clicking on a card or control button
+    const target = e.target as HTMLElement;
+    if (target.closest('.card-position') || target.closest('.zoom-controls') || target.closest('.pan-controls')) {
+      return;
+    }
+    
+    isDragging = true;
+    dragStartPanX = userPanX;
+    dragStartPanY = userPanY;
+    
+    if (e instanceof MouseEvent) {
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      canvasElement.style.cursor = 'grabbing';
+    } else if (e instanceof TouchEvent && e.touches.length === 1) {
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+    }
+  }
+  
+  function handleDragMove(e: MouseEvent | TouchEvent) {
+    if (!isDragging) return;
+    
+    let clientX: number, clientY: number;
+    
+    if (e instanceof MouseEvent) {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else if (e instanceof TouchEvent && e.touches.length === 1) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      return;
+    }
+    
+    const dx = clientX - dragStartX;
+    const dy = clientY - dragStartY;
+    
+    userPanX = dragStartPanX + dx;
+    userPanY = dragStartPanY + dy;
+  }
+  
+  function handleDragEnd() {
+    if (isDragging) {
+      isDragging = false;
+      canvasElement.style.cursor = '';
+    }
   }
   
   // Helper to scale positions from stored values

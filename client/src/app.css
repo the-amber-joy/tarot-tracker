@@ -497,6 +497,15 @@ tbody tr:hover {
   overflow: hidden;
 }
 
+/* Cursor for draggable predefined spreads */
+.spread-canvas:not(.custom-spread) {
+  cursor: grab;
+}
+
+.spread-canvas:not(.custom-spread):active {
+  cursor: grabbing;
+}
+
 .canvas-inner {
   position: relative;
   width: 100%;
