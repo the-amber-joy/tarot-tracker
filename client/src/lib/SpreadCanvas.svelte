@@ -160,9 +160,6 @@
   }
   
   function handleDragStart(e: MouseEvent | TouchEvent) {
-    // Only enable dragging for predefined spreads
-    if (!currentTemplate || currentTemplate.id === 'custom') return;
-    
     // Don't start drag if clicking on a card or control button
     const target = e.target as HTMLElement;
     if (target.closest('.card-position') || target.closest('.zoom-controls')) {
@@ -714,7 +711,7 @@
     class="canvas-inner"
     on:click={handleCanvasClick}
     on:keydown={handleCanvasKeydown}
-    style={currentTemplate && currentTemplate.id !== 'custom' ? `transform: translate(${translateX + userPanX}px, ${translateY + userPanY}px) scale(${displayScale * userZoom})` : ''}
+    style={currentTemplate ? `transform: translate(${translateX + userPanX}px, ${translateY + userPanY}px) scale(${displayScale * userZoom})` : ''}
   >
   {#if !currentTemplate}
     <!-- No template selected - empty canvas waiting for clicks -->
@@ -854,7 +851,7 @@
   {/if}
   </div>
   
-  {#if currentTemplate && currentTemplate.id !== 'custom'}
+  {#if currentTemplate}
     <div class="zoom-controls">
       <button type="button" class="zoom-btn" on:click={zoomOut} title="Zoom out" aria-label="Zoom out">−</button>
       <button type="button" class="zoom-btn" on:click={centerView} title="Reset zoom" aria-label="Reset zoom">⊡</button>
