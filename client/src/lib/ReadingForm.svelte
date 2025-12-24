@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import DeckModal from './DeckModal.svelte';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let readingId: number | null = null;
@@ -32,7 +31,6 @@
   let spreadName = '';
   let notes = '';
   let spreadCards: Record<number, any> = {};
-  let isDeckModalOpen = false;
   
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -141,19 +139,6 @@
     previousSpreadTemplate = event.detail;
   }
   
-  function openDeckModal() {
-    isDeckModalOpen = true;
-  }
-  
-  function closeDeckModal() {
-    isDeckModalOpen = false;
-  }
-  
-  function handleDeckAdded() {
-    // Reload decks when a new one is added
-    loadDecks();
-  }
-  
   async function handleSubmit(e: Event) {
     e.preventDefault();
     
@@ -243,15 +228,12 @@
       
       <div class="form-group">
         <label for="deckName">Deck Used</label>
-        <div class="input-with-button">
-          <select id="deckName" bind:value={deckName}>
-            <option value="">No deck specified</option>
-            {#each decks as deck}
-              <option value={deck.name}>{deck.name}</option>
-            {/each}
-          </select>
-          <button type="button" class="btn btn-primary" on:click={openDeckModal}>Manage Decks</button>
-        </div>
+        <select id="deckName" bind:value={deckName}>
+          <option value="">No deck specified</option>
+          {#each decks as deck}
+            <option value={deck.name}>{deck.name}</option>
+          {/each}
+        </select>
       </div>
       
       <div class="form-group">
@@ -304,8 +286,3 @@
   </form>
 </div>
 
-<DeckModal 
-  isOpen={isDeckModalOpen}
-  onClose={closeDeckModal}
-  onDeckAdded={handleDeckAdded}
-/>

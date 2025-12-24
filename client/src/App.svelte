@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import Header from './lib/Header.svelte';
   import ReadingDetail from './lib/ReadingDetail.svelte';
   import ReadingForm from './lib/ReadingForm.svelte';
   
@@ -97,18 +98,13 @@
 </script>
 
 <div class="container">
-  <header>
-    <h1>🔮 Tarot Tracker</h1>
-  </header>
+  <Header onNewReading={() => showFormView()} />
 
   <!-- Summary View -->
   {#if currentView === 'summary'}
     <div class="view">
       <div class="view-header">
         <h2>Past Readings</h2>
-        <button class="btn btn-primary" on:click={() => showFormView()}>
-          + New Reading
-        </button>
       </div>
       
       <table class="readings-table">
