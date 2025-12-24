@@ -81,18 +81,45 @@
     }
   }
   
-  // Reload decks when modal opens
+  // Reload decks when modal opens and focus first input
   $: if (isOpen) {
     loadDecks();
+    setTimeout(() => {
+      const input = modalElement?.querySelector('#newDeckName') as HTMLInputElement;
+      input?.focus();
+    }, 50);
+  }
+  
+  function handleModalKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+    
+    // Focus trap
+    if (event.key === 'Tab' && modalElement) {
+      const focusableElements = modalElement.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement?.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement?.focus();
+      }
+    }
   }
 </script>
 
 {#if isOpen}
-  <div class="modal" bind:this={modalElement}>
+  <div class="modal" bind:this={modalElement} on:keydown={handleModalKeydown} role="dialog" aria-modal="true" aria-labelledby="deck-modal-title" tabindex="-1">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Manage Decks</h2>
-        <button class="btn-close" on:click={onClose}>&times;</button>
+        <h2 id="deck-modal-title">Manage Decks</h2>
+        <button class="btn-close" on:click={onClose} aria-label="Close">&times;</button>
       </div>
       
       <div class="modal-body">

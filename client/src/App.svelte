@@ -148,7 +148,7 @@
             <th style="text-align: center;">Incomplete</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody aria-live="polite">
           {#if readings.length === 0}
             <tr>
               <td colspan="4" class="empty-message">

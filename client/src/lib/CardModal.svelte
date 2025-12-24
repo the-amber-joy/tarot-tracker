@@ -91,21 +91,44 @@
     cardInterpretation = '';
   }
   
-  // Focus on card name input when modal opens
+  // Focus on card name input when modal opens and trap focus
   $: if (isOpen && modalElement) {
     setTimeout(() => {
       const input = modalElement.querySelector('#cardName') as HTMLInputElement;
       input?.focus();
     }, 50);
   }
+  
+  function handleModalKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      handleCancel();
+    }
+    
+    // Focus trap
+    if (event.key === 'Tab' && modalElement) {
+      const focusableElements = modalElement.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement?.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement?.focus();
+      }
+    }
+  }
 </script>
 
 {#if isOpen}
-  <div class="modal" bind:this={modalElement}>
+  <div class="modal" bind:this={modalElement} on:keydown={handleModalKeydown} role="dialog" aria-modal="true" aria-labelledby="card-modal-title" tabindex="-1">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>{readonly ? 'View Card' : existingCard ? 'Edit Card' : 'Add Card'}</h2>
-        <button class="btn-close" on:click={handleCancel}>&times;</button>
+        <h2 id="card-modal-title">{readonly ? 'View Card' : existingCard ? 'Edit Card' : 'Add Card'}</h2>
+        <button class="btn-close" on:click={handleCancel} aria-label="Close">&times;</button>
       </div>
       
       <div class="modal-body">

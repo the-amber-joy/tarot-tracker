@@ -452,11 +452,14 @@
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <div 
   class="spread-canvas {currentTemplate?.id === 'custom' || !currentTemplate ? 'custom-spread' : ''} {readonly ? 'readonly' : ''}"
   bind:this={canvasElement}
   on:click={handleCanvasClick}
   on:keydown={handleCanvasKeydown}
+  role="region"
+  aria-label="{readonly ? 'Tarot spread layout' : 'Interactive tarot spread canvas'}"
 >
   {#if !currentTemplate}
     <!-- No template selected - empty canvas waiting for clicks -->
@@ -470,6 +473,7 @@
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
+        aria-label="{cardData.position_label || `Position ${index + 1}`} - {cardData.card_name || 'Add card'}"
       >
         {#if !readonly}
           <div 
@@ -479,6 +483,7 @@
             on:keydown={(e) => handleDeleteKeydown(e, index)}
             role="button"
             tabindex="0"
+            aria-label="{cardData.card_name ? 'Clear card' : 'Delete position'}"
           >×</div>
         {/if}
         <div class="position-number">{index + 1}</div>
@@ -505,6 +510,7 @@
         use:draggable={index}
         use:rotatable={index}
         data-position-index={index}
+        aria-label="{cardData.position_label || `Position ${index + 1}`} - {cardData.card_name || 'Add card'}"
       >
         {#if !readonly}
           <div 
@@ -514,6 +520,7 @@
             on:keydown={(e) => handleDeleteKeydown(e, index)}
             role="button"
             tabindex="0"
+            aria-label="{cardData.card_name ? 'Clear card' : 'Delete position'}"
           >×</div>
         {/if}
         <div class="position-number">{index + 1}</div>
@@ -555,6 +562,7 @@
               on:keydown={(e) => handleDeleteKeydown(e, index)}
               role="button"
               tabindex="0"
+              aria-label="Clear card"
             >×</div>
           {/if}
           <div class="position-number">{position.order}</div>
