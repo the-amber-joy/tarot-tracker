@@ -74,7 +74,7 @@
 
 <div class="view summary-view">
   <div class="view-header">
-    <h2>Past Readings</h2>
+    <h2>My Readings</h2>
     <button class="mobile-sort-btn" on:click={toggleDateSort}>
       Date {sortAscending ? '↑' : '↓'}
     </button>

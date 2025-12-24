@@ -21,6 +21,7 @@
   let modalElement: HTMLDivElement;
   let showDropdown = false;
   let searchInput = '';
+  let highlightedIndex = -1;
   
   onMount(async () => {
     await loadTarotCards();
@@ -105,13 +106,27 @@
   
   function handleSearchInput() {
     showDropdown = searchInput.length > 0;
-    cardName = searchInput; // Update cardName as user types
+    cardName = ''; // Don't set cardName until a valid selection is made
+    highlightedIndex = -1; // Reset highlight when typing
   }
   
   function selectCard(card: TarotCard) {
     cardName = card.name;
     searchInput = card.name;
     showDropdown = false;
+    highlightedIndex = -1;
+  }
+  
+  function clearSearch() {
+    searchInput = '';
+    cardName = '';
+    showDropdown = false;
+    highlightedIndex = -1;
+    // Refocus the input
+    setTimeout(() => {
+      const input = modalElement?.querySelector('#cardName') as HTMLInputElement;
+      input?.focus();
+    }, 0);
   }
   
   function handleSearchFocus() {
@@ -120,11 +135,59 @@
     }
   }
   
-  function handleSearchBlur() {
+  function handleSearchBlur(event: FocusEvent) {
+    // Don't hide dropdown if focus moved to a dropdown item
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    if (relatedTarget && relatedTarget.classList.contains('dropdown-item')) {
+      return;
+    }
+    
     // Delay hiding dropdown to allow click events to register
     setTimeout(() => {
       showDropdown = false;
+      // If search input doesn't match a valid card, clear it
+      if (!tarotCards.some(card => card.name === searchInput)) {
+        searchInput = cardName; // Revert to last valid selection
+      }
     }, 200);
+  }
+  
+  function handleKeydown(event: KeyboardEvent) {
+    if (!showDropdown || filteredCards.length === 0) return;
+    
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        highlightedIndex = (highlightedIndex + 1) % filteredCards.length;
+        scrollToHighlighted();
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        highlightedIndex = highlightedIndex <= 0 ? filteredCards.length - 1 : highlightedIndex - 1;
+        scrollToHighlighted();
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredCards.length) {
+          selectCard(filteredCards[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        showDropdown = false;
+        highlightedIndex = -1;
+        break;
+    }
+  }
+  
+  function scrollToHighlighted() {
+    setTimeout(() => {
+      const dropdown = modalElement?.querySelector('.dropdown-list');
+      const highlighted = dropdown?.querySelector('.dropdown-item.highlighted');
+      if (dropdown && highlighted) {
+        highlighted.scrollIntoView({ block: 'nearest' });
+      }
+    }, 0);
   }
   
   // Focus on card name input when modal opens and trap focus
@@ -189,17 +252,31 @@
                 on:input={handleSearchInput}
                 on:focus={handleSearchFocus}
                 on:blur={handleSearchBlur}
+                on:keydown={handleKeydown}
                 placeholder="Start typing card name..."
                 readonly={readonly}
                 autocomplete="off"
               />
+              {#if searchInput.length > 0 && !readonly}
+                <button 
+                  type="button" 
+                  class="btn-clear-search"
+                  on:click={clearSearch}
+                  aria-label="Clear search"
+                  title="Clear"
+                >
+                  &times;
+                </button>
+              {/if}
               {#if showDropdown && filteredCards.length > 0 && !readonly}
                 <div class="dropdown-list">
-                  {#each filteredCards as card}
+                  {#each filteredCards as card, index}
                     <button 
                       type="button"
-                      class="dropdown-item"
+                      class="dropdown-item {highlightedIndex === index ? 'highlighted' : ''}"
+                      on:mousedown={(e) => e.preventDefault()}
                       on:click={() => selectCard(card)}
+                      tabindex="-1"
                     >
                       {card.name}
                     </button>
