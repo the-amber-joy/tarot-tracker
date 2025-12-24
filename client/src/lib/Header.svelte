@@ -61,7 +61,7 @@
 </script>
 
 <header class="app-header">
-  <h1 on:click={onHome} style="cursor: pointer;">🔮 Tarot Tracker</h1>
+  <h1><button on:click={onHome} class="home-button">🔮 Tarot Tracker</button></h1>
   
   <button class="hamburger" on:click={toggleMenu} aria-label="Menu" aria-expanded={isMenuOpen}>
     <span></span>
@@ -133,6 +133,15 @@
     margin: 0;
     font-size: 2rem;
     color: var(--color-text, #eee);
+  }
+
+  .home-button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
   }
   
   .hamburger {

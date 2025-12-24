@@ -11,6 +11,7 @@
   import { authStore } from './stores/authStore';
   
   let formRef: any = null;
+  let listRef: any = null;
   let currentPath = '';
   let authInitialized = false;
   
@@ -20,10 +21,11 @@
   $: isDetailView = currentPath.match(/^\/reading\/\d+$/) !== null;
   $: detailReadingId = isDetailView ? currentPath.match(/\d+/)?.[0] : null;
   
-  onMount(async () => {
+  onMount(() => {
     // Initialize auth
-    await authStore.init();
-    authInitialized = true;
+    authStore.init().then(() => {
+      authInitialized = true;
+    });
 
     // Initial path
     currentPath = window.location.pathname;
@@ -66,6 +68,13 @@
     }
   }
 
+  function handleDecksUpdated() {
+    // Reload decks in the form if it's open
+    if (formRef?.loadDecks) {
+      formRef.loadDecks();
+    }
+  }
+
 </script>
 
 {#if !authInitialized}
@@ -87,6 +96,7 @@
       onSave={handleHeaderSave}
       onCancel={handleHeaderCancel}
       onEdit={handleHeaderEdit}
+      on:decksUpdated={handleDecksUpdated}
       {isFormView}
       {isEditMode}
       {isDetailView}

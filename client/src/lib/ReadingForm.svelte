@@ -74,7 +74,7 @@
     }
   }
   
-  async function loadDecks() {
+  export async function loadDecks() {
     try {
       const response = await fetch('/api/decks');
       decks = await response.json();

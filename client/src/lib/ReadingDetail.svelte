@@ -1,9 +1,9 @@
 <script lang="ts">
   import SpreadCanvas from './SpreadCanvas.svelte';
   
-  export let params: { id: string } = { id: '' };
+  export let params: { id?: string } = { id: '' };
   
-  const readingId = parseInt(params.id);
+  const readingId = parseInt(params.id || '');
   
   type Card = {
     card_name: string;
