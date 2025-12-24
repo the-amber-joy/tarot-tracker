@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let params: { id: string } = { id: '' };
@@ -27,7 +26,7 @@
   };
   
   let reading: Reading | null = null;
-  let loading = true;
+  let readingPromise: Promise<void>;
   
   // Check if reading has incomplete cards (any card with empty card_name)
   $: isIncomplete = reading?.cards.some(card => !card.card_name || card.card_name.trim() === '') || false;
@@ -45,27 +44,18 @@
     return acc;
   }, {} as Record<number, any>) || {};
   
-  onMount(async () => {
-    await loadReading();
-  });
-  
   async function loadReading() {
-    try {
-      const response = await fetch(`/api/readings/${readingId}`);
-      reading = await response.json();
-      loading = false;
-    } catch (error) {
-      console.error('Error loading reading:', error);
-      loading = false;
-    }
+    const response = await fetch(`/api/readings/${readingId}`);
+    reading = await response.json();
   }
+  
+  readingPromise = loadReading();
 </script>
 
-{#if loading}
-  <div class="view">
-    <p>Loading...</p>
-  </div>
-{:else if reading}
+{#await readingPromise}
+  <!-- Don't render anything while loading -->
+{:then}
+  {#if reading}
   <div class="view">
     <div class="view-header">
       <h2>Reading Details</h2>
@@ -118,8 +108,13 @@
       {/each}
     </div>
   </div>
-{:else}
+  {:else}
+    <div class="view">
+      <p>Reading not found.</p>
+    </div>
+  {/if}
+{:catch error}
   <div class="view">
-    <p>Reading not found.</p>
+    <p>Error loading reading: {error.message}</p>
   </div>
-{/if}
+{/await}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing';
+  import { readingsStore } from '../stores/readingsStore';
   
   type Reading = {
     id: number;
@@ -11,36 +12,23 @@
     is_incomplete?: boolean;
   };
   
-  let readings: Reading[] = [];
   let sortAscending: boolean = false;
   
-  onMount(async () => {
-    await loadReadings();
+  $: readings = $readingsStore;
+  $: sortedReadings = [...readings].sort((a, b) => {
+    const dateA = new Date(a.date + ' ' + a.time);
+    const dateB = new Date(b.date + ' ' + b.time);
+    return sortAscending 
+      ? dateA.getTime() - dateB.getTime()
+      : dateB.getTime() - dateA.getTime();
   });
   
-  async function loadReadings() {
-    try {
-      const response = await fetch('/api/readings');
-      readings = await response.json();
-      sortReadings();
-    } catch (error) {
-      console.error('Error loading readings:', error);
-    }
-  }
+  onMount(async () => {
+    await readingsStore.load();
+  });
   
   function toggleDateSort() {
     sortAscending = !sortAscending;
-    sortReadings();
-  }
-  
-  function sortReadings() {
-    readings = readings.sort((a, b) => {
-      const dateA = new Date(a.date + ' ' + a.time);
-      const dateB = new Date(b.date + ' ' + b.time);
-      return sortAscending 
-        ? dateA.getTime() - dateB.getTime()
-        : dateB.getTime() - dateA.getTime();
-    });
   }
   
   function formatDateTime(date: string, time: string): string {
@@ -110,7 +98,7 @@
           </td>
         </tr>
       {:else}
-        {#each readings as reading}
+        {#each sortedReadings as reading}
           <tr on:click={() => handleReadingClick(reading)} on:keydown={(e) => handleRowKeydown(e, reading)} tabindex="0" style="cursor: pointer;">
             <td>{formatDateTime(reading.date, reading.time)}</td>
             <td>
@@ -128,10 +116,10 @@
   
   <!-- Card layout for mobile -->
   <div class="readings-cards" aria-live="polite">
-    {#if readings.length === 0}
+    {#if sortedReadings.length === 0}
       <p class="empty-message">No readings yet. Click "New Reading" to get started!</p>
     {:else}
-      {#each readings as reading}
+      {#each sortedReadings as reading}
         <button 
           class="reading-card"
           on:click={() => handleReadingClick(reading)} 

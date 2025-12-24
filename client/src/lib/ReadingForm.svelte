@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { navigate } from 'svelte-routing';
+  import { readingsStore } from '../stores/readingsStore';
   import SpreadCanvas from './SpreadCanvas.svelte';
   
   export let params: { id?: string } = {};
@@ -185,6 +186,7 @@
       });
       
       if (response.ok) {
+        await readingsStore.refresh();
         navigate('/');
       } else {
         const error = await response.text();
