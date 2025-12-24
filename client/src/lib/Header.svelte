@@ -2,7 +2,6 @@
   import { createEventDispatcher } from 'svelte';
   import { navigate } from 'svelte-routing';
   import { authStore } from '../stores/authStore';
-  import DeckModal from './DeckModal.svelte';
   
   export let onNewReading: () => void;
   export let onHome: () => void;
@@ -14,22 +13,7 @@
   export let isDetailView: boolean = false;
   
   const dispatch = createEventDispatcher();
-  let isDeckModalOpen = false;
   let isMenuOpen = false;
-  
-  function openDeckModal() {
-    isDeckModalOpen = true;
-    isMenuOpen = false; // Close menu when opening modal
-  }
-  
-  function closeDeckModal() {
-    isDeckModalOpen = false;
-  }
-  
-  function handleDeckAdded() {
-    // Dispatch event so other components can reload decks if needed
-    dispatch('decksUpdated');
-  }
   
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
@@ -80,9 +64,6 @@
         🔧 Admin
       </button>
     {/if}
-    <button class="btn btn-secondary manage-decks-btn" on:click={openDeckModal}>
-      Manage Decks
-    </button>
     {#if isFormView}
       <button class="btn btn-secondary form-action-btn" on:click={onCancel}>
         Cancel
@@ -97,10 +78,6 @@
       <button class="btn btn-primary form-action-btn" on:click={onEdit}>
         Edit
       </button>
-    {:else}
-      <button class="btn btn-primary" on:click={handleNewReading}>
-        + New Reading
-      </button>
     {/if}
     {#if $authStore}
       <button class="btn btn-secondary" on:click={handleLogout}>
@@ -109,12 +86,6 @@
     {/if}
   </div>
 </header>
-
-<DeckModal 
-  isOpen={isDeckModalOpen}
-  onClose={closeDeckModal}
-  onDeckAdded={handleDeckAdded}
-/>
 
 <style>
   .app-header {
