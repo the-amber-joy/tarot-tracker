@@ -145,13 +145,12 @@
             </th>
             <th>Spread Name</th>
             <th>Deck</th>
-            <th style="text-align: center;">Incomplete</th>
           </tr>
         </thead>
         <tbody aria-live="polite">
           {#if readings.length === 0}
             <tr>
-              <td colspan="4" class="empty-message">
+              <td colspan="3" class="empty-message">
                 No readings yet. Click "New Reading" to get started!
               </td>
             </tr>
@@ -159,9 +158,13 @@
             {#each readings as reading}
               <tr on:click={() => handleReadingClick(reading)} on:keydown={(e) => handleRowKeydown(e, reading)} tabindex="0" style="cursor: pointer;">
                 <td>{formatDateTime(reading.date, reading.time)}</td>
-                <td>{reading.spread_name}</td>
+                <td>
+                  {reading.spread_name}
+                  {#if reading.is_incomplete}
+                    <span class="incomplete-icon" title="Incomplete">⚠️</span>
+                  {/if}
+                </td>
                 <td>{reading.deck_name}</td>
-                <td style="text-align: center;">{reading.is_incomplete ? '⚠️' : ''}</td>
               </tr>
             {/each}
           {/if}
