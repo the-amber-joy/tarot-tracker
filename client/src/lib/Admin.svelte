@@ -1,0 +1,502 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { navigate } from "svelte-routing";
+  import { authStore } from "../stores/authStore";
+
+  type UserStats = {
+    id: number;
+    username: string;
+    display_name: string;
+    email: string;
+    created_at: string;
+    deck_count: number;
+    reading_count: number;
+  };
+
+  let users: UserStats[] = [];
+  let loading = true;
+  let error = "";
+  let resetUserId: number | null = null;
+  let newPassword = "";
+  let resetError = "";
+  let deleteUserId: number | null = null;
+  let toastMessage = "";
+  let showToast = false;
+
+  onMount(async () => {
+    if (!$authStore?.is_admin) {
+      navigate("/");
+      return;
+    }
+    await loadUsers();
+  });
+
+  async function loadUsers() {
+    try {
+      const response = await fetch("/api/admin/users");
+      if (!response.ok) {
+        throw new Error("Failed to load users");
+      }
+      users = await response.json();
+    } catch (e: any) {
+      error = e.message;
+    } finally {
+      loading = false;
+    }
+  }
+
+  function startReset(userId: number) {
+    resetUserId = userId;
+    newPassword = "";
+    resetError = "";
+  }
+
+  function cancelReset() {
+    resetUserId = null;
+    newPassword = "";
+    resetError = "";
+  }
+
+  function displayToast(message: string) {
+    toastMessage = message;
+    showToast = true;
+    setTimeout(() => {
+      showToast = false;
+    }, 3000);
+  }
+
+  async function handleResetPassword(userId: number) {
+    resetError = "";
+
+    if (newPassword.length < 6) {
+      resetError = "Password must be at least 6 characters";
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to reset password");
+      }
+
+      const user = users.find(u => u.id === userId);
+      displayToast(`Password reset successfully for ${user?.username}`);
+      cancelReset();
+    } catch (e: any) {
+      resetError = e.message;
+    }
+  }
+
+  function confirmDelete(userId: number) {
+    deleteUserId = userId;
+  }
+
+  function cancelDelete() {
+    deleteUserId = null;
+  }
+
+  async function handleDeleteUser(userId: number) {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete user");
+      }
+
+      // Remove user from list
+      users = users.filter((u) => u.id !== userId);
+      deleteUserId = null;
+    } catch (e: any) {
+      alert(`Error: ${e.message}`);
+      deleteUserId = null;
+    }
+  }
+
+  function goBack() {
+    navigate("/");
+  }
+
+  function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString();
+  }
+</script>
+
+<div class="admin-container">
+  {#if showToast}
+    <div class="toast success-toast">
+      ✓ {toastMessage}
+    </div>
+  {/if}
+
+  <div class="admin-header">
+    <button class="back-button" on:click={goBack}>← Back</button>
+    <h2>🔧 Admin Panel</h2>
+  </div>
+
+  {#if loading}
+    <div class="loading">Loading users...</div>
+  {:else if error}
+    <div class="error-message">{error}</div>
+  {:else}
+    <div class="users-table-container">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Display Name</th>
+            <th>Email</th>
+            <th>Created</th>
+            <th>Decks</th>
+            <th>Readings</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each users as user}
+            <tr>
+              <td>
+                {user.username}
+                {#if user.id === $authStore?.id}
+                  <span class="badge">You</span>
+                {/if}
+              </td>
+              <td>{user.display_name || "-"}</td>
+              <td>{user.email || "-"}</td>
+              <td>{formatDate(user.created_at)}</td>
+              <td class="stat-cell">{user.deck_count}</td>
+              <td class="stat-cell">{user.reading_count}</td>
+              <td>
+                {#if user.id === $authStore?.id}
+                  <span class="muted">-</span>
+                {:else if deleteUserId === user.id}
+                  <div class="delete-confirm">
+                    <p class="warning-text">
+                      ⚠️ Delete {user.username}?<br />
+                      This will permanently delete:<br />
+                      • {user.deck_count} deck(s)<br />
+                      • {user.reading_count} reading(s)
+                    </p>
+                    <button
+                      class="btn-small btn-danger"
+                      on:click={() => handleDeleteUser(user.id)}
+                    >
+                      Yes, Delete
+                    </button>
+                    <button class="btn-small btn-secondary" on:click={cancelDelete}>
+                      Cancel
+                    </button>
+                  </div>
+                {:else if resetUserId === user.id}
+                  <form class="reset-form" on:submit|preventDefault={() => handleResetPassword(user.id)}>
+                    <input
+                      type="password"
+                      bind:value={newPassword}
+                      placeholder="New password (6+ chars)"
+                      class="reset-input"
+                      autofocus
+                    />
+                    <button
+                      type="submit"
+                      class="btn-small btn-primary"
+                    >
+                      Save
+                    </button>
+                    <button type="button" class="btn-small btn-secondary" on:click={cancelReset}>
+                      Cancel
+                    </button>
+                    {#if resetError}
+                      <div class="inline-error">{resetError}</div>
+                    {/if}
+                  </form>
+                {:else}
+                  <div class="action-buttons">
+                    <button
+                      class="btn-small btn-warning"
+                      on:click={() => startReset(user.id)}
+                    >
+                      Reset Password
+                    </button>
+                    <button
+                      class="btn-small btn-danger"
+                      on:click={() => confirmDelete(user.id)}
+                    >
+                      Delete User
+                    </button>
+                  </div>
+                {/if}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+
+      {#if users.length === 0}
+        <div class="empty-state">No users found</div>
+      {/if}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .admin-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .success-toast {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .admin-header {
+    margin-bottom: 2rem;
+  }
+
+  .back-button {
+    background: none;
+    border: none;
+    color: #4a90e2;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+
+  .back-button:hover {
+    text-decoration: underline;
+  }
+
+  .admin-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    color: #333;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+    font-size: 1.1rem;
+  }
+
+  .error-message {
+    background-color: #fee;
+    color: #c33;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+
+  .users-table-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .users-table thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  .users-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .users-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+  }
+
+  .users-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+
+  .stat-cell {
+    text-align: center;
+    font-weight: 600;
+    color: #4a90e2;
+  }
+
+  .badge {
+    display: inline-block;
+    background: #4a90e2;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+  }
+
+  .muted {
+    color: #999;
+  }
+
+  .reset-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .reset-input {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    min-width: 150px;
+  }
+
+  .btn-small {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #4a90e2;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #357abd;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+
+  .btn-warning {
+    background: #ffc107;
+    color: #000;
+  }
+
+  .btn-warning:hover {
+    background: #e0a800;
+  }
+
+  .btn-danger {
+    background: #dc3545;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #c82333;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .delete-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+  }
+
+  .warning-text {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #856404;
+  }
+
+  .inline-error {
+    color: #c33;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+  }
+
+  @media (max-width: 768px) {
+    .admin-container {
+      padding: 1rem;
+    }
+
+    .users-table {
+      font-size: 0.85rem;
+    }
+
+    .users-table th,
+    .users-table td {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .reset-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .reset-input {
+      min-width: unset;
+    }
+  }
+</style>

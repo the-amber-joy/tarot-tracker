@@ -20,12 +20,26 @@ const db = new sqlite3.Database(path.join(dataDir, "tarot.db"), (err) => {
 // Initialize database schema
 function initDatabase() {
   db.serialize(() => {
+    // Create users table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        email TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create decks table
     db.run(`
       CREATE TABLE IF NOT EXISTS decks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        name TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(name, user_id)
       )
     `);
 
@@ -33,13 +47,15 @@ function initDatabase() {
     db.run(`
       CREATE TABLE IF NOT EXISTS readings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         time TEXT NOT NULL,
         spread_name TEXT NOT NULL,
         spread_template_id TEXT,
         deck_name TEXT NOT NULL,
         notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 

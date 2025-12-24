@@ -1,5 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { navigate } from 'svelte-routing';
+  import { authStore } from '../stores/authStore';
   import DeckModal from './DeckModal.svelte';
   
   export let onNewReading: () => void;
@@ -37,6 +39,25 @@
     isMenuOpen = false; // Close menu when opening new reading
     onNewReading();
   }
+
+  async function handleLogout() {
+    try {
+      await authStore.logout();
+      isMenuOpen = false;
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  }
+
+  function handleProfileClick() {
+    isMenuOpen = false;
+    navigate('/profile');
+  }
+
+  function handleAdminClick() {
+    isMenuOpen = false;
+    navigate('/admin');
+  }
 </script>
 
 <header class="app-header">
@@ -49,6 +70,16 @@
   </button>
   
   <div class="header-actions" class:menu-open={isMenuOpen}>
+    {#if $authStore}
+      <button class="user-info" on:click={handleProfileClick} title="View Profile">
+        👤 {$authStore.display_name || $authStore.username}
+      </button>
+    {/if}
+    {#if $authStore?.is_admin}
+      <button class="btn btn-warning" on:click={handleAdminClick}>
+        🔧 Admin
+      </button>
+    {/if}
     <button class="btn btn-secondary manage-decks-btn" on:click={openDeckModal}>
       Manage Decks
     </button>
@@ -69,6 +100,11 @@
     {:else}
       <button class="btn btn-primary" on:click={handleNewReading}>
         + New Reading
+      </button>
+    {/if}
+    {#if $authStore}
+      <button class="btn btn-secondary" on:click={handleLogout}>
+        Logout
       </button>
     {/if}
   </div>
@@ -119,6 +155,22 @@
   .header-actions {
     display: flex;
     gap: 1rem;
+    align-items: center;
+  }
+
+  .user-info {
+    color: var(--color-text, #eee);
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  .user-info:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
   
   /* Container query: show hamburger when header is narrow */

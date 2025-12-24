@@ -20,6 +20,6 @@
   },
   "dependencies": {
     "interactjs": "^1.10.27",
-    "svelte-spa-router": "^4.0.1"
+    "svelte-routing": "^2.13.0"
   }
 }

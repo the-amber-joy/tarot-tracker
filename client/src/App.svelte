@@ -1,13 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Route, Router, navigate } from 'svelte-routing';
+  import Admin from './lib/Admin.svelte';
   import Header from './lib/Header.svelte';
+  import Login from './lib/Login.svelte';
+  import Profile from './lib/Profile.svelte';
   import ReadingDetail from './lib/ReadingDetail.svelte';
   import ReadingForm from './lib/ReadingForm.svelte';
   import ReadingsList from './lib/ReadingsList.svelte';
+  import { authStore } from './stores/authStore';
   
   let formRef: any = null;
   let currentPath = '';
+  let authInitialized = false;
   
   // Track if we're in form view for header
   $: isFormView = currentPath === '/reading/new' || currentPath.includes('/edit');
@@ -15,7 +20,11 @@
   $: isDetailView = currentPath.match(/^\/reading\/\d+$/) !== null;
   $: detailReadingId = isDetailView ? currentPath.match(/\d+/)?.[0] : null;
   
-  onMount(() => {
+  onMount(async () => {
+    // Initialize auth
+    await authStore.init();
+    authInitialized = true;
+
     // Initial path
     currentPath = window.location.pathname;
     
@@ -59,6 +68,11 @@
 
 </script>
 
+{#if !authInitialized}
+  <div class="loading">Loading...</div>
+{:else if !$authStore}
+  <Login />
+{:else}
 <Router>
   <div class="container">
     <Header 
@@ -81,6 +95,12 @@
     <Route path="/">
       <ReadingsList />
     </Route>
+    <Route path="/profile">
+      <Profile />
+    </Route>
+    <Route path="/admin">
+      <Admin />
+    </Route>
     <Route path="/reading/new">
       <ReadingForm bind:this={formRef} />
     </Route>
@@ -92,3 +112,15 @@
     </Route>
   </div>
 </Router>
+{/if}
+
+<style>
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: #666;
+  }
+</style>
