@@ -8,5 +8,4 @@ client/dist
 *.db-wal
 data/
 .env
-.git
 deploy.txt
