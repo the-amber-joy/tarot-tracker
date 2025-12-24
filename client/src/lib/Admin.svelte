@@ -14,6 +14,9 @@
     storage_bytes: number;
   };
 
+  type SortField = 'username' | 'display_name' | 'created_at' | 'deck_count' | 'reading_count' | 'storage_bytes';
+  type SortDirection = 'asc' | 'desc';
+
   let users: UserStats[] = [];
   let loading = true;
   let error = "";
@@ -23,6 +26,20 @@
   let deleteUserId: number | null = null;
   let toastMessage = "";
   let showToast = false;
+  let sortField: SortField = 'username';
+  let sortDirection: SortDirection = 'asc';
+
+  $: adminUser = users.find(u => u.id === $authStore?.id);
+  $: otherUsers = users.filter(u => u.id !== $authStore?.id).sort((a, b) => {
+    const aVal = a[sortField];
+    const bVal = b[sortField];
+    const multiplier = sortDirection === 'asc' ? 1 : -1;
+    
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return aVal.localeCompare(bVal) * multiplier;
+    }
+    return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * multiplier;
+  });
 
   onMount(async () => {
     if (!$authStore?.is_admin) {
@@ -141,6 +158,20 @@
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortField = field;
+      sortDirection = 'asc';
+    }
+  }
+
+  function getSortIcon(field: SortField): string {
+    if (sortField !== field) return '⇅';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  }
 </script>
 
 <div class="admin-container">
@@ -160,36 +191,60 @@
   {:else if error}
     <div class="error-message">{error}</div>
   {:else}
-    <div class="users-table-container">
-      <table class="users-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Display Name</th>
-            <th>Email</th>
-            <th>Created</th>
-            <th>Decks</th>
-            <th>Readings</th>
-            <th>Storage</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each users as user}
-            <tr>
-              <td>
-                {user.username}
-                {#if user.id === $authStore?.id}
-                  <span class="badge">You</span>
-                {/if}
-              </td>
-              <td>{user.display_name || "-"}</td>
-              <td>{user.email || "-"}</td>
-              <td>{formatDate(user.created_at)}</td>
-              <td class="stat-cell">{user.deck_count}</td>
-              <td class="stat-cell">{user.reading_count}</td>
-              <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
-              <td>
+    {#if adminUser}
+      <div class="admin-user-section">
+        <h3>Your Account</h3>
+        <div class="admin-user-card">
+          <div class="admin-user-info">
+            <div><strong>Username:</strong> {adminUser.username}</div>
+            <div><strong>Display Name:</strong> {adminUser.display_name || "-"}</div>
+            <div><strong>Created:</strong> {formatDate(adminUser.created_at)}</div>
+            <div><strong>Decks:</strong> {adminUser.deck_count}</div>
+            <div><strong>Readings:</strong> {adminUser.reading_count}</div>
+            <div><strong>Storage:</strong> {formatBytes(adminUser.storage_bytes)}</div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    {#if otherUsers.length > 0}
+      <div class="other-users-section">
+        <h3>Other Users</h3>
+        <div class="users-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th class="sortable" on:click={() => handleSort('username')}>
+                  Username {getSortIcon('username')}
+                </th>
+                <th class="sortable" on:click={() => handleSort('display_name')}>
+                  Display Name {getSortIcon('display_name')}
+                </th>
+                <th class="sortable" on:click={() => handleSort('created_at')}>
+                  Created {getSortIcon('created_at')}
+                </th>
+                <th class="sortable" on:click={() => handleSort('deck_count')}>
+                  Decks {getSortIcon('deck_count')}
+                </th>
+                <th class="sortable" on:click={() => handleSort('reading_count')}>
+                  Readings {getSortIcon('reading_count')}
+                </th>
+                <th class="sortable" on:click={() => handleSort('storage_bytes')}>
+                  Storage {getSortIcon('storage_bytes')}
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each otherUsers as user}
+                <tr>
+                  <td>{user.username}</td>
+                  <td>{user.display_name || "-"}</td>
+                  <td>{formatDate(user.created_at)}</td>
+                  <td class="stat-cell">{user.deck_count}</td>
+                  <td class="stat-cell">{user.reading_count}</td>
+                  <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
+                  <td>
                 {#if user.id === $authStore?.id}
                   <span class="muted">-</span>
                 {:else if deleteUserId === user.id}
@@ -253,13 +308,12 @@
           {/each}
         </tbody>
       </table>
-
-      {#if users.length === 0}
-        <div class="empty-state">No users found</div>
-      {/if}
     </div>
+  </div>
+  {:else}
+    <div class="empty-state">No other users found</div>
   {/if}
-</div>
+{/if}</div>
 
 <style>
   .admin-container {
@@ -323,6 +377,39 @@
     color: #333;
   }
 
+  .admin-user-section {
+    margin-bottom: 3rem;
+  }
+
+  .admin-user-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: #333;
+  }
+
+  .admin-user-card {
+    background: #f0f7ff;
+    border: 2px solid #4a90e2;
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+
+  .admin-user-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .admin-user-info div {
+    color: #333;
+  }
+
+  .other-users-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: #333;
+  }
+
   .loading {
     text-align: center;
     padding: 3rem;
@@ -365,6 +452,15 @@
     letter-spacing: 0.5px;
   }
 
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .sortable:hover {
+    background-color: #e9ecef;
+  }
+
   .users-table td {
     padding: 1rem;
     border-bottom: 1px solid #dee2e6;
@@ -376,7 +472,6 @@
   }
 
   .stat-cell {
-    text-align: center;
     font-weight: 600;
     color: #4a90e2;
   }

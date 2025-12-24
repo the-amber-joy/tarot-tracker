@@ -77,7 +77,7 @@ passport.deserializeUser((id, done) => {
 });
 
 // Helper function to create a new user
-async function createUser(username, password, email = null) {
+async function createUser(username, password) {
   return new Promise((resolve, reject) => {
     bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
       if (err) {
@@ -93,8 +93,8 @@ async function createUser(username, password, email = null) {
       }
 
       db.run(
-        "INSERT INTO users (username, password_hash, email, display_name, is_admin) VALUES (?, ?, ?, ?, ?)",
-        [username, hash, email, username, isAdmin],
+        "INSERT INTO users (username, password_hash, display_name, is_admin) VALUES (?, ?, ?, ?)",
+        [username, hash, username, isAdmin],
         function (err) {
           if (err) {
             if (err.message.includes("UNIQUE")) {
@@ -106,7 +106,6 @@ async function createUser(username, password, email = null) {
             id: this.lastID,
             username,
             display_name: username,
-            email,
             is_admin: isAdmin,
           });
         },

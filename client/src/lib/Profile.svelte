@@ -3,7 +3,6 @@
   import { authStore } from "../stores/authStore";
 
   let display_name = $authStore?.display_name || $authStore?.username || "";
-  let email = $authStore?.email || "";
   let currentPassword = "";
   let newPassword = "";
   let confirmPassword = "";
@@ -22,7 +21,7 @@
     profileLoading = true;
 
     try {
-      await authStore.updateProfile(display_name, email || undefined);
+      await authStore.updateProfile(display_name);
       profileSuccess = "Profile updated successfully!";
       setTimeout(() => profileSuccess = "", 3000);
     } catch (e: any) {
@@ -102,17 +101,6 @@
             disabled={profileLoading}
           />
           <small>This is how your name will appear in the app</small>
-        </div>
-
-        <div class="form-group">
-          <label for="email">Email (optional)</label>
-          <input
-            id="email"
-            type="email"
-            bind:value={email}
-            placeholder="Enter email"
-            disabled={profileLoading}
-          />
         </div>
 
         {#if profileError}

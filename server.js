@@ -48,7 +48,7 @@ app.use(express.static(path.join(__dirname, "client/dist")));
 
 // Authentication routes
 app.post("/api/auth/register", async (req, res) => {
-  const { username, password, email } = req.body;
+  const { username, password } = req.body;
 
   if (!username || !password) {
     return res
@@ -63,7 +63,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 
   try {
-    const user = await createUser(username, password, email);
+    const user = await createUser(username, password);
     // Auto login after registration
     req.login(user, (err) => {
       if (err) {
@@ -73,7 +73,6 @@ app.post("/api/auth/register", async (req, res) => {
         id: user.id,
         username: user.username,
         display_name: user.display_name,
-        email: user.email,
         is_admin: user.is_admin || false,
       });
     });
@@ -98,7 +97,6 @@ app.post("/api/auth/login", (req, res, next) => {
         id: user.id,
         username: user.username,
         display_name: user.display_name,
-        email: user.email,
         is_admin: user.is_admin || false,
       });
     });
@@ -120,7 +118,6 @@ app.get("/api/auth/me", (req, res) => {
       id: req.user.id,
       username: req.user.username,
       display_name: req.user.display_name,
-      email: req.user.email,
       is_admin: req.user.is_admin || false,
     });
   } else {
@@ -130,12 +127,12 @@ app.get("/api/auth/me", (req, res) => {
 
 // Update user profile
 app.put("/api/auth/profile", requireAuth, async (req, res) => {
-  const { display_name, email } = req.body;
+  const { display_name } = req.body;
 
   try {
     db.run(
-      "UPDATE users SET display_name = ?, email = ? WHERE id = ?",
-      [display_name, email, req.user.id],
+      "UPDATE users SET display_name = ? WHERE id = ?",
+      [display_name, req.user.id],
       function (err) {
         if (err) {
           return res.status(500).json({ error: err.message });
@@ -143,7 +140,7 @@ app.put("/api/auth/profile", requireAuth, async (req, res) => {
 
         // Return updated user data
         db.get(
-          "SELECT id, username, display_name, email FROM users WHERE id = ?",
+          "SELECT id, username, display_name FROM users WHERE id = ?",
           [req.user.id],
           (err, user) => {
             if (err) {
@@ -229,14 +226,12 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
       u.id,
       u.username,
       u.display_name,
-      u.email,
       u.created_at,
       (SELECT COUNT(*) FROM decks WHERE user_id = u.id) as deck_count,
       (SELECT COUNT(*) FROM readings WHERE user_id = u.id) as reading_count,
       (
         LENGTH(COALESCE(u.username, '')) +
         LENGTH(COALESCE(u.display_name, '')) +
-        LENGTH(COALESCE(u.email, '')) +
         LENGTH(COALESCE(u.password_hash, '')) +
         COALESCE((
           SELECT SUM(LENGTH(COALESCE(name, '')))

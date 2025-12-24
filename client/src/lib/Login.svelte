@@ -3,7 +3,6 @@
 
   let username = "";
   let password = "";
-  let email = "";
   let error = "";
   let loading = false;
   let isRegisterMode = false;
@@ -19,7 +18,7 @@
           loading = false;
           return;
         }
-        await authStore.register(username, password, email || undefined);
+        await authStore.register(username, password);
       } else {
         await authStore.login(username, password);
       }
@@ -53,19 +52,6 @@
           disabled={loading}
         />
       </div>
-
-      {#if isRegisterMode}
-        <div class="form-group">
-          <label for="email">Email (optional)</label>
-          <input
-            id="email"
-            type="email"
-            bind:value={email}
-            placeholder="Enter email"
-            disabled={loading}
-          />
-        </div>
-      {/if}
 
       <div class="form-group">
         <label for="password">Password</label>

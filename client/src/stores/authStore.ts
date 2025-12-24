@@ -4,7 +4,6 @@ type User = {
   id: number;
   username: string;
   display_name?: string;
-  email?: string;
   is_admin?: boolean;
 } | null;
 
@@ -56,12 +55,12 @@ function createAuthStore() {
         throw error;
       }
     },
-    async register(username: string, password: string, email?: string) {
+    async register(username: string, password: string) {
       try {
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password, email }),
+          body: JSON.stringify({ username, password }),
         });
 
         if (!response.ok) {
@@ -81,11 +80,11 @@ function createAuthStore() {
         throw error;
       }
     },
-    async updateProfile(display_name: string, email?: string) {
+    async updateProfile(display_name: string) {
       const response = await fetch("/api/auth/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name, email }),
+        body: JSON.stringify({ display_name }),
       });
 
       if (!response.ok) {
