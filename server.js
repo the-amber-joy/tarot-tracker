@@ -763,6 +763,11 @@ app.delete("/api/readings/:id", requireAuth, (req, res) => {
   );
 });
 
+// Serve deployment info
+app.get("/deploy.txt", (req, res) => {
+  res.sendFile(path.join(__dirname, "deploy.txt"));
+});
+
 // Serve static files from Vite build
 app.use(express.static(path.join(__dirname, "client/dist")));
 

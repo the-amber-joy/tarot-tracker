@@ -21,6 +21,9 @@ data/
 *.db-shm
 *.db-wal
 
+# Deployment info (generated at runtime)
+deploy.txt
+
 # Environment variables
 .env
 
