@@ -73,7 +73,7 @@
 {:else if !$authStore}
   <Login />
 {:else}
-<Router url="">
+<Router>
   <div class="container">
     <Header 
       onHome={() => {
@@ -92,7 +92,6 @@
       {isDetailView}
     />
 
-    {#key currentPath}
     <Route path="/">
       <ReadingsList />
     </Route>
@@ -111,7 +110,6 @@
     <Route path="/reading/:id/edit" let:params>
       <ReadingForm {params} bind:this={formRef} />
     </Route>
-    {/key}
   </div>
 </Router>
 {/if}
