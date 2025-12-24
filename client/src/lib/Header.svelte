@@ -3,6 +3,9 @@
   import DeckModal from './DeckModal.svelte';
   
   export let onNewReading: () => void;
+  export let onSave: (() => void) | null = null;
+  export let onCancel: (() => void) | null = null;
+  export let isFormView: boolean = false;
   
   const dispatch = createEventDispatcher();
   let isDeckModalOpen = false;
@@ -28,9 +31,18 @@
     <button class="btn btn-secondary" on:click={openDeckModal}>
       Manage Decks
     </button>
-    <button class="btn btn-primary" on:click={onNewReading}>
-      + New Reading
-    </button>
+    {#if isFormView}
+      <button class="btn btn-secondary" on:click={onCancel}>
+        Cancel
+      </button>
+      <button class="btn btn-primary" on:click={onSave}>
+        Save Reading
+      </button>
+    {:else}
+      <button class="btn btn-primary" on:click={onNewReading}>
+        + New Reading
+      </button>
+    {/if}
   </div>
 </header>
 

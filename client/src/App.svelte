@@ -18,6 +18,7 @@
   
   let currentView: View = 'summary';
   let readings: Reading[] = [];
+  let formRef: any = null;
   let selectedReadingId: number | null = null;
   let editingReadingId: number | null = null;
   let sortAscending: boolean = false;
@@ -95,10 +96,25 @@
       showDetailView(reading.id);
     }
   }
+  
+  function handleHeaderSave() {
+    if (formRef) {
+      formRef.triggerSubmit();
+    }
+  }
+  
+  function handleHeaderCancel() {
+    showSummaryView();
+  }
 </script>
 
 <div class="container">
-  <Header onNewReading={() => showFormView()} />
+  <Header 
+    onNewReading={() => showFormView()}
+    onSave={handleHeaderSave}
+    onCancel={handleHeaderCancel}
+    isFormView={currentView === 'form'}
+  />
 
   <!-- Summary View -->
   {#if currentView === 'summary'}
@@ -143,6 +159,7 @@
   <!-- Form View -->
   {#if currentView === 'form'}
     <ReadingForm 
+      bind:this={formRef}
       readingId={editingReadingId}
       onBack={showSummaryView}
       onSaved={showSummaryView}

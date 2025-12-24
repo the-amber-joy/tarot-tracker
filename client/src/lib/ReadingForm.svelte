@@ -139,6 +139,11 @@
     previousSpreadTemplate = event.detail;
   }
   
+  // Expose method to trigger submit from parent component
+  export function triggerSubmit() {
+    handleSubmit(new Event('submit'));
+  }
+  
   async function handleSubmit(e: Event) {
     e.preventDefault();
     
@@ -195,9 +200,6 @@
 <div class="view">
   <div class="view-header">
     <h2>{isEditMode ? 'Edit Reading' : 'New Reading'}</h2>
-    <button class="btn btn-secondary" on:click={onBack}>
-      ← Back to Summary
-    </button>
   </div>
   
   <form on:submit={handleSubmit}>
@@ -280,8 +282,8 @@
     </div>
     
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">{isEditMode ? 'Update Reading' : 'Save Reading'}</button>
       <button type="button" class="btn btn-secondary" on:click={onBack}>Cancel</button>
+      <button type="submit" class="btn btn-primary">{isEditMode ? 'Update Reading' : 'Save Reading'}</button>
     </div>
   </form>
 </div>
