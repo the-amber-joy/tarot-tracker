@@ -130,13 +130,16 @@
 
   .user-info {
     color: var(--color-text, #eee);
-    font-size: 0.9rem;
+    font-size: 1rem;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .user-info:hover {

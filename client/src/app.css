@@ -103,6 +103,17 @@ header h1 {
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 
+.btn-warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background: #e0a800;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
 .btn-small {
   padding: 5px 12px;
   font-size: 0.85rem;
@@ -111,6 +122,8 @@ header h1 {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .btn-small:hover {
@@ -125,6 +138,8 @@ header h1 {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .btn-remove:hover {

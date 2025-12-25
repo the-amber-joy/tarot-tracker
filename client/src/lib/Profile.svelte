@@ -878,15 +878,15 @@
   }
 
   .btn-toggle-form {
-    padding: 10px 16px;
+    padding: 10px 20px;
     background-color: #f8f9fa;
     color: #495057;
     border: 1px solid #dee2e6;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -906,12 +906,12 @@
     background-color: #28a745;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
   }
 
   .btn-add:hover {
@@ -1053,14 +1053,14 @@
   }
 
   .btn-save {
-    padding: 0.5rem 1rem;
+    padding: 10px 20px;
     background-color: #28a745;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
   }
 
   .btn-save:hover {
@@ -1068,14 +1068,14 @@
   }
 
   .btn-cancel {
-    padding: 0.5rem 1rem;
+    padding: 10px 20px;
     background-color: #6c757d;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
   }
 
   .btn-cancel:hover {
@@ -1083,14 +1083,14 @@
   }
 
   .btn-edit {
-    padding: 0.5rem 1rem;
+    padding: 10px 20px;
     background-color: #4a90e2;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
   }
 
   .btn-edit:hover {
@@ -1098,14 +1098,14 @@
   }
 
   .btn-remove {
-    padding: 0.5rem 1rem;
+    padding: 10px 20px;
     background-color: #dc3545;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
   }
 
   .btn-remove:hover {
