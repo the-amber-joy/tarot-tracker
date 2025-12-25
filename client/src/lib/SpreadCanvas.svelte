@@ -731,6 +731,9 @@
                 {cardData.card_name ? "close_small" : "delete_forever"}
               </span>
             </div>
+            <div class="drag-handle-icon" aria-hidden="true">
+              <span class="material-symbols-outlined">drag_handle</span>
+            </div>
           {/if}
           <div class="position-number">{index + 1}</div>
           <div class="position-label">
@@ -794,6 +797,9 @@
               <span class="material-symbols-outlined">
                 {cardData.card_name ? "close_small" : "delete_forever"}
               </span>
+            </div>
+            <div class="drag-handle-icon" aria-hidden="true">
+              <span class="material-symbols-outlined">drag_handle</span>
             </div>
           {/if}
           <div class="position-number">{index + 1}</div>
