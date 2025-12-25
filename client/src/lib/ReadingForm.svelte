@@ -60,9 +60,10 @@
       spreadName = reading.spread_name;
       notes = reading.notes || '';
       
-      // Transform cards into spreadCards format
-      spreadCards = reading.cards.reduce((acc: Record<number, any>, card: any, idx: number) => {
-        acc[idx] = {
+      // Transform cards into spreadCards format using card_order as the key
+      spreadCards = reading.cards.reduce((acc: Record<number, any>, card: any) => {
+        const cardIndex = card.card_order;
+        acc[cardIndex] = {
           card_name: card.card_name,
           position_label: card.position,
           interpretation: card.interpretation,

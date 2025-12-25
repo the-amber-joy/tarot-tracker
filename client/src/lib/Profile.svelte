@@ -58,6 +58,13 @@
   let editDeckName = "";
   let editDeckNotes = "";
   let expandedDeckNotes: Set<number> = new Set();
+  let showAddDeckForm = false;
+
+  let toastMessage = "";
+  let showToast = false;
+
+  let showDeleteModal = false;
+  let deckToDelete: { id: number; name: string } | null = null;
 
   let readings: Reading[] = [];
 
@@ -88,6 +95,14 @@
     }
   }
 
+  function displayToast(message: string) {
+    toastMessage = message;
+    showToast = true;
+    setTimeout(() => {
+      showToast = false;
+    }, 3000);
+  }
+
   async function handleAddDeck() {
     if (!newDeckName.trim()) {
       alert("Please enter a deck name.");
@@ -107,9 +122,12 @@
       });
 
       if (response.ok) {
+        const deckName = newDeckName.trim();
         newDeckName = "";
         newDeckNotes = "";
+        showAddDeckForm = false;
         await loadDecks();
+        displayToast(`${deckName} added!`);
       } else {
         const error = await response.text();
         alert(`Failed to add deck: ${error}`);
@@ -121,17 +139,21 @@
   }
 
   async function handleDeleteDeck(deckId: number, deckName: string) {
-    if (!confirm(`Are you sure you want to delete "${deckName}"?`)) {
-      return;
-    }
+    deckToDelete = { id: deckId, name: deckName };
+    showDeleteModal = true;
+  }
+
+  async function confirmDeleteDeck() {
+    if (!deckToDelete) return;
 
     try {
-      const response = await fetch(`/api/decks/${deckId}`, {
+      const response = await fetch(`/api/decks/${deckToDelete.id}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
         await loadDecks();
+        displayToast(`${deckToDelete.name} deleted`);
       } else {
         const error = await response.text();
         alert(`Failed to delete deck: ${error}`);
@@ -139,7 +161,15 @@
     } catch (error) {
       console.error("Error deleting deck:", error);
       alert("Error deleting deck. Please try again.");
+    } finally {
+      showDeleteModal = false;
+      deckToDelete = null;
     }
+  }
+
+  function cancelDeleteDeck() {
+    showDeleteModal = false;
+    deckToDelete = null;
   }
 
   function startEditDeck(deck: Deck) {
@@ -288,6 +318,12 @@
 </script>
 
 <div class="profile-container">
+  {#if showToast}
+    <div class="toast success-toast">
+      ✓ {toastMessage}
+    </div>
+  {/if}
+
   <div class="profile-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2>{display_name}'s Profile</h2>
@@ -458,24 +494,31 @@
       <section class="profile-section">
         <h3>Manage Your Decks</h3>
         
-        <div class="form-group">
-          <label for="newDeckName">Add New Deck</label>
-          <input 
-            type="text" 
-            id="newDeckName" 
-            bind:value={newDeckName}
-            placeholder="Enter deck name..."
-            on:keydown={(e) => e.key === "Enter" && !e.shiftKey && handleAddDeck()}
-          />
-          <label for="newDeckNotes" style="margin-top: 0.75rem;">Notes (optional)</label>
-          <textarea
-            id="newDeckNotes"
-            bind:value={newDeckNotes}
-            placeholder="Add notes about this deck..."
-            rows="2"
-          ></textarea>
-          <button class="btn-add" on:click={handleAddDeck} style="margin-top: 0.5rem; width: 100%;">Add Deck</button>
-        </div>
+        <button class="btn-toggle-form" on:click={() => showAddDeckForm = !showAddDeckForm}>
+          <span class="material-symbols-outlined">{showAddDeckForm ? 'close' : 'add'}</span>
+          {showAddDeckForm ? 'Cancel' : 'Add New Deck'}
+        </button>
+        
+        {#if showAddDeckForm}
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="newDeckName">Deck Name</label>
+            <input 
+              type="text" 
+              id="newDeckName" 
+              bind:value={newDeckName}
+              placeholder="Enter deck name..."
+              on:keydown={(e) => e.key === "Enter" && !e.shiftKey && handleAddDeck()}
+            />
+            <label for="newDeckNotes" style="margin-top: 0.75rem;">Notes (optional)</label>
+            <textarea
+              id="newDeckNotes"
+              bind:value={newDeckNotes}
+              placeholder="Add notes about this deck..."
+              rows="2"
+            ></textarea>
+            <button class="btn-add" on:click={handleAddDeck} style="margin-top: 0.5rem; width: 100%;">Add Deck</button>
+          </div>
+        {/if}
         
         <div class="deck-list">
           <h4>Your Decks ({decks.length})</h4>
@@ -595,6 +638,24 @@
     {/if}
   </div>
 </div>
+
+{#if showDeleteModal}
+  <div class="modal-overlay" on:click={cancelDeleteDeck}>
+    <div class="modal-dialog" on:click|stopPropagation>
+      <div class="modal-header">
+        <h3>Delete Deck</h3>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete "<strong>{deckToDelete?.name}</strong>"?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" on:click={cancelDeleteDeck}>Cancel</button>
+        <button class="btn-danger" on:click={confirmDeleteDeck}>Delete</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .profile-container {
@@ -769,6 +830,30 @@
     margin-top: 0.25rem;
     color: #6c757d;
     font-size: 0.875rem;
+  }
+
+  .btn-toggle-form {
+    padding: 10px 16px;
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-toggle-form:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .btn-toggle-form .material-symbols-outlined {
+    font-size: 20px;
   }
 
   .btn-add {
@@ -1155,6 +1240,136 @@
     .btn-edit,
     .btn-remove {
       flex: 1;
+    }
+  }
+
+  .toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .success-toast {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-dialog {
+    background: white;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: modalFadeIn 0.2s ease-out;
+  }
+
+  .modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.25rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-body p {
+    margin: 0 0 1rem 0;
+    color: #495057;
+  }
+
+  .modal-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .warning-text {
+    color: #dc3545;
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .btn-cancel {
+    padding: 0.5rem 1.25rem;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-cancel:hover {
+    background-color: #5a6268;
+  }
+
+  .btn-danger {
+    padding: 0.5rem 1.25rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-danger:hover {
+    background-color: #c82333;
+  }
+
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
     }
   }
 </style>
