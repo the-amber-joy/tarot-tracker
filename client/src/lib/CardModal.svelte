@@ -12,7 +12,7 @@
   type TarotCard = {
     name: string;
     suit?: string;
-    rank?: string;
+    number?: string;
   };
   
   let tarotCards: TarotCard[] = [];
@@ -193,7 +193,7 @@
         }
         break;
       case 'Escape':
-        event.preventDefault();
+        eventfpreventDefault();
         showDropdown = false;
         highlightedIndex = -1;
         break;
