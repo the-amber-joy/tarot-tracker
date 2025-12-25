@@ -33,6 +33,9 @@
   let spreadName = '';
   let notes = '';
   let spreadCards: Record<number, any> = {};
+  let showDeckModal = false;
+  let newDeckName = '';
+  let newDeckNotes = '';
   
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -157,6 +160,59 @@
     previousSpreadTemplate = event.detail;
   }
 
+  function handleDeckSelectChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === '__add_new__') {
+      showDeckModal = true;
+      // Reset select to current deck
+      if (deckSelectElement) {
+        deckSelectElement.value = deckName;
+      }
+    } else {
+      deckName = value;
+    }
+  }
+
+  async function handleAddDeck() {
+    if (!newDeckName.trim()) {
+      alert("Please enter a deck name.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/decks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          name: newDeckName.trim(),
+          notes: newDeckNotes.trim() || null
+        }),
+      });
+
+      if (response.ok) {
+        await loadDecks();
+        deckName = newDeckName.trim();
+        newDeckName = "";
+        newDeckNotes = "";
+        showDeckModal = false;
+      } else {
+        const error = await response.text();
+        alert(`Failed to add deck: ${error}`);
+      }
+    } catch (error) {
+      console.error("Error adding deck:", error);
+      alert("Error adding deck. Please try again.");
+    }
+  }
+
+  function closeDeckModal() {
+    showDeckModal = false;
+    newDeckName = "";
+    newDeckNotes = "";
+  }
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     
@@ -238,11 +294,12 @@
       
       <div class="form-group">
         <label for="deckName">Deck Used</label>
-        <select id="deckName" bind:this={deckSelectElement} bind:value={deckName}>
+        <select id="deckName" bind:this={deckSelectElement} value={deckName} on:change={handleDeckSelectChange}>
           <option value="">No deck specified</option>
           {#each decks as deck}
             <option value={deck.name}>{deck.name}</option>
           {/each}
+          <option value="__add_new__" class="add-option">+ Add New Deck</option>
         </select>
       </div>
       
@@ -296,3 +353,130 @@
   </form>
 </div>
 
+{#if showDeckModal}
+  <div class="modal-overlay" on:click={closeDeckModal}>
+    <div class="modal-content" on:click|stopPropagation>
+      <div class="modal-header">
+        <h3>Add New Deck</h3>
+        <button type="button" class="close-button" on:click={closeDeckModal}>×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="newDeckName">Deck Name<span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="newDeckName" 
+            bind:value={newDeckName}
+            placeholder="Enter deck name..."
+            autofocus
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="newDeckNotes">Notes (optional)</label>
+          <textarea
+            id="newDeckNotes"
+            bind:value={newDeckNotes}
+            placeholder="Add notes about this deck..."
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" on:click={closeDeckModal}>Cancel</button>
+        <button type="button" class="btn btn-primary" on:click={handleAddDeck}>Add Deck</button>
+      </div>
+    </div>
+  </div>
+{/if}
+<style>
+  .add-option {
+    font-weight: 600;
+    color: #4a90e2;
+    border-top: 1px solid #ddd;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #333;
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+  }
+
+  .close-button:hover {
+    color: #333;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  @media (max-width: 768px) {
+    .modal-content {
+      width: 95%;
+      max-height: 95vh;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: 1rem;
+    }
+  }
+</style>

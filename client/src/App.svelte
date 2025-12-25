@@ -14,13 +14,10 @@
   let formRef: any = null;
   let currentPath = '';
   let authInitialized = false;
-  let showFabMenu: boolean = false;
   let isDeckModalOpen: boolean = false;
   
   // Show FAB on home, profile, and reading pages
   $: showFab = currentPath === '/' || currentPath === '/profile' || (currentPath.startsWith('/reading/') && currentPath !== '/reading/new');
-  // When in edit mode, only show Manage Decks option
-  $: isEditMode = currentPath.includes('/edit');
   
   onMount(() => {
     // Initialize auth
@@ -58,19 +55,9 @@
     }
   }
 
-  function toggleFabMenu() {
-    showFabMenu = !showFabMenu;
-  }
-
   function handleNewReading() {
-    showFabMenu = false;
     navigate('/reading/new');
     setTimeout(() => currentPath = window.location.pathname, 0);
-  }
-
-  function handleManageDecks() {
-    showFabMenu = false;
-    isDeckModalOpen = true;
   }
 
   function closeDeckModal() {
@@ -127,31 +114,13 @@
   
   <!-- Floating action button -->
   {#if showFab}
-    <div class="fab-container">
-      {#if showFabMenu}
-        <div class="fab-menu">
-          {#if !isEditMode}
-            <button class="fab-menu-item" on:click={handleNewReading}>
-              <span class="fab-menu-icon">📖</span>
-              <span class="fab-menu-label">New Reading</span>
-            </button>
-          {/if}
-          <button class="fab-menu-item" on:click={handleManageDecks}>
-            <span class="fab-menu-icon">🃏</span>
-            <span class="fab-menu-label">Manage Decks</span>
-          </button>
-        </div>
-      {/if}
-      <button 
-        class="fab" 
-        class:fab-open={showFabMenu}
-        on:click={toggleFabMenu} 
-        aria-label="Menu" 
-        aria-expanded={showFabMenu}
-      >
-        <span class="fab-icon">{showFabMenu ? '×' : '+'}</span>
-      </button>
-    </div>
+    <button 
+      class="fab" 
+      on:click={handleNewReading} 
+      aria-label="New Reading"
+    >
+      <span class="fab-icon">+</span>
+    </button>
   {/if}
   
   <DeckModal 
@@ -173,66 +142,10 @@
   }
 
   /* Floating Action Button */
-  .fab-container {
+  .fab {
     position: fixed;
     bottom: 2rem;
     right: max(2rem, calc((100vw - 1200px) / 2 + 2rem));
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1rem;
-    z-index: 100;
-  }
-
-  .fab-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    animation: slideUp 0.3s ease-out;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .fab-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1.25rem;
-    background: white;
-    border: none;
-    border-radius: 30px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .fab-menu-item:hover {
-    transform: translateX(-5px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  }
-
-  .fab-menu-icon {
-    font-size: 1.5rem;
-    line-height: 1;
-  }
-
-  .fab-menu-label {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #333;
-  }
-
-  .fab {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -245,6 +158,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    z-index: 100;
   }
 
   .fab:hover {
@@ -253,10 +167,6 @@
   }
 
   .fab:active {
-    transform: scale(0.95);
-  }
-
-  .fab.fab-open:active {
     transform: scale(0.95);
   }
 
