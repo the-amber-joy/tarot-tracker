@@ -608,7 +608,7 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
+  opacity: 1;
 }
 
 .card-position:hover .empty-card-btn {
@@ -636,8 +636,8 @@ tbody tr:hover {
 /* Hide + button on touch devices until card is activated */
 @media (hover: none) and (pointer: coarse) {
   .empty-card-btn {
-    opacity: 0;
-    pointer-events: none;
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

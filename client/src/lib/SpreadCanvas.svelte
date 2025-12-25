@@ -750,14 +750,14 @@
             tabindex="0"
             title="Add card"
             aria-label="Add card to this position"
-          >+</div>
+          ><span class="material-symbols-outlined">edit_square</span></div>
         {/if}
         {#if !readonly}
           <div class="rotation-handle" title="Drag to rotate">↻</div>
         {/if}
       </button>
     {/each}
-  {:else if currentTemplate.id === 'custom'}
+  {:else if currentTemplate.id === 'custom'}}
     <!-- Custom template - click-to-add cards -->
     {#each Object.entries(spreadCards) as [indexStr, cardData]}
       {@const index = parseInt(indexStr)}
@@ -794,7 +794,7 @@
             tabindex="0"
             title="Add card"
             aria-label="Add card to this position"
-          >+</div>
+          ><span class="material-symbols-outlined">edit_square</span></div>
         {/if}
         {#if !readonly}
           <div class="rotation-handle" title="Drag to rotate">↻</div>
@@ -844,7 +844,7 @@
             tabindex="0"
             title="Add card"
             aria-label="Add card to this position"
-          >+</div>
+          ><span class="material-symbols-outlined">edit_square</span></div>
         {/if}
       </button>
     {/each}
