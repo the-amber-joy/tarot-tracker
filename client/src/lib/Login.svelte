@@ -6,6 +6,7 @@
   let error = "";
   let loading = false;
   let isRegisterMode = false;
+  let showPassword = false;
 
   async function handleSubmit() {
     error = "";
@@ -32,6 +33,7 @@
   function toggleMode() {
     isRegisterMode = !isRegisterMode;
     error = "";
+    showPassword = false;
   }
 </script>
 
@@ -55,14 +57,27 @@
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          bind:value={password}
-          required
-          placeholder={isRegisterMode ? "At least 6 characters" : "Enter password"}
-          disabled={loading}
-        />
+        <div class="password-input-wrapper">
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            bind:value={password}
+            required
+            placeholder={isRegisterMode ? "At least 6 characters" : "Enter password"}
+            disabled={loading}
+          />
+          <button 
+            type="button" 
+            class="password-toggle-btn"
+            on:click={() => showPassword = !showPassword}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            disabled={loading}
+          >
+            <span class="material-symbols-outlined">
+              {showPassword ? "visibility_off" : "visibility"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {#if error}
@@ -128,6 +143,12 @@
     color: #555;
   }
 
+  .password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
   input {
     width: 100%;
     padding: 10px;
@@ -145,6 +166,28 @@
   input:disabled {
     background-color: #f5f5f5;
     cursor: not-allowed;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.2rem;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .password-toggle-btn:hover:not(:disabled) {
+    opacity: 1;
+  }
+
+  .password-toggle-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
   }
 
   .btn-primary {

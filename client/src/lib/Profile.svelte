@@ -30,6 +30,9 @@
   let passwordSuccess = "";
   let profileLoading = false;
   let passwordLoading = false;
+  let showCurrentPassword = false;
+  let showNewPassword = false;
+  let showConfirmPassword = false;
 
   let decks: Deck[] = [];
   let newDeckName = "";
@@ -337,38 +340,77 @@
         <form on:submit={handlePasswordUpdate}>
           <div class="form-group">
             <label for="currentPassword">Current Password</label>
-            <input
-              id="currentPassword"
-              type="password"
-              bind:value={currentPassword}
-              required
-              placeholder="Enter current password"
-              disabled={passwordLoading}
-            />
+            <div class="password-input-wrapper">
+              <input
+                id="currentPassword"
+                type={showCurrentPassword ? "text" : "password"}
+                bind:value={currentPassword}
+                required
+                placeholder="Enter current password"
+                disabled={passwordLoading}
+              />
+              <button 
+                type="button" 
+                class="password-toggle-btn"
+                on:click={() => showCurrentPassword = !showCurrentPassword}
+                aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                disabled={passwordLoading}
+              >
+                <span class="material-symbols-outlined">
+                  {showCurrentPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
             <label for="newPassword">New Password</label>
-            <input
-              id="newPassword"
-              type="password"
-              bind:value={newPassword}
-              required
-              placeholder="At least 6 characters"
-              disabled={passwordLoading}
-            />
+            <div class="password-input-wrapper">
+              <input
+                id="newPassword"
+                type={showNewPassword ? "text" : "password"}
+                bind:value={newPassword}
+                required
+                placeholder="At least 6 characters"
+                disabled={passwordLoading}
+              />
+              <button 
+                type="button" 
+                class="password-toggle-btn"
+                on:click={() => showNewPassword = !showNewPassword}
+                aria-label={showNewPassword ? "Hide password" : "Show password"}
+                disabled={passwordLoading}
+              >
+                <span class="material-symbols-outlined">
+                  {showNewPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
             <label for="confirmPassword">Confirm New Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              bind:value={confirmPassword}
-              required
-              placeholder="Re-enter new password"
-              disabled={passwordLoading}
-            />
+            <div class="password-input-wrapper">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                bind:value={confirmPassword}
+                required
+                placeholder="Re-enter new password"
+                disabled={passwordLoading}
+              />
+              <button 
+                type="button" 
+                class="password-toggle-btn"
+                on:click={() => showConfirmPassword = !showConfirmPassword}
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                disabled={passwordLoading}
+              >
+                <span class="material-symbols-outlined">
+                  {showConfirmPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
           </div>
 
           {#if passwordError}
@@ -619,6 +661,12 @@
     color: #555;
   }
 
+  .password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
   input {
     width: 100%;
     padding: 10px;
@@ -650,6 +698,28 @@
     background-color: #e9ecef;
     cursor: not-allowed;
     color: #6c757d;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.2rem;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .password-toggle-btn:hover:not(:disabled) {
+    opacity: 1;
+  }
+
+  .password-toggle-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
   }
 
   small {

@@ -30,6 +30,7 @@
   let showNukeConfirm = false;
   let nukeConfirmText = "";
   let nukeLoading = false;
+  let showPassword = false;
 
   $: adminUser = users.find(u => u.id === $authStore?.id);
   $: otherUsers = users.filter(u => u.id !== $authStore?.id).sort((a, b) => {
@@ -69,6 +70,7 @@
     resetUserId = userId;
     newPassword = "";
     resetError = "";
+    showPassword = false;
   }
 
   function cancelReset() {
@@ -307,12 +309,24 @@
                   </div>
                 {:else if resetUserId === user.id}
                   <form class="reset-form" on:submit|preventDefault={() => handleResetPassword(user.id)}>
-                    <input
-                      type="password"
-                      bind:value={newPassword}
-                      placeholder="New password (6+ chars)"
-                      class="reset-input"
-                    />
+                    <div class="password-input-wrapper">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        bind:value={newPassword}
+                        placeholder="New password (6+ chars)"
+                        class="reset-input"
+                      />
+                      <button 
+                        type="button" 
+                        class="password-toggle-btn"
+                        on:click={() => showPassword = !showPassword}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        <span class="material-symbols-outlined">
+                          {showPassword ? "visibility_off" : "visibility"}
+                        </span>
+                      </button>
+                    </div>
                     <button
                       type="submit"
                       class="btn-small btn-primary"
@@ -569,12 +583,36 @@
     flex-wrap: wrap;
   }
 
+  .password-input-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
   .reset-input {
-    padding: 0.4rem 0.6rem;
+    padding: 0.4rem 2.5rem 0.4rem 0.6rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 0.85rem;
     min-width: 150px;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    right: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .password-toggle-btn:hover {
+    opacity: 1;
   }
 
   .btn-small {
