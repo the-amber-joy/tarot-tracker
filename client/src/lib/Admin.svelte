@@ -183,10 +183,10 @@
     }
   }
 
-  function getSortIcon(field: SortField): string {
-    if (sortField !== field) return "⇅";
+  $: sortIcon = (field: SortField) => {
+    if (sortField !== field) return "";
     return sortDirection === "asc" ? "↑" : "↓";
-  }
+  };
 
   function openNukeConfirm() {
     showNukeConfirm = true;
@@ -278,31 +278,31 @@
             <thead>
               <tr>
                 <th class="sortable" on:click={() => handleSort("username")}>
-                  Username {getSortIcon("username")}
+                  Username {sortIcon("username")}
                 </th>
                 <th
                   class="sortable"
                   on:click={() => handleSort("display_name")}
                 >
-                  Display Name {getSortIcon("display_name")}
+                  Display Name {sortIcon("display_name")}
                 </th>
                 <th class="sortable" on:click={() => handleSort("created_at")}>
-                  Created {getSortIcon("created_at")}
+                  Created {sortIcon("created_at")}
                 </th>
                 <th class="sortable" on:click={() => handleSort("deck_count")}>
-                  Decks {getSortIcon("deck_count")}
+                  Decks {sortIcon("deck_count")}
                 </th>
                 <th
                   class="sortable"
                   on:click={() => handleSort("reading_count")}
                 >
-                  Readings {getSortIcon("reading_count")}
+                  Readings {sortIcon("reading_count")}
                 </th>
                 <th
                   class="sortable"
                   on:click={() => handleSort("storage_bytes")}
                 >
-                  Storage {getSortIcon("storage_bytes")}
+                  Storage {sortIcon("storage_bytes")}
                 </th>
                 <th>Actions</th>
               </tr>
@@ -718,6 +718,11 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+  }
+
+  .action-buttons .btn-small {
+    flex: 1;
+    min-width: 120px;
   }
 
   .delete-confirm {
