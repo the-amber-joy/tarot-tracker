@@ -212,6 +212,13 @@
     cursor: not-allowed;
   }
 
+  .password-input-wrapper input {
+    font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
+    letter-spacing: 0.05em;
+    height: 42px;
+    line-height: 1.5;
+  }
+
   .error-message {
     background-color: #fee;
     color: #c33;

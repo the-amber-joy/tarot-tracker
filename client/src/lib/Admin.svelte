@@ -652,6 +652,13 @@
     background: #e0a800;
   }
 
+  .password-input-wrapper input {
+    font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
+    letter-spacing: 0.05em;
+    height: 42px;
+    line-height: 1.5;
+  }
+
   .btn-danger {
     background: #dc3545;
     color: white;

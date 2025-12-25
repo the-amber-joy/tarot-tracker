@@ -700,6 +700,13 @@
     color: #6c757d;
   }
 
+  .password-input-wrapper input {
+    font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
+    letter-spacing: 0.05em;
+    height: 42px;
+    line-height: 1.5;
+  }
+
   .password-toggle-btn {
     position: absolute;
     right: 10px;
