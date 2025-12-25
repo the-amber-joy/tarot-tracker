@@ -588,16 +588,19 @@ tbody tr:hover {
   font-size: 1.2rem;
   font-weight: bold;
   margin-bottom: 4px;
+  color: inherit;
 }
 
 .position-label {
   font-size: 0.75rem;
   opacity: 0.8;
   margin-bottom: 8px;
+  color: inherit;
 }
 
 .card-position.filled .position-label {
   opacity: 0.9;
+  color: white;
 }
 
 .empty-card {
@@ -763,6 +766,7 @@ tbody tr:hover {
   font-weight: 600;
   line-height: 1.2;
   margin-top: 4px;
+  color: #f4c430;
 }
 
 .hint {
