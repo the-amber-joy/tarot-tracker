@@ -156,7 +156,7 @@
       deleteUserId = null;
       displayToast(`User ${username} has been deleted`);
     } catch (e: any) {
-      alert(`Error: ${e.message}`);
+      displayToast(`Error: ${e.message}`, "error");
       deleteUserId = null;
     }
   }

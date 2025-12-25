@@ -4,6 +4,7 @@
   import { readingsStore } from "../stores/readingsStore";
   import SpreadCanvas from "./SpreadCanvas.svelte";
   import ConfirmModal from "./ConfirmModal.svelte";
+  import Toast from "./Toast.svelte";
 
   export let params: { id?: string } = {};
 
@@ -41,6 +42,13 @@
   let showTemplateChangeModal = false;
   let pendingTemplateChange: string | null = null;
   let templateSelectElement: HTMLSelectElement | null = null;
+
+  let toastMessage = "";
+  let showToast = false;
+  let toastType: "success" | "error" | "info" = "success";
+
+  let showValidationModal = false;
+  let validationMessage = "";
 
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -84,7 +92,9 @@
       );
     } catch (error) {
       console.error("Error loading reading:", error);
-      alert("Error loading reading data.");
+      toastMessage = "Error loading reading data.";
+      toastType = "error";
+      showToast = true;
     }
   }
 
@@ -203,7 +213,8 @@
 
   async function handleAddDeck() {
     if (!newDeckName.trim()) {
-      alert("Please enter a deck name.");
+      validationMessage = "Please enter a deck name.";
+      showValidationModal = true;
       return;
     }
 
@@ -227,11 +238,15 @@
         showDeckModal = false;
       } else {
         const error = await response.text();
-        alert(`Failed to add deck: ${error}`);
+        toastMessage = `Failed to add deck: ${error}`;
+        toastType = "error";
+        showToast = true;
       }
     } catch (error) {
       console.error("Error adding deck:", error);
-      alert("Error adding deck. Please try again.");
+      toastMessage = "Error adding deck. Please try again.";
+      toastType = "error";
+      showToast = true;
     }
   }
 
@@ -285,14 +300,20 @@
         navigate("/");
       } else {
         const error = await response.text();
-        alert(`Failed to save reading: ${error}`);
+        toastMessage = `Failed to save reading: ${error}`;
+        toastType = "error";
+        showToast = true;
       }
     } catch (error) {
       console.error("Error saving reading:", error);
-      alert("Error saving reading. Please try again.");
+      toastMessage = "Error saving reading. Please try again.";
+      toastType = "error";
+      showToast = true;
     }
   }
 </script>
+
+<Toast bind:isVisible={showToast} message={toastMessage} type={toastType} />
 
 <div class="view">
   <div class="view-header">
@@ -411,10 +432,24 @@
 </div>
 
 {#if showDeckModal}
-  <div class="modal-overlay" on:click={closeDeckModal}>
-    <div class="modal-content" on:click|stopPropagation>
+  <div
+    class="modal-overlay"
+    on:click={closeDeckModal}
+    on:keydown={(e) => e.key === "Escape" && closeDeckModal()}
+    role="button"
+    tabindex="-1"
+  >
+    <div
+      class="modal-content"
+      on:click|stopPropagation
+      on:keydown={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="deck-modal-title"
+      tabindex="-1"
+    >
       <div class="modal-header">
-        <h3>Add New Deck</h3>
+        <h3 id="deck-modal-title">Add New Deck</h3>
         <button type="button" class="close-button" on:click={closeDeckModal}
           ><span class="material-symbols-outlined"> close </span></button
         >
@@ -430,7 +465,6 @@
             id="newDeckName"
             bind:value={newDeckName}
             placeholder="Enter deck name..."
-            autofocus
           />
         </div>
 
@@ -468,6 +502,15 @@
   isDanger={false}
   onConfirm={confirmTemplateChange}
   onCancel={cancelTemplateChange}
+/>
+
+<ConfirmModal
+  bind:isOpen={showValidationModal}
+  title="Validation Error"
+  message={validationMessage}
+  confirmText="OK"
+  isAlert={true}
+  onConfirm={() => (showValidationModal = false)}
 />
 
 <style>

@@ -72,6 +72,9 @@
   let showDeleteReadingModal = false;
   let readingToDelete: { id: number; name: string } | null = null;
 
+  let showValidationModal = false;
+  let validationMessage = "";
+
   let readings: Reading[] = [];
 
   onMount(async () => {
@@ -112,7 +115,8 @@
 
   async function handleAddDeck() {
     if (!newDeckName.trim()) {
-      alert("Please enter a deck name.");
+      validationMessage = "Please enter a deck name.";
+      showValidationModal = true;
       return;
     }
 
@@ -137,11 +141,11 @@
         displayToast(`${deckName} added!`);
       } else {
         const error = await response.text();
-        alert(`Failed to add deck: ${error}`);
+        displayToast(`Failed to add deck: ${error}`, "error");
       }
     } catch (error) {
       console.error("Error adding deck:", error);
-      alert("Error adding deck. Please try again.");
+      displayToast("Error adding deck. Please try again.", "error");
     }
   }
 
@@ -163,11 +167,11 @@
         displayToast(`${deckToDelete.name} deleted`);
       } else {
         const error = await response.text();
-        alert(`Failed to delete deck: ${error}`);
+        displayToast(`Failed to delete deck: ${error}`, "error");
       }
     } catch (error) {
       console.error("Error deleting deck:", error);
-      alert("Error deleting deck. Please try again.");
+      displayToast("Error deleting deck. Please try again.", "error");
     } finally {
       showDeleteModal = false;
       deckToDelete = null;
@@ -202,7 +206,8 @@
 
   async function handleUpdateDeck(deckId: number) {
     if (!editDeckName.trim()) {
-      alert("Please enter a deck name.");
+      validationMessage = "Please enter a deck name.";
+      showValidationModal = true;
       return;
     }
 
@@ -225,11 +230,11 @@
         await loadDecks();
       } else {
         const error = await response.text();
-        alert(`Failed to update deck: ${error}`);
+        displayToast(`Failed to update deck: ${error}`, "error");
       }
     } catch (error) {
       console.error("Error updating deck:", error);
-      alert("Error updating deck. Please try again.");
+      displayToast("Error updating deck. Please try again.", "error");
     }
   }
 
@@ -251,11 +256,11 @@
         displayToast(`"${readingToDelete.name}" deleted`);
       } else {
         const error = await response.text();
-        alert(`Failed to delete reading: ${error}`);
+        displayToast(`Failed to delete reading: ${error}`, "error");
       }
     } catch (error) {
       console.error("Error deleting reading:", error);
-      alert("Error deleting reading. Please try again.");
+      displayToast("Error deleting reading. Please try again.", "error");
     } finally {
       showDeleteReadingModal = false;
       readingToDelete = null;
@@ -714,6 +719,15 @@
   isDanger={true}
   onConfirm={confirmDeleteReading}
   onCancel={cancelDeleteReading}
+/>
+
+<ConfirmModal
+  bind:isOpen={showValidationModal}
+  title="Validation Error"
+  message={validationMessage}
+  confirmText="OK"
+  isAlert={true}
+  onConfirm={() => (showValidationModal = false)}
 />
 
 <style>

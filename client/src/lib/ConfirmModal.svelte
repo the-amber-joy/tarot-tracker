@@ -28,10 +28,17 @@
 </script>
 
 {#if isOpen}
-  <div class="modal-overlay" on:click={handleOverlayClick}>
+  <div
+    class="modal-overlay"
+    on:click={handleOverlayClick}
+    on:keydown={(e) => e.key === "Escape" && handleCancel()}
+    role="button"
+    tabindex="-1"
+  >
     <div
       class="modal-dialog"
       on:click|stopPropagation
+      on:keydown={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
