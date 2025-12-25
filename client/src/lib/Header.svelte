@@ -50,7 +50,7 @@
   <div class="header-actions" class:menu-open={isMenuOpen}>
     {#if $authStore}
       <button class="user-info" on:click={handleProfileClick} title="View Profile">
-        👤 {$authStore.display_name || $authStore.username}
+        👤 Profile
       </button>
     {/if}
     {#if $authStore?.is_admin}
