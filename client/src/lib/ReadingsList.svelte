@@ -108,7 +108,7 @@
               {/if}
               {reading.spread_name}
             </td>
-            <td>{reading.deck_name}</td>
+            <td>{reading.deck_name || 'No Deck Specified'}</td>
           </tr>
         {/each}
       {/if}
@@ -133,7 +133,7 @@
               {/if}
               {reading.spread_name}
             </span>
-            <span class="reading-deck">{reading.deck_name}</span>
+            <span class="reading-deck">{reading.deck_name || 'No Deck Specified'}</span>
           </div>
           <div class="reading-date">{formatDateTime(reading.date, reading.time)}</div>
         </button>

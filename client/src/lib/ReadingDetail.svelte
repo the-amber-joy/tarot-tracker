@@ -70,7 +70,7 @@
           <strong>Time:</strong> {reading.time}
         </div>
         <div class="detail-item">
-          <strong>Deck:</strong> {reading.deck_name}
+          <strong>Deck:</strong> {reading.deck_name || 'No Deck Specified'}
         </div>
         <div class="detail-item">
           <strong>Spread:</strong> {reading.spread_name}

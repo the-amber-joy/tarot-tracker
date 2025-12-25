@@ -279,21 +279,21 @@
       class:active={activeTab === "decks"}
       on:click={() => activeTab = "decks"}
     >
-      My Decks
+      Decks
     </button>
     <button 
       class="tab" 
       class:active={activeTab === "readings"}
       on:click={() => activeTab = "readings"}
     >
-      My Readings
+      Readings
     </button>
   </div>
 
   <div class="profile-content">
     {#if activeTab === "profile"}
       <section class="profile-section">
-        <h3>Login & Display Name</h3>
+        <h3>Your Name</h3>
         <form on:submit={handleProfileUpdate}>
           <div class="form-group">
             <label for="username">Username (Login)</label>
@@ -532,7 +532,7 @@
                       {reading.spread_name}
                     </span>
                     <p class="reading-details">{formatDateTime(reading.date, reading.time)}</p>
-                    <p class="reading-deck">{reading.deck_name}</p>
+                    <p class="reading-deck">{reading.deck_name || 'No Deck Specified'}</p>
                   </div>
                 </button>
                 <div class="reading-actions">

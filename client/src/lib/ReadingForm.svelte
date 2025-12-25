@@ -54,7 +54,7 @@
       // Populate form fields
       date = reading.date;
       time = reading.time;
-      deckName = reading.deck_name === '-' ? '' : reading.deck_name;
+      deckName = reading.deck_name === 'No Deck Specified' ? '' : reading.deck_name;
       spreadTemplate = reading.spread_template_id || 'custom';
       previousSpreadTemplate = reading.spread_template_id || 'custom';
       spreadName = reading.spread_name;
@@ -219,7 +219,7 @@
     const readingData = {
       date: date,
       time: time,
-      deck_name: deckName || '-',
+      deck_name: deckName || 'No Deck Specified',
       spread_template_id: spreadTemplate || 'custom',
       spread_name: spreadName || (spreadTemplate === 'celtic-cross' ? 'Celtic Cross' : 'Custom Spread'),
       notes: notes,
