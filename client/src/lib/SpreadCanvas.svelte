@@ -719,7 +719,7 @@
         >
           {#if !readonly}
             <div
-              class="delete-card-btn"
+              class="delete-card-btn {cardData.card_name ? '' : 'delete-icon'}"
               title={cardData.card_name ? "Clear card" : "Delete position"}
               on:click|stopPropagation={() => deleteCard(index)}
               on:keydown={(e) => handleDeleteKeydown(e, index)}
@@ -727,7 +727,9 @@
               tabindex="0"
               aria-label={cardData.card_name ? "Clear card" : "Delete position"}
             >
-              <span class="material-symbols-outlined"> close </span>
+              <span class="material-symbols-outlined">
+                {cardData.card_name ? "close_small" : "delete_forever"}
+              </span>
             </div>
           {/if}
           <div class="position-number">{index + 1}</div>
@@ -781,7 +783,7 @@
         >
           {#if !readonly}
             <div
-              class="delete-card-btn"
+              class="delete-card-btn {cardData.card_name ? '' : 'delete-icon'}"
               title={cardData.card_name ? "Clear card" : "Delete position"}
               on:click|stopPropagation={() => deleteCard(index)}
               on:keydown={(e) => handleDeleteKeydown(e, index)}
@@ -789,7 +791,9 @@
               tabindex="0"
               aria-label={cardData.card_name ? "Clear card" : "Delete position"}
             >
-              <span class="material-symbols-outlined"> close </span>
+              <span class="material-symbols-outlined">
+                {cardData.card_name ? "close_small" : "delete_forever"}
+              </span>
             </div>
           {/if}
           <div class="position-number">{index + 1}</div>

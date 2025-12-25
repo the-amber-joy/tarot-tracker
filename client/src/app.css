@@ -711,6 +711,17 @@ tbody tr:hover {
   transform: scale(1.1);
 }
 
+.delete-card-btn.delete-icon {
+  background: transparent;
+  color: #dc2626;
+}
+
+.delete-card-btn.delete-icon:hover {
+  background: transparent;
+  color: #b91c1c;
+  transform: scale(1.1);
+}
+
 .delete-card-btn:active {
   transform: scale(0.95);
 }
