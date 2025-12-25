@@ -404,14 +404,18 @@
           </div>
 
           {#if profileError}
-            <div class="error-message">{profileError}</div>
+            <div class="message-box error">{profileError}</div>
           {/if}
 
           {#if profileSuccess}
-            <div class="success-message">{profileSuccess}</div>
+            <div class="message-box success">{profileSuccess}</div>
           {/if}
 
-          <button type="submit" class="btn-primary" disabled={profileLoading}>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            disabled={profileLoading}
+          >
             {profileLoading ? "Saving..." : "Save Profile"}
           </button>
         </form>
@@ -501,14 +505,18 @@
           </div>
 
           {#if passwordError}
-            <div class="error-message">{passwordError}</div>
+            <div class="message-box error">{passwordError}</div>
           {/if}
 
           {#if passwordSuccess}
-            <div class="success-message">{passwordSuccess}</div>
+            <div class="message-box success">{passwordSuccess}</div>
           {/if}
 
-          <button type="submit" class="btn-primary" disabled={passwordLoading}>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            disabled={passwordLoading}
+          >
             {passwordLoading ? "Updating..." : "Update Password"}
           </button>
         </form>
@@ -549,7 +557,7 @@
               rows="2"
             ></textarea>
             <button
-              class="btn-add"
+              class="btn btn-primary"
               on:click={handleAddDeck}
               style="margin-top: 0.5rem; width: 100%;">Add Deck</button
             >
@@ -582,12 +590,13 @@
                       ></textarea>
                       <div class="deck-edit-actions">
                         <button
-                          class="btn-save"
+                          class="btn btn-primary"
                           on:click={() => handleUpdateDeck(deck.id)}
                           >Save</button
                         >
-                        <button class="btn-cancel" on:click={cancelEditDeck}
-                          >Cancel</button
+                        <button
+                          class="btn btn-secondary"
+                          on:click={cancelEditDeck}>Cancel</button
                         >
                       </div>
                     </div>
@@ -613,14 +622,14 @@
                       </div>
                       <div class="deck-actions">
                         <button
-                          class="btn-edit"
+                          class="btn btn-primary"
                           on:click={() => startEditDeck(deck)}
                           aria-label="Edit {deck.name}"
                         >
                           Edit
                         </button>
                         <button
-                          class="btn-remove"
+                          class="btn btn-danger"
                           on:click={() => handleDeleteDeck(deck.id, deck.name)}
                           aria-label="Delete {deck.name}"
                         >
@@ -674,7 +683,7 @@
                 </button>
                 <div class="reading-actions">
                   <button
-                    class="btn-edit"
+                    class="btn btn-primary"
                     on:click={() => navigate(`/reading/${reading.id}/edit`)}
                     aria-label="Edit {reading.spread_name}"
                     title="Edit"
@@ -682,7 +691,7 @@
                     Edit
                   </button>
                   <button
-                    class="btn-remove"
+                    class="btn btn-danger"
                     on:click={() =>
                       handleDeleteReading(reading.id, reading.spread_name)}
                     aria-label="Delete {reading.spread_name}"
@@ -765,7 +774,7 @@
   .tabs {
     display: flex;
     gap: 0.5rem;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid var(--color-border);
     margin-bottom: 2rem;
   }
 
@@ -775,21 +784,21 @@
     padding: 1rem 1.5rem;
     font-size: 1rem;
     font-weight: 500;
-    color: #666;
+    color: var(--color-text-secondary);
     cursor: pointer;
     border-bottom: 3px solid transparent;
-    transition: all 0.2s;
+    transition: var(--transition-normal);
     position: relative;
     top: 2px;
   }
 
   .tab:hover {
-    color: #4a90e2;
+    color: var(--color-primary);
   }
 
   .tab.active {
-    color: #4a90e2;
-    border-bottom-color: #4a90e2;
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
   }
 
   .profile-content {
@@ -799,24 +808,24 @@
   }
 
   .profile-section {
-    background: #f9f9f9;
+    background: var(--color-bg-section);
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
   }
 
   .profile-section h3 {
     margin: 0 0 1.5rem 0;
     font-size: 1.4rem;
-    color: #555;
-    border-bottom: 2px solid #ddd;
+    color: var(--color-text-secondary);
+    border-bottom: 2px solid var(--color-border);
     padding-bottom: 0.5rem;
   }
 
   .profile-section h4 {
     margin: 1.5rem 0 1rem 0;
     font-size: 1.1rem;
-    color: #666;
+    color: var(--color-text-secondary);
   }
 
   .form-group {
@@ -827,7 +836,7 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #555;
+    color: var(--color-text-secondary);
   }
 
   .password-input-wrapper {
@@ -839,8 +848,8 @@
   input {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 14px;
     box-sizing: border-box;
   }
@@ -848,8 +857,8 @@
   textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 14px;
     box-sizing: border-box;
     font-family: inherit;
@@ -859,14 +868,14 @@
   input:focus,
   textarea:focus {
     outline: none;
-    border-color: #4a90e2;
+    border-color: var(--color-primary);
   }
 
   input:disabled,
   .disabled-input {
-    background-color: #e9ecef;
+    background-color: var(--color-bg-disabled);
     cursor: not-allowed;
-    color: #6c757d;
+    color: var(--color-secondary);
   }
 
   .password-input-wrapper input[type="text"] {
@@ -877,96 +886,40 @@
     line-height: 1.5;
   }
 
-  .password-toggle-btn {
-    position: absolute;
-    right: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.25rem;
-    font-size: 1.2rem;
-    line-height: 1;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-  }
-
-  .password-toggle-btn:hover:not(:disabled) {
-    opacity: 1;
-  }
-
-  .password-toggle-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
-  }
-
   small {
     display: block;
     margin-top: 0.25rem;
-    color: #6c757d;
+    color: var(--color-secondary);
     font-size: 0.875rem;
   }
 
   .btn-toggle-form {
     padding: 10px 20px;
-    background-color: #f8f9fa;
-    color: #495057;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    background-color: var(--color-bg-section);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
   .btn-toggle-form:hover {
-    background-color: #e9ecef;
-    border-color: #adb5bd;
+    background-color: var(--color-bg-hover);
+    border-color: var(--color-text-secondary);
   }
 
   .btn-toggle-form .material-symbols-outlined {
     font-size: 20px;
   }
 
-  .btn-add {
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-  }
-
-  .btn-add:hover {
-    background-color: #218838;
-  }
-
   .btn-primary {
     width: 100%;
     padding: 12px;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background-color: #357abd;
-  }
-
-  .btn-primary:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
   }
 
   .deck-list {
@@ -983,15 +936,15 @@
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     margin-bottom: 0.5rem;
-    transition: box-shadow 0.2s;
+    transition: var(--transition-fast);
   }
 
   .deck-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   .deck-info {
@@ -1008,7 +961,7 @@
 
   .deck-name {
     font-size: 1rem;
-    color: #333;
+    color: var(--color-text-primary);
     font-weight: 500;
     display: block;
   }
@@ -1016,7 +969,7 @@
   .deck-notes {
     margin: 0.5rem 0 0 0;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--color-text-secondary);
     white-space: pre-wrap;
     display: -webkit-box;
     line-clamp: 2;
@@ -1035,17 +988,17 @@
   .notes-toggle {
     background: none;
     border: none;
-    color: #888;
+    color: var(--color-text-muted);
     font-size: 0.85rem;
     cursor: pointer;
     padding: 0;
     margin-top: 0.25rem;
     text-decoration: underline;
-    transition: color 0.2s;
+    transition: var(--transition-fast);
   }
 
   .notes-toggle:hover {
-    color: #555;
+    color: var(--color-text-secondary);
   }
 
   .deck-actions {
@@ -1065,8 +1018,8 @@
   .deck-edit-textarea {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 14px;
     box-sizing: border-box;
   }
@@ -1081,68 +1034,8 @@
     gap: 0.5rem;
   }
 
-  .btn-save {
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-save:hover {
-    background-color: #218838;
-  }
-
-  .btn-cancel {
-    padding: 10px 20px;
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-cancel:hover {
-    background-color: #5a6268;
-  }
-
-  .btn-edit {
-    padding: 10px 20px;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-edit:hover {
-    background-color: #357abd;
-  }
-
-  .btn-remove {
-    padding: 10px 20px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-remove:hover {
-    background-color: #c82333;
-  }
-
   .empty-message {
-    color: #666;
+    color: var(--color-text-secondary);
     font-style: italic;
     text-align: center;
     padding: 2rem;
@@ -1159,16 +1052,16 @@
     justify-content: space-between;
     align-items: center;
     padding: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     margin-bottom: 0.5rem;
-    transition: box-shadow 0.2s;
+    transition: var(--transition-fast);
     overflow: hidden;
   }
 
   .reading-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   .reading-info {
@@ -1178,16 +1071,16 @@
     background: none;
     border: none;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: var(--transition-fast);
   }
 
   .reading-info:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: var(--color-bg-hover);
   }
 
   .reading-spread {
     font-size: 1rem;
-    color: #333;
+    color: var(--color-text-primary);
     font-weight: 500;
     display: block;
     margin-bottom: 0.25rem;
@@ -1200,24 +1093,24 @@
   .reading-details {
     margin: 0.25rem 0;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--color-text-secondary);
   }
 
   .reading-spread-layout {
     margin: 0.25rem 0 0 0;
     font-size: 0.85rem;
-    color: #7b2cbf;
+    color: var(--color-gradient-end);
     font-weight: 600;
     background: rgba(123, 44, 191, 0.1);
     padding: 0.25rem 0.5rem;
-    border-radius: 12px;
+    border-radius: var(--radius-pill);
     display: inline-block;
   }
 
   .reading-deck {
     margin: 0.25rem 0 0 0;
     font-size: 0.85rem;
-    color: #888;
+    color: var(--color-text-muted);
   }
 
   .reading-actions {
@@ -1225,24 +1118,6 @@
     gap: 0.5rem;
     padding: 1rem;
     flex-shrink: 0;
-  }
-
-  .error-message {
-    background-color: #fee;
-    color: #c33;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    font-size: 14px;
-  }
-
-  .success-message {
-    background-color: #d4edda;
-    color: #155724;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    font-size: 14px;
   }
 
   @media (max-width: 768px) {
@@ -1282,8 +1157,7 @@
       margin-top: 0.75rem;
     }
 
-    .btn-edit,
-    .btn-remove {
+    .deck-actions .btn {
       flex: 1;
     }
 
@@ -1291,8 +1165,7 @@
       flex-direction: column;
     }
 
-    .btn-save,
-    .btn-cancel {
+    .deck-edit-actions .btn {
       width: 100%;
     }
 
@@ -1311,8 +1184,7 @@
       border-top: 1px solid #eee;
     }
 
-    .btn-edit,
-    .btn-remove {
+    .reading-actions .btn {
       flex: 1;
     }
   }

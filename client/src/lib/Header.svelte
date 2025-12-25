@@ -83,8 +83,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 2rem;
-    background: var(--color-bg-secondary, #1a1a2e);
-    border-bottom: 2px solid var(--color-border, #16213e);
+    background: var(--color-bg-dark);
+    border-bottom: 2px solid var(--color-bg-dark-border);
     margin-bottom: 2rem;
     position: relative;
     container-type: inline-size;
@@ -93,7 +93,7 @@
   .app-header h1 {
     margin: 0;
     font-size: 2rem;
-    color: var(--color-text, #eee);
+    color: white;
   }
 
   .home-button {
@@ -118,8 +118,8 @@
   .hamburger span {
     width: 24px;
     height: 3px;
-    background: var(--color-text, #eee);
-    transition: all 0.3s ease;
+    background: white;
+    transition: var(--transition-normal);
   }
 
   .header-actions {
@@ -128,9 +128,11 @@
     align-items: center;
   }
 
+  /* Using global .btn from app.css */
+
   .user-info {
     background: none;
-    color: var(--color-text, #eee);
+    color: white;
   }
 
   .user-info:hover {
@@ -153,13 +155,17 @@
       right: 0;
       left: 0;
       flex-direction: column;
-      background: var(--color-bg-secondary, #1a1a2e);
-      border-bottom: 2px solid var(--color-border, #16213e);
+      background: linear-gradient(
+        135deg,
+        var(--color-gradient-start) 0%,
+        var(--color-gradient-end) 100%
+      );
+      border-bottom: 2px solid var(--color-border);
       padding: 0;
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
-      z-index: 10;
+      z-index: var(--z-dropdown);
     }
 
     .header-actions.menu-open {

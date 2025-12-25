@@ -233,7 +233,7 @@
   <div class="admin-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2><span class="material-symbols-outlined"> build </span> Admin Panel</h2>
-    <button class="btn-danger nuke-button" on:click={openNukeConfirm}>
+    <button class="btn btn-danger nuke-button" on:click={openNukeConfirm}>
       ☢️ Nuclear Option
     </button>
   </div>
@@ -241,7 +241,7 @@
   {#if loading}
     <div class="loading">Loading users...</div>
   {:else if error}
-    <div class="error-message">{error}</div>
+    <div class="message-box error">{error}</div>
   {:else}
     {#if adminUser}
       <div class="admin-user-section">
@@ -326,13 +326,13 @@
                           • {user.reading_count} reading(s)
                         </p>
                         <button
-                          class="btn-small btn-danger"
+                          class="btn btn-small btn-danger"
                           on:click={() => handleDeleteUser(user.id)}
                         >
                           Yes, Delete
                         </button>
                         <button
-                          class="btn-small btn-secondary"
+                          class="btn btn-small btn-secondary"
                           on:click={cancelDelete}
                         >
                           Cancel
@@ -364,12 +364,12 @@
                             </span>
                           </button>
                         </div>
-                        <button type="submit" class="btn-small btn-primary">
+                        <button type="submit" class="btn btn-small btn-primary">
                           Save
                         </button>
                         <button
                           type="button"
-                          class="btn-small btn-secondary"
+                          class="btn btn-small btn-secondary"
                           on:click={cancelReset}
                         >
                           Cancel
@@ -381,13 +381,13 @@
                     {:else}
                       <div class="action-buttons">
                         <button
-                          class="btn-small btn-warning"
+                          class="btn btn-small btn-warning"
                           on:click={() => startReset(user.id)}
                         >
                           Reset Password
                         </button>
                         <button
-                          class="btn-small btn-danger"
+                          class="btn btn-small btn-danger"
                           on:click={() => confirmDelete(user.id)}
                         >
                           Delete User
@@ -452,13 +452,16 @@
         </div>
         <div class="nuke-actions">
           <button
-            class="btn-small btn-danger"
+            class="btn btn-small btn-danger"
             on:click={handleNuke}
             disabled={nukeConfirmText !== "DELETE EVERYTHING" || nukeLoading}
           >
             {nukeLoading ? "Deleting..." : "☢️ Delete Everything"}
           </button>
-          <button class="btn-small btn-secondary" on:click={closeNukeConfirm}>
+          <button
+            class="btn btn-small btn-secondary"
+            on:click={closeNukeConfirm}
+          >
             Cancel
           </button>
         </div>
@@ -482,7 +485,7 @@
   .back-button {
     background: none;
     border: none;
-    color: #4a90e2;
+    color: var(--color-primary);
     font-size: 1rem;
     cursor: pointer;
     padding: 0.5rem 0;
@@ -497,7 +500,7 @@
   .admin-header h2 {
     margin: 0;
     font-size: 2rem;
-    color: #333;
+    color: var(--color-text-primary);
   }
 
   .admin-user-section {
@@ -507,13 +510,13 @@
   .admin-user-section h3 {
     margin: 0 0 1rem 0;
     font-size: 1.25rem;
-    color: #333;
+    color: var(--color-text-primary);
   }
 
   .admin-user-card {
-    background: #f0f7ff;
-    border: 2px solid #4a90e2;
-    border-radius: 8px;
+    background: var(--color-primary-light);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-lg);
     padding: 1.5rem;
   }
 
@@ -524,34 +527,26 @@
   }
 
   .admin-user-info div {
-    color: #333;
+    color: var(--color-text-primary);
   }
 
   .other-users-section h3 {
     margin: 0 0 1rem 0;
     font-size: 1.25rem;
-    color: #333;
+    color: var(--color-text-primary);
   }
 
   .loading {
     text-align: center;
     padding: 3rem;
-    color: #666;
+    color: var(--color-text-secondary);
     font-size: 1.1rem;
   }
 
-  .error-message {
-    background-color: #fee;
-    color: #c33;
-    padding: 1rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-  }
-
   .users-table-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--color-bg-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
     overflow-x: auto;
   }
 
@@ -561,15 +556,15 @@
   }
 
   .users-table thead {
-    background: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
+    background: var(--color-bg-section);
+    border-bottom: 2px solid var(--color-border);
   }
 
   .users-table th {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
-    color: #495057;
+    color: var(--color-text-heading);
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -581,26 +576,26 @@
   }
 
   .sortable:hover {
-    background-color: #e9ecef;
+    background-color: var(--color-bg-hover);
   }
 
   .users-table td {
     padding: 1rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
   }
 
   .users-table tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: var(--color-bg-section);
   }
 
   .stat-cell {
     font-weight: 600;
-    color: #4a90e2;
+    color: var(--color-primary);
   }
 
   .muted {
-    color: #999;
+    color: var(--color-text-light);
   }
 
   .reset-form {
@@ -617,66 +612,10 @@
 
   .reset-input {
     padding: 0.4rem 2.5rem 0.4rem 0.6rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 0.85rem;
     min-width: 150px;
-  }
-
-  .password-toggle-btn {
-    position: absolute;
-    right: 0.25rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.25rem;
-    font-size: 1rem;
-    line-height: 1;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-  }
-
-  .password-toggle-btn:hover {
-    opacity: 1;
-  }
-
-  .btn-small {
-    padding: 0.4rem 0.8rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-  }
-
-  .btn-primary {
-    background: #4a90e2;
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: #357abd;
-  }
-
-  .btn-secondary {
-    background: #6c757d;
-    color: white;
-  }
-
-  .btn-secondary:hover {
-    background: #5a6268;
-  }
-
-  .btn-warning {
-    background: #ffc107;
-    color: #000;
-  }
-
-  .btn-warning:hover {
-    background: #e0a800;
   }
 
   .password-input-wrapper input[type="text"] {
@@ -687,15 +626,6 @@
     line-height: 1.5;
   }
 
-  .btn-danger {
-    background: #dc3545;
-    color: white;
-  }
-
-  .btn-danger:hover {
-    background: #c82333;
-  }
-
   .action-buttons {
     display: flex;
     gap: 0.5rem;
@@ -704,7 +634,6 @@
 
   .action-buttons .btn-small {
     flex: 1;
-    min-width: 120px;
   }
 
   .delete-confirm {
@@ -712,20 +641,20 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.5rem;
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    border-radius: 4px;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid var(--color-warning);
+    border-radius: var(--radius-md);
   }
 
   .warning-text {
     margin: 0;
     font-size: 0.85rem;
     line-height: 1.4;
-    color: #856404;
+    color: var(--color-warning-hover);
   }
 
   .inline-error {
-    color: #c33;
+    color: var(--color-error-text);
     font-size: 0.85rem;
     width: 100%;
   }
@@ -733,29 +662,16 @@
   .empty-state {
     text-align: center;
     padding: 3rem;
-    color: #999;
+    color: var(--color-text-light);
   }
 
   /* Nuclear option modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-  }
-
   .nuke-modal {
-    background: white;
-    border-radius: 8px;
+    background: var(--color-bg-white);
+    border-radius: var(--radius-lg);
     max-width: 500px;
     width: 90%;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-xl);
   }
 
   .nuke-header {
@@ -763,12 +679,12 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .nuke-header h3 {
     margin: 0;
-    color: #dc3545;
+    color: var(--color-danger);
     font-size: 1.5rem;
   }
 
@@ -776,13 +692,13 @@
     background: none;
     border: none;
     font-size: 2rem;
-    color: #999;
+    color: var(--color-text-light);
     cursor: pointer;
     line-height: 1;
   }
 
   .modal-close:hover {
-    color: #333;
+    color: var(--color-text-primary);
   }
 
   .nuke-body {
@@ -791,17 +707,17 @@
 
   .nuke-warning {
     margin: 0 0 1rem 0;
-    color: #856404;
-    background: #fff3cd;
+    color: var(--color-warning-hover);
+    background: rgba(255, 193, 7, 0.1);
     padding: 0.75rem;
-    border-radius: 4px;
-    border: 1px solid #ffc107;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-warning);
   }
 
   .nuke-list {
     margin: 1rem 0;
     padding-left: 2rem;
-    color: #666;
+    color: var(--color-text-secondary);
   }
 
   .nuke-list li {
@@ -816,15 +732,15 @@
   .nuke-input {
     width: 100%;
     padding: 0.75rem;
-    border: 2px solid #dc3545;
-    border-radius: 4px;
+    border: 2px solid var(--color-danger);
+    border-radius: var(--radius-md);
     font-size: 1rem;
     font-family: monospace;
   }
 
   .nuke-input:focus {
     outline: none;
-    border-color: #c82333;
+    border-color: var(--color-danger-hover);
   }
 
   .nuke-actions {
@@ -832,7 +748,7 @@
     gap: 0.5rem;
     justify-content: flex-end;
     padding: 1.5rem;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--color-border);
   }
 
   .nuke-button {

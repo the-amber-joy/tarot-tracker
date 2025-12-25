@@ -5,6 +5,98 @@
   box-sizing: border-box;
 }
 
+/* CSS Variables */
+:root {
+  /* Primary Colors */
+  --color-primary: #4a90e2;
+  --color-primary-hover: #357abd;
+  --color-primary-light: rgba(74, 144, 226, 0.1);
+
+  /* Purple Gradient */
+  --color-gradient-start: #667eea;
+  --color-gradient-end: #764ba2;
+
+  /* Danger/Error Colors */
+  --color-danger: #dc3545;
+  --color-danger-hover: #c82333;
+  --color-danger-light: #b91c1c;
+  --color-error-bg: #fee;
+  --color-error-text: #c33;
+
+  /* Success Colors */
+  --color-success: #28a745;
+  --color-success-hover: #218838;
+  --color-success-bg: #d4edda;
+  --color-success-text: #155724;
+
+  /* Warning Colors */
+  --color-warning: #ffc107;
+  --color-warning-hover: #e0a800;
+
+  /* Secondary/Gray Colors */
+  --color-secondary: #6c757d;
+  --color-secondary-hover: #5a6268;
+  --color-gray-100: #f8f9fa;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #dee2e6;
+  --color-gray-400: #ced4da;
+  --color-gray-500: #adb5bd;
+  --color-gray-600: #6c757d;
+
+  /* Text Colors */
+  --color-text: #333;
+  --color-text-primary: #333;
+  --color-text-secondary: #555;
+  --color-text-muted: #888;
+  --color-text-light: #999;
+  --color-text-heading: #495057;
+
+  /* Background Colors */
+  --color-bg-section: #f9f9f9;
+  --color-bg-white: #ffffff;
+  --color-bg-dark: #1a1a2e;
+  --color-bg-dark-border: #16213e;
+  --color-bg-disabled: #e9ecef;
+  --color-bg-hover: rgba(0, 0, 0, 0.02);
+
+  /* Border Colors */
+  --color-border: #dee2e6;
+  --color-border-light: #ddd;
+  --color-border-input: #ced4da;
+
+  /* Card/Component Colors */
+  --color-card-gold: #f4c430;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-pill: 12px;
+
+  /* Transitions */
+  --transition-fast: all 0.2s ease;
+  --transition-normal: all 0.3s ease;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 10px 40px rgba(0, 0, 0, 0.2);
+
+  /* Z-index layers */
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-toast: 2000;
+}
+
 /* Material Symbols Icons */
 .material-symbols-outlined {
   font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
@@ -16,8 +108,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, sans-serif;
   line-height: 1.6;
-  color: #333;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--color-text);
+  background: linear-gradient(
+    135deg,
+    var(--color-gradient-start) 0%,
+    var(--color-gradient-end) 100%
+  );
   min-height: 100vh;
   padding: 20px;
 }
@@ -117,11 +213,7 @@ header h1 {
 .btn-small {
   padding: 5px 12px;
   font-size: 0.85rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+}
   font-weight: 500;
   transition: all 0.3s ease;
 }
@@ -420,6 +512,82 @@ tbody tr:hover {
 
 .btn-remove-small:hover {
   background: #c82333;
+}
+
+/* Utility Classes */
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: var(--z-modal);
+}
+
+/* Password Toggle */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.6;
+  transition: var(--transition-fast);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-btn:hover {
+  opacity: 1;
+  color: var(--color-text);
+}
+
+.password-input-wrapper input[type="text"] {
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Monaco,
+    "Courier New", monospace;
+  letter-spacing: 0.05em;
+}
+
+/* Empty State Message */
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: var(--spacing-xl);
+}
+
+/* Error/Success Message Boxes */
+.message-box {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.message-box.error {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  border: 1px solid var(--color-error-text);
+}
+
+.message-box.success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success);
 }
 
 /* Responsive Design */

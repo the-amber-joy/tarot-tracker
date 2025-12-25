@@ -64,13 +64,15 @@
             type={showPassword ? "text" : "password"}
             bind:value={password}
             required
-            placeholder={isRegisterMode ? "At least 6 characters" : "Enter password"}
+            placeholder={isRegisterMode
+              ? "At least 6 characters"
+              : "Enter password"}
             disabled={loading}
           />
-          <button 
-            type="button" 
+          <button
+            type="button"
             class="password-toggle-btn"
-            on:click={() => showPassword = !showPassword}
+            on:click={() => (showPassword = !showPassword)}
             aria-label={showPassword ? "Hide password" : "Show password"}
             disabled={loading}
           >
@@ -82,10 +84,10 @@
       </div>
 
       {#if error}
-        <div class="error-message">{error}</div>
+        <div class="message-box error">{error}</div>
       {/if}
 
-      <button type="submit" class="btn-primary" disabled={loading}>
+      <button type="submit" class="btn btn-primary" disabled={loading}>
         {#if loading}
           Loading...
         {:else}
@@ -95,7 +97,12 @@
 
       <div class="toggle-mode">
         {isRegisterMode ? "Already have an account?" : "Don't have an account?"}
-        <button type="button" class="link-button" on:click={toggleMode} disabled={loading}>
+        <button
+          type="button"
+          class="link-button"
+          on:click={toggleMode}
+          disabled={loading}
+        >
           {isRegisterMode ? "Sign In" : "Create Account"}
         </button>
       </div>
@@ -113,10 +120,10 @@
   }
 
   .auth-card {
-    background: white;
+    background: var(--color-bg-white);
     padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
     width: 100%;
     max-width: 400px;
   }
@@ -130,7 +137,7 @@
   h2 {
     text-align: center;
     margin: 0 0 30px 0;
-    color: #333;
+    color: var(--color-text);
   }
 
   .form-group {
@@ -141,104 +148,55 @@
     display: block;
     margin-bottom: 5px;
     font-weight: 500;
-    color: #555;
+    color: var(--color-text-secondary);
   }
 
-  .password-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
+  /* Using global .password-input-wrapper and .password-toggle-btn from app.css */
 
   input {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
     font-size: 14px;
     box-sizing: border-box;
   }
 
   input:focus {
     outline: none;
-    border-color: #4a90e2;
+    border-color: var(--color-primary);
   }
 
   input:disabled {
-    background-color: #f5f5f5;
+    background-color: var(--color-gray-100);
     cursor: not-allowed;
   }
 
-  .password-toggle-btn {
-    position: absolute;
-    right: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.25rem;
-    font-size: 1.2rem;
-    line-height: 1;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-  }
+  /* Password toggle styles now in app.css - removed duplicate */
 
-  .password-toggle-btn:hover:not(:disabled) {
-    opacity: 1;
-  }
-
-  .password-toggle-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
-  }
-
+  /* Using global .btn and .btn-primary from app.css */
   .btn-primary {
     width: 100%;
     padding: 12px;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background-color: #357abd;
   }
 
   .btn-primary:disabled {
-    background-color: #ccc;
+    background: #ccc;
     cursor: not-allowed;
-  }
-
-  .password-input-wrapper input[type="text"] {
-    font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
-    letter-spacing: 0.05em;
-    height: 42px;
-    line-height: 1.5;
-  }
-
-  .error-message {
-    background-color: #fee;
-    color: #c33;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    font-size: 14px;
+    transform: none;
+    box-shadow: none;
   }
 
   .toggle-mode {
     text-align: center;
     margin-top: 20px;
-    color: #666;
+    color: var(--color-text-muted);
   }
 
   .link-button {
     background: none;
     border: none;
-    color: #4a90e2;
+    color: var(--color-primary);
     cursor: pointer;
     text-decoration: underline;
     font-size: inherit;
@@ -246,7 +204,7 @@
   }
 
   .link-button:hover:not(:disabled) {
-    color: #357abd;
+    color: var(--color-primary-hover);
   }
 
   .link-button:disabled {

@@ -50,12 +50,12 @@
     min-width: 250px;
     max-width: 400px;
     padding: 1rem 1.5rem;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    z-index: 2000;
+    z-index: var(--z-toast);
     animation: slideIn 0.3s ease-out;
     font-size: 0.95rem;
   }
@@ -72,12 +72,12 @@
   }
 
   .toast-success {
-    background: #28a745;
+    background: var(--color-success);
     color: white;
   }
 
   .toast-error {
-    background: #dc3545;
+    background: var(--color-danger);
     color: white;
   }
 
@@ -111,7 +111,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0.8;
-    transition: opacity 0.2s;
+    transition: var(--transition-fast);
     flex-shrink: 0;
   }
 
