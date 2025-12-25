@@ -529,10 +529,10 @@
     {:else if activeTab === "readings"}
       <!-- Readings List Section -->
       <section class="profile-section">
-        <h3>My Readings ({readings.length})</h3>
+        <h3>All Readings ({readings.length})</h3>
         
         {#if readings.length === 0}
-          <p class="empty-message">No readings yet. Create your first reading from the home page!</p>
+          <p class="empty-message">No readings yet. Tap the + button to get started!</p>
         {:else}
           <ul class="readings-list">
             {#each readings as reading}
