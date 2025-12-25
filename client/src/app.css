@@ -457,7 +457,7 @@ tbody tr:hover {
   position: relative;
   width: 100%;
   max-width: 1100px;
-  aspect-ratio: 1;
+  aspect-ratio: 2 / 1;
   background: #f8f9fa;
   border: 2px dashed #ddd;
   border-radius: 8px;
@@ -796,7 +796,7 @@ tbody tr:hover {
   position: relative;
   width: 100%;
   max-width: 1100px;
-  aspect-ratio: 1;
+  aspect-ratio: 2 / 1;
   background: #f8f9fa;
   border: 2px solid #ddd;
   border-radius: 8px;
@@ -944,5 +944,10 @@ tbody tr:hover {
   .dropdown-item {
     padding: 14px 16px;
     font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .spread-canvas,
+  .spread-canvas-readonly {
+    aspect-ratio: 1;
   }
 }
