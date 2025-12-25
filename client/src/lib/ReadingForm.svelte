@@ -146,7 +146,6 @@
         (event.target as HTMLSelectElement).value = previousSpreadTemplate;
       }
     } else if (isChanging) {
-      // Always clear cards when switching templates (even if no confirmation needed)
       spreadCards = {};
       spreadTemplate = newTemplate;
       previousSpreadTemplate = newTemplate;
@@ -157,22 +156,10 @@
     spreadTemplate = event.detail;
     previousSpreadTemplate = event.detail;
   }
-  
-  // Expose method to trigger submit from parent component
-  export function triggerSubmit() {
-    handleSubmit(new Event('submit'));
-  }
-  
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     
-    // Validate required fields
-    if (!date || !time) {
-      alert('Please fill in all required fields (Date and Time).');
-      return;
-    }
-    
-    // Prepare reading data
     const readingData = {
       date: date,
       time: time,
@@ -262,7 +249,7 @@
       <div class="form-group">
         <label for="spreadTemplate">Spread Template</label>
         <select id="spreadTemplate" value={spreadTemplate} on:change={handleSpreadTemplateChange}>
-          <option disabled value="">Selct one, or click the canvas to start a custom spread...</option>
+          <option disabled value="">Select one</option>
           {#each spreadTemplates as template}
             <option value={template.id}>{template.name}</option>
           {/each}
@@ -275,7 +262,7 @@
           type="text" 
           id="spreadName" 
           bind:value={spreadName}
-          placeholder="e.g., Three Card Spread, Celtic Cross"
+          placeholder="e.g., Daily Pull, Should I quit my job?"
         />
       </div>
       

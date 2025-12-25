@@ -42,10 +42,6 @@ header h1 {
   padding: 30px;
 }
 
-.view.hidden {
-  display: none;
-}
-
 .view-header {
   display: flex;
   justify-content: space-between;
@@ -114,22 +110,6 @@ header h1 {
   background: #5568d3;
 }
 
-.btn-sort {
-  padding: 2px 8px;
-  font-size: 0.9rem;
-  background: transparent;
-  color: #667eea;
-  border: 1px solid #667eea;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 8px;
-}
-
-.btn-sort:hover {
-  background: #667eea;
-  color: white;
-}
-
 .btn-remove {
   padding: 5px 12px;
   font-size: 0.85rem;
@@ -196,13 +176,6 @@ tbody tr:hover {
   color: #495057;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -253,29 +226,6 @@ tbody tr:hover {
 
 .input-with-button input {
   flex: 1;
-}
-
-/* Card Entry */
-.card-entry {
-  background: white;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-}
-
-.card-entry-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.card-entry-header h4 {
-  color: #667eea;
-  margin: 0;
 }
 
 /* Form Actions */
@@ -360,10 +310,6 @@ tbody tr:hover {
   justify-content: center;
   align-items: center;
   z-index: 1000;
-}
-
-.modal.hidden {
-  display: none;
 }
 
 .modal-content {

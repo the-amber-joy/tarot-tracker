@@ -10,7 +10,7 @@ type Reading = {
 };
 
 function createReadingsStore() {
-  const { subscribe, set, update } = writable<Reading[]>([]);
+  const { subscribe, set } = writable<Reading[]>([]);
   let loaded = false;
 
   return {
@@ -37,10 +37,6 @@ function createReadingsStore() {
       } catch (error) {
         console.error("Error loading readings:", error);
       }
-    },
-    reset: () => {
-      set([]);
-      loaded = false;
     },
   };
 }

@@ -12,7 +12,6 @@
   import { authStore } from './stores/authStore';
   
   let formRef: any = null;
-  let listRef: any = null;
   let currentPath = '';
   let authInitialized = false;
   let showFabMenu: boolean = false;
