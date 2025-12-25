@@ -17,7 +17,7 @@
   type SpreadTemplate = {
     id: string;
     name: string;
-    description: string;
+    description: string; // TODO: create descriptions
     positions: any[];
   };
   

@@ -7,7 +7,6 @@
     id: number;
     username: string;
     display_name: string;
-    email: string;
     created_at: string;
     deck_count: number;
     reading_count: number;
