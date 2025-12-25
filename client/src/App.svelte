@@ -11,13 +11,12 @@
   import ReadingsList from './lib/ReadingsList.svelte';
   import { authStore } from './stores/authStore';
   
-  let formRef: any = null;
   let currentPath = '';
   let authInitialized = false;
   let isDeckModalOpen: boolean = false;
   
-  // Show FAB on home, profile, and reading pages
-  $: showFab = currentPath === '/' || currentPath === '/profile' || (currentPath.startsWith('/reading/') && currentPath !== '/reading/new');
+  // Show FAB on home, profile, and reading pages (not in edit/new mode)
+  $: showFab = currentPath === '/' || currentPath === '/profile' || (currentPath.startsWith('/reading/') && currentPath !== '/reading/new' && !currentPath.includes('/edit'));
   
   onMount(() => {
     // Initialize auth
@@ -48,13 +47,6 @@
     };
   });
   
-  function handleDecksUpdated() {
-    // Reload decks in the form if it's open
-    if (formRef?.loadDecks) {
-      formRef.loadDecks();
-    }
-  }
-
   function handleNewReading() {
     navigate('/reading/new');
     setTimeout(() => currentPath = window.location.pathname, 0);
@@ -62,13 +54,6 @@
 
   function closeDeckModal() {
     isDeckModalOpen = false;
-  }
-
-  function handleDeckAdded() {
-    // Deck was added, reload if needed
-    if (formRef?.loadDecks) {
-      formRef.loadDecks();
-    }
   }
 
 </script>
@@ -89,7 +74,6 @@
         navigate('/reading/new');
         setTimeout(() => currentPath = window.location.pathname, 0);
       }}
-      on:decksUpdated={handleDecksUpdated}
     />
 
     <Route path="/">
@@ -102,13 +86,13 @@
       <Admin />
     </Route>
     <Route path="/reading/new">
-      <ReadingForm bind:this={formRef} />
+      <ReadingForm />
     </Route>
     <Route path="/reading/:id" let:params>
       <ReadingDetail {params} />
     </Route>
     <Route path="/reading/:id/edit" let:params>
-      <ReadingForm {params} bind:this={formRef} />
+      <ReadingForm {params} />
     </Route>
   </div>
   
@@ -126,7 +110,6 @@
   <DeckModal 
     isOpen={isDeckModalOpen}
     onClose={closeDeckModal}
-    onDeckAdded={handleDeckAdded}
   />
 </Router>
 {/if}

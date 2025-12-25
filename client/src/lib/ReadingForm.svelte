@@ -215,6 +215,11 @@
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
+    await submitForm();
+  }
+  
+  // Export this function so parent can trigger save via FAB
+  export async function submitForm() {
     
     const readingData = {
       date: date,

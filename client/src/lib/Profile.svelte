@@ -14,9 +14,26 @@
     date: string;
     time: string;
     spread_name: string;
+    spread_template_id?: string;
     deck_name: string;
     is_incomplete?: boolean;
   };
+
+  // Map spread template IDs to display names
+  const spreadTemplates: Record<string, string> = {
+    'celtic-cross': 'Celtic Cross',
+    'five-card': 'Five Card Spread',
+    'horseshoe': 'Horseshoe Spread',
+    'relationship': 'Relationship Spread',
+    'single-card': 'Single Card',
+    'three-card': 'Three Card Spread',
+    'custom': 'Custom Spread'
+  };
+  
+  function getSpreadLayout(templateId?: string): string {
+    if (!templateId) return '-';
+    return spreadTemplates[templateId] || '-';
+  }
 
   let activeTab: "profile" | "decks" | "readings" = "profile";
   let display_name = $authStore?.display_name || $authStore?.username || "";
@@ -549,6 +566,7 @@
                       {reading.spread_name}
                     </span>
                     <p class="reading-details">{formatDateTime(reading.date, reading.time)}</p>
+                    <p class="reading-spread-layout">{getSpreadLayout(reading.spread_template_id)}</p>
                     <p class="reading-deck">{reading.deck_name || 'No Deck Specified'}</p>
                   </div>
                 </button>
@@ -1024,6 +1042,17 @@
     margin: 0.25rem 0;
     font-size: 0.9rem;
     color: #666;
+  }
+
+  .reading-spread-layout {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    color: #7b2cbf;
+    font-weight: 600;
+    background: rgba(123, 44, 191, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    display: inline-block;
   }
 
   .reading-deck {

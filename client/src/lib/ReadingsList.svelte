@@ -8,14 +8,61 @@
     date: string;
     time: string;
     spread_name: string;
+    spread_template_id?: string;
     deck_name: string;
     is_incomplete?: boolean;
   };
   
+  // Map spread template IDs to display names
+  const spreadTemplates: Record<string, string> = {
+    'celtic-cross': 'Celtic Cross',
+    'five-card': 'Five Card Spread',
+    'horseshoe': 'Horseshoe Spread',
+    'relationship': 'Relationship Spread',
+    'single-card': 'Single Card',
+    'three-card': 'Three Card Spread',
+    'custom': 'Custom Spread'
+  };
+  
+  function getSpreadLayout(templateId?: string): string {
+    if (!templateId) return '-';
+    return spreadTemplates[templateId] || '-';
+  }
+  
   let sortAscending: boolean = false;
+  let deckFilter: string = '';
+  let statusFilter: string = ''; // '', 'complete', or 'incomplete'
+  let spreadFilter: string = '';
   
   $: readings = $readingsStore;
-  $: sortedReadings = [...readings].sort((a, b) => {
+  
+  // Get unique deck names for filter dropdown
+  $: uniqueDecks = [...new Set(readings.map(r => r.deck_name || 'No Deck Specified'))].sort();
+  
+  // Get unique spread layouts
+  $: uniqueSpreads = [...new Set(readings.map(r => getSpreadLayout(r.spread_template_id)).filter(s => s !== '-'))].sort();
+  
+  // Filter and sort readings
+  $: filteredReadings = readings.filter(r => {
+    // Filter by deck
+    if (deckFilter && (r.deck_name || 'No Deck Specified') !== deckFilter) {
+      return false;
+    }
+    // Filter by completion status
+    if (statusFilter === 'complete' && r.is_incomplete) {
+      return false;
+    }
+    if (statusFilter === 'incomplete' && !r.is_incomplete) {
+      return false;
+    }
+    // Filter by spread layout
+    if (spreadFilter && getSpreadLayout(r.spread_template_id) !== spreadFilter) {
+      return false;
+    }
+    return true;
+  });
+  
+  $: sortedReadings = [...filteredReadings].sort((a, b) => {
     const dateA = new Date(a.date + ' ' + a.time);
     const dateB = new Date(b.date + ' ' + b.time);
     return sortAscending 
@@ -69,14 +116,47 @@
       handleReadingClick(reading);
     }
   }
+  
+  function clearFilters() {
+    deckFilter = '';
+    statusFilter = '';
+    spreadFilter = '';
+  }
 
 </script>
 
 <div class="view summary-view">
   <div class="view-header">
     <h2>My Readings</h2>
+  </div>
+  
+  <div class="filters-section">
+    <div class="controls">
+      <select class="deck-filter" bind:value={deckFilter}>
+        <option value="">All Decks</option>
+        {#each uniqueDecks as deck}
+          <option value={deck}>{deck}</option>
+        {/each}
+      </select>
+      <select class="spread-filter" bind:value={spreadFilter}>
+        <option value="">All Spreads</option>
+        {#each uniqueSpreads as spread}
+          <option value={spread}>{spread}</option>
+        {/each}
+      </select>
+      <select class="status-filter" bind:value={statusFilter}>
+        <option value="">All Readings</option>
+        <option value="complete">Complete</option>
+        <option value="incomplete">Incomplete</option>
+      </select>
+      {#if deckFilter || statusFilter || spreadFilter}
+        <button class="clear-filters-btn" on:click={clearFilters}>
+          Clear Filters
+        </button>
+      {/if}
+    </div>
     <button class="mobile-sort-btn" on:click={toggleDateSort}>
-      Date {sortAscending ? '↑' : '↓'}
+      Sort by Date {sortAscending ? '↑' : '↓'}
     </button>
   </div>
   
@@ -84,17 +164,18 @@
   <table class="readings-table">
     <thead>
       <tr>
-        <th on:click={toggleDateSort} on:keydown={handleSortKeydown} tabindex="0" style="cursor: pointer;">
+        <th class="sortable" on:click={toggleDateSort} on:keydown={handleSortKeydown} tabindex="0">
           Date {sortAscending ? '↑' : '↓'}
         </th>
-        <th>Spread Name</th>
+        <th>Name</th>
+        <th>Spread</th>
         <th>Deck</th>
       </tr>
     </thead>
     <tbody aria-live="polite">
       {#if readings.length === 0}
         <tr>
-          <td colspan="3" class="empty-message">
+          <td colspan="4" class="empty-message">
             No readings yet. Tap the + button to get started!
           </td>
         </tr>
@@ -108,6 +189,7 @@
               {/if}
               {reading.spread_name}
             </td>
+            <td><span class="spread-badge">{getSpreadLayout(reading.spread_template_id)}</span></td>
             <td>{reading.deck_name || 'No Deck Specified'}</td>
           </tr>
         {/each}
@@ -133,9 +215,12 @@
               {/if}
               {reading.spread_name}
             </span>
-            <span class="reading-deck">{reading.deck_name || 'No Deck Specified'}</span>
+            <span class="spread-badge">{getSpreadLayout(reading.spread_template_id)}</span>
           </div>
-          <div class="reading-date">{formatDateTime(reading.date, reading.time)}</div>
+          <div class="reading-card-footer">
+            <div class="reading-date">{formatDateTime(reading.date, reading.time)}</div>
+            <div class="reading-deck">{reading.deck_name || 'No Deck Specified'}</div>
+          </div>
         </button>
       {/each}
     {/if}
@@ -145,6 +230,96 @@
 <style>
   .summary-view {
     container-type: inline-size;
+  }
+  
+  .filters-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: .5rem;
+    margin-top: 15px
+  }
+  
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .deck-filter,
+  .status-filter,
+  .spread-filter {
+    padding: 0.5rem 1rem;
+    background: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    min-width: 150px;
+    max-width: 100%;
+  }
+  
+  .deck-filter:hover,
+  .status-filter:hover,
+  .spread-filter:hover {
+    border-color: var(--color-primary, #7b2cbf);
+  }
+  
+  .deck-filter:focus,
+  .status-filter:focus,
+  .spread-filter:focus {
+    outline: 2px solid var(--color-primary, #7b2cbf);
+    outline-offset: 2px;
+    border-color: var(--color-primary, #7b2cbf);
+  }
+  
+  .clear-filters-btn {
+    padding: 0.5rem 1rem;
+    background: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  
+  .clear-filters-btn:hover {
+    background: #e0e0e0;
+    border-color: #999;
+  }
+  
+  .clear-filters-btn:focus {
+    outline: 2px solid var(--color-primary, #7b2cbf);
+    outline-offset: 2px;
+  }
+  
+  .clear-filters-btn:active {
+    background: #d0d0d0;
+    transform: scale(0.98);
+  }
+  
+  th.sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  th.sortable:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+  
+  .spread-badge {
+    display: inline-block;
+    background: rgba(123, 44, 191, 0.1);
+    color: #7b2cbf;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
   }
   
   /* Hide mobile sort button on desktop */
@@ -168,7 +343,7 @@
       padding: 0.5rem 1rem;
       background: transparent;
       color: #666;
-      border: none;
+      border: 1px solid #ddd;
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.9rem;
@@ -234,9 +409,22 @@
       color: #333;
     }
     
-    .reading-deck {
+    .reading-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .reading-date {
       color: #666;
       font-size: 0.9rem;
+    }
+    
+    .reading-deck {
+      color: #999;
+      font-size: 0.85rem;
+      text-align: right;
     }
     
     .reading-date {
