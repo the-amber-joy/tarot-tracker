@@ -212,7 +212,7 @@
     cursor: not-allowed;
   }
 
-  .password-input-wrapper input {
+  .password-input-wrapper input[type="text"] {
     font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
     letter-spacing: 0.05em;
     height: 42px;
