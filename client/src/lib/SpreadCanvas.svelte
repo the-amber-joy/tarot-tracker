@@ -754,7 +754,7 @@
               title="Add card"
               aria-label="Add card to this position"
             >
-              <span class="material-symbols-outlined">edit_square</span>
+              <span class="material-symbols-outlined">add_2</span>
             </div>
           {/if}
           {#if !readonly}
@@ -821,7 +821,7 @@
               title="Add card"
               aria-label="Add card to this position"
             >
-              <span class="material-symbols-outlined">edit_square</span>
+              <span class="material-symbols-outlined">add_2</span>
             </div>
           {/if}
           {#if !readonly}
@@ -884,7 +884,7 @@
               title="Add card"
               aria-label="Add card to this position"
             >
-              <span class="material-symbols-outlined">edit_square</span>
+              <span class="material-symbols-outlined">add_2</span>
             </div>
           {/if}
         </button>
