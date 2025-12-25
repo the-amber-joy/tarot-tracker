@@ -62,7 +62,7 @@
     {/if}
     {#if $authStore}
       <button
-        class="user-info"
+        class="btn user-info"
         on:click={handleProfileClick}
         title="View Profile"
       >
@@ -129,17 +129,8 @@
   }
 
   .user-info {
-    color: var(--color-text, #eee);
-    font-size: 1rem;
     background: none;
-    border: none;
-    cursor: pointer;
-    padding: 10px 20px;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    color: var(--color-text, #eee);
   }
 
   .user-info:hover {
