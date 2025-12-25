@@ -40,6 +40,7 @@
   let editingDeckId: number | null = null;
   let editDeckName = "";
   let editDeckNotes = "";
+  let expandedDeckNotes: Set<number> = new Set();
 
   let readings: Reading[] = [];
 
@@ -134,6 +135,15 @@
     editingDeckId = null;
     editDeckName = "";
     editDeckNotes = "";
+  }
+
+  function toggleDeckNotes(deckId: number) {
+    if (expandedDeckNotes.has(deckId)) {
+      expandedDeckNotes.delete(deckId);
+    } else {
+      expandedDeckNotes.add(deckId);
+    }
+    expandedDeckNotes = expandedDeckNotes; // Trigger reactivity
   }
 
   async function handleUpdateDeck(deckId: number) {
@@ -482,7 +492,14 @@
                       <div>
                         <span class="deck-name">{deck.name}</span>
                         {#if deck.notes}
-                          <p class="deck-notes">{deck.notes}</p>
+                          <p class="deck-notes" class:expanded={expandedDeckNotes.has(deck.id)}>{deck.notes}</p>
+                          <button 
+                            class="notes-toggle" 
+                            on:click={() => toggleDeckNotes(deck.id)}
+                            type="button"
+                          >
+                            {expandedDeckNotes.has(deck.id) ? 'Less' : 'More'}
+                          </button>
                         {/if}
                       </div>
                       <div class="deck-actions">
@@ -824,6 +841,34 @@
     font-size: 0.9rem;
     color: #666;
     white-space: pre-wrap;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .deck-notes.expanded {
+    display: block;
+    line-clamp: unset;
+    -webkit-line-clamp: unset;
+  }
+
+  .notes-toggle {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 0.25rem;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+
+  .notes-toggle:hover {
+    color: #555;
   }
 
   .deck-actions {
