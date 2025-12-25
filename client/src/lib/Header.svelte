@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import { navigate } from 'svelte-routing';
-  import { authStore } from '../stores/authStore';
-  
+  import { createEventDispatcher } from "svelte";
+  import { navigate } from "svelte-routing";
+  import { authStore } from "../stores/authStore";
+
   export let onNewReading: () => void;
   export let onHome: () => void;
-  
+
   const dispatch = createEventDispatcher();
   let isMenuOpen = false;
-  
+
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
   }
-  
+
   function handleNewReading() {
     isMenuOpen = false; // Close menu when opening new reading
     onNewReading();
@@ -23,39 +23,50 @@
       await authStore.logout();
       isMenuOpen = false;
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   }
 
   function handleProfileClick() {
     isMenuOpen = false;
-    navigate('/profile');
+    navigate("/profile");
   }
 
   function handleAdminClick() {
     isMenuOpen = false;
-    navigate('/admin');
+    navigate("/admin");
   }
 </script>
 
 <header class="app-header">
-  <h1><button on:click={onHome} class="home-button">🔮 Tarot Tracker</button></h1>
-  
-  <button class="hamburger" on:click={toggleMenu} aria-label="Menu" aria-expanded={isMenuOpen}>
+  <h1>
+    <button on:click={onHome} class="home-button">🔮 Tarot Tracker</button>
+  </h1>
+
+  <button
+    class="hamburger"
+    on:click={toggleMenu}
+    aria-label="Menu"
+    aria-expanded={isMenuOpen}
+  >
     <span></span>
     <span></span>
     <span></span>
   </button>
-  
+
   <div class="header-actions" class:menu-open={isMenuOpen}>
-    {#if $authStore}
-      <button class="user-info" on:click={handleProfileClick} title="View Profile">
-        👤 Profile
-      </button>
-    {/if}
     {#if $authStore?.is_admin}
       <button class="btn btn-warning" on:click={handleAdminClick}>
-        🔧 Admin
+        <span class="material-symbols-outlined"> build </span> Admin
+      </button>
+    {/if}
+    {#if $authStore}
+      <button
+        class="user-info"
+        on:click={handleProfileClick}
+        title="View Profile"
+      >
+        <span class="material-symbols-outlined"> user_attributes </span>
       </button>
     {/if}
     {#if $authStore}
@@ -78,7 +89,7 @@
     position: relative;
     container-type: inline-size;
   }
-  
+
   .app-header h1 {
     margin: 0;
     font-size: 2rem;
@@ -93,7 +104,7 @@
     cursor: pointer;
     padding: 0;
   }
-  
+
   .hamburger {
     display: none;
     flex-direction: column;
@@ -103,14 +114,14 @@
     cursor: pointer;
     padding: 8px;
   }
-  
+
   .hamburger span {
     width: 24px;
     height: 3px;
     background: var(--color-text, #eee);
     transition: all 0.3s ease;
   }
-  
+
   .header-actions {
     display: flex;
     gap: 1rem;
@@ -131,17 +142,17 @@
   .user-info:hover {
     background-color: rgba(255, 255, 255, 0.1);
   }
-  
+
   /* Container query: show hamburger when header is narrow */
   @container (max-width: 600px) {
     .app-header h1 {
       font-size: 1.5rem;
     }
-    
+
     .hamburger {
       display: flex;
     }
-    
+
     .header-actions {
       position: absolute;
       top: 100%;
@@ -156,12 +167,12 @@
       transition: max-height 0.3s ease;
       z-index: 10;
     }
-    
+
     .header-actions.menu-open {
       max-height: 300px;
       padding: 1rem;
     }
-    
+
     .header-actions button {
       width: 100%;
     }

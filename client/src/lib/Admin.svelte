@@ -13,8 +13,14 @@
     storage_bytes: number;
   };
 
-  type SortField = 'username' | 'display_name' | 'created_at' | 'deck_count' | 'reading_count' | 'storage_bytes';
-  type SortDirection = 'asc' | 'desc';
+  type SortField =
+    | "username"
+    | "display_name"
+    | "created_at"
+    | "deck_count"
+    | "reading_count"
+    | "storage_bytes";
+  type SortDirection = "asc" | "desc";
 
   let users: UserStats[] = [];
   let loading = true;
@@ -25,24 +31,26 @@
   let deleteUserId: number | null = null;
   let toastMessage = "";
   let showToast = false;
-  let sortField: SortField = 'username';
-  let sortDirection: SortDirection = 'asc';
+  let sortField: SortField = "username";
+  let sortDirection: SortDirection = "asc";
   let showNukeConfirm = false;
   let nukeConfirmText = "";
   let nukeLoading = false;
   let showPassword = false;
 
-  $: adminUser = users.find(u => u.id === $authStore?.id);
-  $: otherUsers = users.filter(u => u.id !== $authStore?.id).sort((a, b) => {
-    const aVal = a[sortField];
-    const bVal = b[sortField];
-    const multiplier = sortDirection === 'asc' ? 1 : -1;
-    
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return aVal.localeCompare(bVal) * multiplier;
-    }
-    return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * multiplier;
-  });
+  $: adminUser = users.find((u) => u.id === $authStore?.id);
+  $: otherUsers = users
+    .filter((u) => u.id !== $authStore?.id)
+    .sort((a, b) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+      const multiplier = sortDirection === "asc" ? 1 : -1;
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return aVal.localeCompare(bVal) * multiplier;
+      }
+      return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * multiplier;
+    });
 
   onMount(async () => {
     if (!$authStore?.is_admin) {
@@ -96,18 +104,21 @@
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword }),
-      });
+      const response = await fetch(
+        `/api/admin/users/${userId}/reset-password`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ newPassword }),
+        },
+      );
 
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Failed to reset password");
       }
 
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
       displayToast(`Password reset successfully for ${user?.username}`);
       cancelReset();
     } catch (e: any) {
@@ -126,7 +137,7 @@
   async function handleDeleteUser(userId: number) {
     const user = users.find((u) => u.id === userId);
     const username = user?.username;
-    
+
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: "DELETE",
@@ -156,25 +167,25 @@
   }
 
   function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return "0 B";
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   }
 
   function handleSort(field: SortField) {
     if (sortField === field) {
-      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      sortDirection = sortDirection === "asc" ? "desc" : "asc";
     } else {
       sortField = field;
-      sortDirection = 'asc';
+      sortDirection = "asc";
     }
   }
 
   function getSortIcon(field: SortField): string {
-    if (sortField !== field) return '⇅';
-    return sortDirection === 'asc' ? '↑' : '↓';
+    if (sortField !== field) return "⇅";
+    return sortDirection === "asc" ? "↑" : "↓";
   }
 
   function openNukeConfirm() {
@@ -216,13 +227,14 @@
 <div class="admin-container">
   {#if showToast}
     <div class="toast success-toast">
-      ✓ {toastMessage}
+      <span class="material-symbols-outlined"> check </span>
+      {toastMessage}
     </div>
   {/if}
 
   <div class="admin-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
-    <h2>🔧 Admin Panel</h2>
+    <h2><span class="material-symbols-outlined"> build </span> Admin Panel</h2>
     <button class="btn-danger nuke-button" on:click={openNukeConfirm}>
       ☢️ Nuclear Option
     </button>
@@ -239,11 +251,20 @@
         <div class="admin-user-card">
           <div class="admin-user-info">
             <div><strong>Username:</strong> {adminUser.username}</div>
-            <div><strong>Display Name:</strong> {adminUser.display_name || "-"}</div>
-            <div><strong>Created:</strong> {formatDate(adminUser.created_at)}</div>
+            <div>
+              <strong>Display Name:</strong>
+              {adminUser.display_name || "-"}
+            </div>
+            <div>
+              <strong>Created:</strong>
+              {formatDate(adminUser.created_at)}
+            </div>
             <div><strong>Decks:</strong> {adminUser.deck_count}</div>
             <div><strong>Readings:</strong> {adminUser.reading_count}</div>
-            <div><strong>Storage:</strong> {formatBytes(adminUser.storage_bytes)}</div>
+            <div>
+              <strong>Storage:</strong>
+              {formatBytes(adminUser.storage_bytes)}
+            </div>
           </div>
         </div>
       </div>
@@ -256,23 +277,32 @@
           <table class="users-table">
             <thead>
               <tr>
-                <th class="sortable" on:click={() => handleSort('username')}>
-                  Username {getSortIcon('username')}
+                <th class="sortable" on:click={() => handleSort("username")}>
+                  Username {getSortIcon("username")}
                 </th>
-                <th class="sortable" on:click={() => handleSort('display_name')}>
-                  Display Name {getSortIcon('display_name')}
+                <th
+                  class="sortable"
+                  on:click={() => handleSort("display_name")}
+                >
+                  Display Name {getSortIcon("display_name")}
                 </th>
-                <th class="sortable" on:click={() => handleSort('created_at')}>
-                  Created {getSortIcon('created_at')}
+                <th class="sortable" on:click={() => handleSort("created_at")}>
+                  Created {getSortIcon("created_at")}
                 </th>
-                <th class="sortable" on:click={() => handleSort('deck_count')}>
-                  Decks {getSortIcon('deck_count')}
+                <th class="sortable" on:click={() => handleSort("deck_count")}>
+                  Decks {getSortIcon("deck_count")}
                 </th>
-                <th class="sortable" on:click={() => handleSort('reading_count')}>
-                  Readings {getSortIcon('reading_count')}
+                <th
+                  class="sortable"
+                  on:click={() => handleSort("reading_count")}
+                >
+                  Readings {getSortIcon("reading_count")}
                 </th>
-                <th class="sortable" on:click={() => handleSort('storage_bytes')}>
-                  Storage {getSortIcon('storage_bytes')}
+                <th
+                  class="sortable"
+                  on:click={() => handleSort("storage_bytes")}
+                >
+                  Storage {getSortIcon("storage_bytes")}
                 </th>
                 <th>Actions</th>
               </tr>
@@ -287,128 +317,143 @@
                   <td class="stat-cell">{user.reading_count}</td>
                   <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
                   <td>
-                {#if user.id === $authStore?.id}
-                  <span class="muted">-</span>
-                {:else if deleteUserId === user.id}
-                  <div class="delete-confirm">
-                    <p class="warning-text">
-                      ⚠️ Delete {user.username}?<br />
-                      This will permanently delete:<br />
-                      • {user.deck_count} deck(s)<br />
-                      • {user.reading_count} reading(s)
-                    </p>
-                    <button
-                      class="btn-small btn-danger"
-                      on:click={() => handleDeleteUser(user.id)}
-                    >
-                      Yes, Delete
-                    </button>
-                    <button class="btn-small btn-secondary" on:click={cancelDelete}>
-                      Cancel
-                    </button>
-                  </div>
-                {:else if resetUserId === user.id}
-                  <form class="reset-form" on:submit|preventDefault={() => handleResetPassword(user.id)}>
-                    <div class="password-input-wrapper">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        bind:value={newPassword}
-                        placeholder="New password (6+ chars)"
-                        class="reset-input"
-                      />
-                      <button 
-                        type="button" 
-                        class="password-toggle-btn"
-                        on:click={() => showPassword = !showPassword}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                    {#if user.id === $authStore?.id}
+                      <span class="muted">-</span>
+                    {:else if deleteUserId === user.id}
+                      <div class="delete-confirm">
+                        <p class="warning-text">
+                          ⚠️ Delete {user.username}?<br />
+                          This will permanently delete:<br />
+                          • {user.deck_count} deck(s)<br />
+                          • {user.reading_count} reading(s)
+                        </p>
+                        <button
+                          class="btn-small btn-danger"
+                          on:click={() => handleDeleteUser(user.id)}
+                        >
+                          Yes, Delete
+                        </button>
+                        <button
+                          class="btn-small btn-secondary"
+                          on:click={cancelDelete}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    {:else if resetUserId === user.id}
+                      <form
+                        class="reset-form"
+                        on:submit|preventDefault={() =>
+                          handleResetPassword(user.id)}
                       >
-                        <span class="material-symbols-outlined">
-                          {showPassword ? "visibility_off" : "visibility"}
-                        </span>
-                      </button>
-                    </div>
-                    <button
-                      type="submit"
-                      class="btn-small btn-primary"
-                    >
-                      Save
-                    </button>
-                    <button type="button" class="btn-small btn-secondary" on:click={cancelReset}>
-                      Cancel
-                    </button>
-                    {#if resetError}
-                      <div class="inline-error">{resetError}</div>
+                        <div class="password-input-wrapper">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            bind:value={newPassword}
+                            placeholder="New password (6+ chars)"
+                            class="reset-input"
+                          />
+                          <button
+                            type="button"
+                            class="password-toggle-btn"
+                            on:click={() => (showPassword = !showPassword)}
+                            aria-label={showPassword
+                              ? "Hide password"
+                              : "Show password"}
+                          >
+                            <span class="material-symbols-outlined">
+                              {showPassword ? "visibility_off" : "visibility"}
+                            </span>
+                          </button>
+                        </div>
+                        <button type="submit" class="btn-small btn-primary">
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-small btn-secondary"
+                          on:click={cancelReset}
+                        >
+                          Cancel
+                        </button>
+                        {#if resetError}
+                          <div class="inline-error">{resetError}</div>
+                        {/if}
+                      </form>
+                    {:else}
+                      <div class="action-buttons">
+                        <button
+                          class="btn-small btn-warning"
+                          on:click={() => startReset(user.id)}
+                        >
+                          Reset Password
+                        </button>
+                        <button
+                          class="btn-small btn-danger"
+                          on:click={() => confirmDelete(user.id)}
+                        >
+                          Delete User
+                        </button>
+                      </div>
                     {/if}
-                  </form>
-                {:else}
-                  <div class="action-buttons">
-                    <button
-                      class="btn-small btn-warning"
-                      on:click={() => startReset(user.id)}
-                    >
-                      Reset Password
-                    </button>
-                    <button
-                      class="btn-small btn-danger"
-                      on:click={() => confirmDelete(user.id)}
-                    >
-                      Delete User
-                    </button>
-                  </div>
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  {:else}
-    <div class="empty-state">No other users found</div>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {:else}
+      <div class="empty-state">No other users found</div>
+    {/if}
   {/if}
-{/if}
 
-{#if showNukeConfirm}
-  <div class="modal-overlay" on:click={closeNukeConfirm}>
-    <div class="nuke-modal" on:click|stopPropagation>
-      <div class="nuke-header">
-        <h3>☢️ Nuclear Option</h3>
-        <button class="modal-close" on:click={closeNukeConfirm}>&times;</button>
-      </div>
-      <div class="nuke-body">
-        <p class="nuke-warning">⚠️ <strong>WARNING:</strong> This will permanently delete:</p>
-        <ul class="nuke-list">
-          <li>All users (except you)</li>
-          <li>All readings from all users</li>
-          <li>All decks from all users</li>
-          <li>Your own readings and decks</li>
-        </ul>
-        <p class="nuke-warning">Only your admin account will remain.</p>
-        <p class="nuke-instruction">Type <strong>DELETE EVERYTHING</strong> to confirm:</p>
-        <input 
-          type="text" 
-          class="nuke-input" 
-          bind:value={nukeConfirmText}
-          placeholder="DELETE EVERYTHING"
-          autofocus
-        />
-      </div>
-      <div class="nuke-actions">
-        <button 
-          class="btn-small btn-danger" 
-          on:click={handleNuke}
-          disabled={nukeConfirmText !== "DELETE EVERYTHING" || nukeLoading}
-        >
-          {nukeLoading ? "Deleting..." : "☢️ Delete Everything"}
-        </button>
-        <button class="btn-small btn-secondary" on:click={closeNukeConfirm}>
-          Cancel
-        </button>
+  {#if showNukeConfirm}
+    <div class="modal-overlay" on:click={closeNukeConfirm}>
+      <div class="nuke-modal" on:click|stopPropagation>
+        <div class="nuke-header">
+          <h3>☢️ Nuclear Option</h3>
+          <button class="modal-close" on:click={closeNukeConfirm}
+            >&times;</button
+          >
+        </div>
+        <div class="nuke-body">
+          <p class="nuke-warning">
+            ⚠️ <strong>WARNING:</strong> This will permanently delete:
+          </p>
+          <ul class="nuke-list">
+            <li>All users (except you)</li>
+            <li>All readings from all users</li>
+            <li>All decks from all users</li>
+            <li>Your own readings and decks</li>
+          </ul>
+          <p class="nuke-warning">Only your admin account will remain.</p>
+          <p class="nuke-instruction">
+            Type <strong>DELETE EVERYTHING</strong> to confirm:
+          </p>
+          <input
+            type="text"
+            class="nuke-input"
+            bind:value={nukeConfirmText}
+            placeholder="DELETE EVERYTHING"
+            autofocus
+          />
+        </div>
+        <div class="nuke-actions">
+          <button
+            class="btn-small btn-danger"
+            on:click={handleNuke}
+            disabled={nukeConfirmText !== "DELETE EVERYTHING" || nukeLoading}
+          >
+            {nukeLoading ? "Deleting..." : "☢️ Delete Everything"}
+          </button>
+          <button class="btn-small btn-secondary" on:click={closeNukeConfirm}>
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-{/if}
-
+  {/if}
 </div>
 
 <style>
@@ -653,7 +698,8 @@
   }
 
   .password-input-wrapper input[type="text"] {
-    font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
+    font-family: ui-monospace, "Cascadia Code", "Courier New", Courier,
+      monospace;
     letter-spacing: 0.05em;
     height: 42px;
     line-height: 1.5;

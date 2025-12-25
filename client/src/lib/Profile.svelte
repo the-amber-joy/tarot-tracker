@@ -21,18 +21,18 @@
 
   // Map spread template IDs to display names
   const spreadTemplates: Record<string, string> = {
-    'celtic-cross': 'Celtic Cross',
-    'five-card': 'Five Card Spread',
-    'horseshoe': 'Horseshoe Spread',
-    'relationship': 'Relationship Spread',
-    'single-card': 'Single Card',
-    'three-card': 'Three Card Spread',
-    'custom': 'Custom Spread'
+    "celtic-cross": "Celtic Cross",
+    "five-card": "Five Card Spread",
+    horseshoe: "Horseshoe Spread",
+    relationship: "Relationship Spread",
+    "single-card": "Single Card",
+    "three-card": "Three Card Spread",
+    custom: "Custom Spread",
   };
-  
+
   function getSpreadLayout(templateId?: string): string {
-    if (!templateId) return '-';
-    return spreadTemplates[templateId] || '-';
+    if (!templateId) return "-";
+    return spreadTemplates[templateId] || "-";
   }
 
   let activeTab: "profile" | "decks" | "readings" = "profile";
@@ -40,7 +40,7 @@
   let currentPassword = "";
   let newPassword = "";
   let confirmPassword = "";
-  
+
   let profileError = "";
   let profileSuccess = "";
   let passwordError = "";
@@ -86,8 +86,8 @@
       const response = await fetch("/api/readings");
       const allReadings = await response.json();
       readings = allReadings.sort((a: Reading, b: Reading) => {
-        const dateA = new Date(a.date + ' ' + a.time);
-        const dateB = new Date(b.date + ' ' + b.time);
+        const dateA = new Date(a.date + " " + a.time);
+        const dateB = new Date(b.date + " " + b.time);
         return dateB.getTime() - dateA.getTime();
       });
     } catch (error) {
@@ -115,9 +115,9 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: newDeckName.trim(),
-          notes: newDeckNotes.trim() || null
+          notes: newDeckNotes.trim() || null,
         }),
       });
 
@@ -205,9 +205,9 @@
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: editDeckName.trim(),
-          notes: editDeckNotes.trim() || null
+          notes: editDeckNotes.trim() || null,
         }),
       });
 
@@ -249,16 +249,16 @@
   }
 
   function formatDateTime(date: string, time: string): string {
-    const dateObj = new Date(date + ' ' + time);
-    const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-    const formattedDate = dateObj.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    const dateObj = new Date(date + " " + time);
+    const dayOfWeek = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+    const formattedDate = dateObj.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
-    const formattedTime = dateObj.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+    const formattedTime = dateObj.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     });
     return `${dayOfWeek}, ${formattedDate} at ${formattedTime}`;
@@ -273,7 +273,7 @@
     try {
       await authStore.updateProfile(display_name);
       profileSuccess = "Profile updated successfully!";
-      setTimeout(() => profileSuccess = "", 3000);
+      setTimeout(() => (profileSuccess = ""), 3000);
     } catch (e: any) {
       profileError = e.message;
     } finally {
@@ -304,7 +304,7 @@
       currentPassword = "";
       newPassword = "";
       confirmPassword = "";
-      setTimeout(() => passwordSuccess = "", 3000);
+      setTimeout(() => (passwordSuccess = ""), 3000);
     } catch (e: any) {
       passwordError = e.message;
     } finally {
@@ -320,7 +320,8 @@
 <div class="profile-container">
   {#if showToast}
     <div class="toast success-toast">
-      ✓ {toastMessage}
+      <span class="material-symbols-outlined"> check </span>
+      {toastMessage}
     </div>
   {/if}
 
@@ -330,24 +331,24 @@
   </div>
 
   <div class="tabs">
-    <button 
-      class="tab" 
+    <button
+      class="tab"
       class:active={activeTab === "profile"}
-      on:click={() => activeTab = "profile"}
+      on:click={() => (activeTab = "profile")}
     >
       Account
     </button>
-    <button 
-      class="tab" 
+    <button
+      class="tab"
       class:active={activeTab === "decks"}
-      on:click={() => activeTab = "decks"}
+      on:click={() => (activeTab = "decks")}
     >
       Decks
     </button>
-    <button 
-      class="tab" 
+    <button
+      class="tab"
       class:active={activeTab === "readings"}
-      on:click={() => activeTab = "readings"}
+      on:click={() => (activeTab = "readings")}
     >
       Readings
     </button>
@@ -412,11 +413,13 @@
                 placeholder="Enter current password"
                 disabled={passwordLoading}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="password-toggle-btn"
-                on:click={() => showCurrentPassword = !showCurrentPassword}
-                aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                on:click={() => (showCurrentPassword = !showCurrentPassword)}
+                aria-label={showCurrentPassword
+                  ? "Hide password"
+                  : "Show password"}
                 disabled={passwordLoading}
               >
                 <span class="material-symbols-outlined">
@@ -437,10 +440,10 @@
                 placeholder="At least 6 characters"
                 disabled={passwordLoading}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="password-toggle-btn"
-                on:click={() => showNewPassword = !showNewPassword}
+                on:click={() => (showNewPassword = !showNewPassword)}
                 aria-label={showNewPassword ? "Hide password" : "Show password"}
                 disabled={passwordLoading}
               >
@@ -462,11 +465,13 @@
                 placeholder="Re-enter new password"
                 disabled={passwordLoading}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="password-toggle-btn"
-                on:click={() => showConfirmPassword = !showConfirmPassword}
-                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                on:click={() => (showConfirmPassword = !showConfirmPassword)}
+                aria-label={showConfirmPassword
+                  ? "Hide password"
+                  : "Show password"}
                 disabled={passwordLoading}
               >
                 <span class="material-symbols-outlined">
@@ -493,45 +498,59 @@
       <!-- Deck Management Section -->
       <section class="profile-section">
         <h3>Manage Your Decks</h3>
-        
-        <button class="btn-toggle-form" on:click={() => showAddDeckForm = !showAddDeckForm}>
-          <span class="material-symbols-outlined">{showAddDeckForm ? 'close' : 'add'}</span>
-          {showAddDeckForm ? 'Cancel' : 'Add New Deck'}
+
+        <button
+          class="btn-toggle-form"
+          on:click={() => (showAddDeckForm = !showAddDeckForm)}
+        >
+          <span class="material-symbols-outlined"
+            >{showAddDeckForm ? "close" : "add"}</span
+          >
+          {showAddDeckForm ? "Cancel" : "Add New Deck"}
         </button>
-        
+
         {#if showAddDeckForm}
           <div class="form-group" style="margin-top: 1rem;">
             <label for="newDeckName">Deck Name</label>
-            <input 
-              type="text" 
-              id="newDeckName" 
+            <input
+              type="text"
+              id="newDeckName"
               bind:value={newDeckName}
               placeholder="Enter deck name..."
-              on:keydown={(e) => e.key === "Enter" && !e.shiftKey && handleAddDeck()}
+              on:keydown={(e) =>
+                e.key === "Enter" && !e.shiftKey && handleAddDeck()}
             />
-            <label for="newDeckNotes" style="margin-top: 0.75rem;">Notes (optional)</label>
+            <label for="newDeckNotes" style="margin-top: 0.75rem;"
+              >Notes (optional)</label
+            >
             <textarea
               id="newDeckNotes"
               bind:value={newDeckNotes}
               placeholder="Add notes about this deck..."
               rows="2"
             ></textarea>
-            <button class="btn-add" on:click={handleAddDeck} style="margin-top: 0.5rem; width: 100%;">Add Deck</button>
+            <button
+              class="btn-add"
+              on:click={handleAddDeck}
+              style="margin-top: 0.5rem; width: 100%;">Add Deck</button
+            >
           </div>
         {/if}
-        
+
         <div class="deck-list">
           <h4>Your Decks ({decks.length})</h4>
           {#if decks.length === 0}
-            <p class="empty-message">No decks added yet. Add your first deck above!</p>
+            <p class="empty-message">
+              No decks added yet. Add your first deck above!
+            </p>
           {:else}
             <ul>
               {#each decks as deck}
                 <li class="deck-item">
                   {#if editingDeckId === deck.id}
                     <div class="deck-edit-form">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         bind:value={editDeckName}
                         placeholder="Deck name"
                         class="deck-edit-input"
@@ -543,8 +562,14 @@
                         class="deck-edit-textarea"
                       ></textarea>
                       <div class="deck-edit-actions">
-                        <button class="btn-save" on:click={() => handleUpdateDeck(deck.id)}>Save</button>
-                        <button class="btn-cancel" on:click={cancelEditDeck}>Cancel</button>
+                        <button
+                          class="btn-save"
+                          on:click={() => handleUpdateDeck(deck.id)}
+                          >Save</button
+                        >
+                        <button class="btn-cancel" on:click={cancelEditDeck}
+                          >Cancel</button
+                        >
                       </div>
                     </div>
                   {:else}
@@ -552,26 +577,31 @@
                       <div>
                         <span class="deck-name">{deck.name}</span>
                         {#if deck.notes}
-                          <p class="deck-notes" class:expanded={expandedDeckNotes.has(deck.id)}>{deck.notes}</p>
-                          <button 
-                            class="notes-toggle" 
+                          <p
+                            class="deck-notes"
+                            class:expanded={expandedDeckNotes.has(deck.id)}
+                          >
+                            {deck.notes}
+                          </p>
+                          <button
+                            class="notes-toggle"
                             on:click={() => toggleDeckNotes(deck.id)}
                             type="button"
                           >
-                            {expandedDeckNotes.has(deck.id) ? 'Less' : 'More'}
+                            {expandedDeckNotes.has(deck.id) ? "Less" : "More"}
                           </button>
                         {/if}
                       </div>
                       <div class="deck-actions">
-                        <button 
-                          class="btn-edit" 
+                        <button
+                          class="btn-edit"
                           on:click={() => startEditDeck(deck)}
                           aria-label="Edit {deck.name}"
                         >
                           Edit
                         </button>
-                        <button 
-                          class="btn-remove" 
+                        <button
+                          class="btn-remove"
                           on:click={() => handleDeleteDeck(deck.id, deck.name)}
                           aria-label="Delete {deck.name}"
                         >
@@ -590,41 +620,52 @@
       <!-- Readings List Section -->
       <section class="profile-section">
         <h3>All Readings ({readings.length})</h3>
-        
+
         {#if readings.length === 0}
-          <p class="empty-message">No readings yet. Tap the + button to get started!</p>
+          <p class="empty-message">
+            No readings yet. Tap the + button to get started!
+          </p>
         {:else}
           <ul class="readings-list">
             {#each readings as reading}
               <li class="reading-item">
-                <button 
+                <button
                   class="reading-info"
                   on:click={() => navigate(`/reading/${reading.id}`)}
                 >
                   <div>
                     <span class="reading-spread">
                       {#if reading.is_incomplete}
-                        <span class="incomplete-icon" title="Incomplete">⚠️</span>
+                        <span class="incomplete-icon" title="Incomplete"
+                          >⚠️</span
+                        >
                       {/if}
                       {reading.spread_name}
                     </span>
-                    <p class="reading-details">{formatDateTime(reading.date, reading.time)}</p>
-                    <p class="reading-spread-layout">{getSpreadLayout(reading.spread_template_id)}</p>
-                    <p class="reading-deck">{reading.deck_name || 'No Deck Specified'}</p>
+                    <p class="reading-details">
+                      {formatDateTime(reading.date, reading.time)}
+                    </p>
+                    <p class="reading-spread-layout">
+                      {getSpreadLayout(reading.spread_template_id)}
+                    </p>
+                    <p class="reading-deck">
+                      {reading.deck_name || "No Deck Specified"}
+                    </p>
                   </div>
                 </button>
                 <div class="reading-actions">
-                  <button 
-                    class="btn-edit" 
+                  <button
+                    class="btn-edit"
                     on:click={() => navigate(`/reading/${reading.id}/edit`)}
                     aria-label="Edit {reading.spread_name}"
                     title="Edit"
                   >
                     Edit
                   </button>
-                  <button 
-                    class="btn-remove" 
-                    on:click={() => handleDeleteReading(reading.id, reading.spread_name)}
+                  <button
+                    class="btn-remove"
+                    on:click={() =>
+                      handleDeleteReading(reading.id, reading.spread_name)}
                     aria-label="Delete {reading.spread_name}"
                   >
                     Delete
@@ -646,7 +687,10 @@
         <h3>Delete Deck</h3>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to delete "<strong>{deckToDelete?.name}</strong>"?</p>
+        <p>
+          Are you sure you want to delete "<strong>{deckToDelete?.name}</strong
+          >"?
+        </p>
         <p class="warning-text">This action cannot be undone.</p>
       </div>
       <div class="modal-footer">
@@ -797,7 +841,8 @@
   }
 
   .password-input-wrapper input[type="text"] {
-    font-family: ui-monospace, 'Cascadia Code', 'Courier New', Courier, monospace;
+    font-family: ui-monospace, "Cascadia Code", "Courier New", Courier,
+      monospace;
     letter-spacing: 0.05em;
     height: 42px;
     line-height: 1.5;
