@@ -421,24 +421,8 @@
     modalExistingCard = null;
   }
 
-  function convertToCustomSpread() {
-    // Find and set Custom template
-    const customTemplate = spreadTemplates.find((t) => t.id === "custom");
-    if (customTemplate) {
-      spreadTemplate = "custom";
-      currentTemplate = customTemplate;
-
-      // Notify parent component
-      const selectEvent = new CustomEvent("templateAutoSelected", {
-        detail: "custom",
-      });
-      canvasElement.dispatchEvent(selectEvent);
-    }
-  }
-
   function deleteCard(index: number) {
     const card = spreadCards[index];
-    const isCustomSpread = !currentTemplate || currentTemplate.id === "custom";
 
     // If card has a name, just clear it
     if (card?.card_name && card.card_name.trim()) {
@@ -449,8 +433,8 @@
         interpretation: "",
       };
       onCardsUpdate(newCards);
-    } else if (isCustomSpread) {
-      // Card is already empty and it's a custom spread - delete the position entirely
+    } else {
+      // Card is already empty - delete the position entirely
       const newCards: Record<number, any> = {};
 
       // Rebuild the cards object, skipping the deleted card and renumbering
@@ -471,7 +455,6 @@
 
       onCardsUpdate(newCards);
     }
-    // For predefined spreads with empty cards, do nothing (X won't be shown anyway)
   }
 
   function handleDeleteKeydown(event: KeyboardEvent, index: number) {
@@ -486,7 +469,6 @@
   function setupInteractions(element: HTMLButtonElement, index: number) {
     const currentRotation = spreadCards[index]?.rotation || 0;
     let hasMoved = false;
-    let confirmedConversion = false;
 
     // Setup draggable
     const interactable = interact(element)
@@ -496,31 +478,9 @@
         listeners: {
           start(event) {
             hasMoved = false;
-            confirmedConversion = false;
             event.target.style.cursor = "grabbing";
           },
           move(event) {
-            // Check if this is a predefined spread and needs confirmation
-            if (
-              !hasMoved &&
-              !confirmedConversion &&
-              currentTemplate &&
-              currentTemplate.id !== "custom"
-            ) {
-              if (
-                !confirm(
-                  "Moving cards will convert this to a custom spread. Continue?",
-                )
-              ) {
-                // Cancel the interaction
-                interactable.draggable(false);
-                event.target.style.cursor = "grab";
-                setTimeout(() => interactable.draggable(true), 0);
-                return;
-              }
-              convertToCustomSpread();
-              confirmedConversion = true;
-            }
             hasMoved = true;
 
             const target = event.target;
@@ -599,19 +559,8 @@
 
       interact(handle)
         .on("down", (event) => {
-          // Warn about conversion for predefined spreads
-          if (currentTemplate && currentTemplate.id !== "custom") {
-            if (
-              !confirm(
-                "Rotating cards will convert this to a custom spread. Continue?",
-              )
-            ) {
-              event.preventDefault();
-              event.stopPropagation();
-              return;
-            }
-            convertToCustomSpread();
-          }
+          event.preventDefault();
+          event.stopPropagation();
 
           // Prevent card click while rotating
           justDragged[index] = true;
