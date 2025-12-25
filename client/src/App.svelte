@@ -15,10 +15,11 @@
   let authInitialized = false;
   let isDeckModalOpen: boolean = false;
 
-  // Show FAB on home, profile, and reading pages (not in edit/new mode)
+  // Show FAB on home, profile, admin, and reading pages (not in edit/new mode)
   $: showFab =
     currentPath === "/" ||
     currentPath === "/profile" ||
+    currentPath === "/admin" ||
     (currentPath.startsWith("/reading/") &&
       currentPath !== "/reading/new" &&
       !currentPath.includes("/edit"));

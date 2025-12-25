@@ -233,7 +233,10 @@
   <div class="admin-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2><span class="material-symbols-outlined"> build </span> Admin Panel</h2>
-    <button class="btn btn-danger nuke-button" on:click={openNukeConfirm}>
+    <button
+      class="btn btn-small btn-danger nuke-button"
+      on:click={openNukeConfirm}
+    >
       ☢️ Nuclear Option
     </button>
   </div>
@@ -399,6 +402,125 @@
               {/each}
             </tbody>
           </table>
+          <!-- Mobile cards view -->
+          <div class="users-cards">
+            {#each otherUsers as user}
+              <div class="user-card">
+                <div class="user-card-header">
+                  <div>
+                    <div class="user-name">{user.username}</div>
+                    <div class="user-display-name">
+                      {user.display_name || "-"}
+                    </div>
+                  </div>
+                </div>
+                <div class="user-stats">
+                  <div class="stat-item">
+                    <span class="stat-label">Created:</span>
+                    <span class="stat-value">{formatDate(user.created_at)}</span
+                    >
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Decks:</span>
+                    <span class="stat-value stat-cell">{user.deck_count}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Readings:</span>
+                    <span class="stat-value stat-cell"
+                      >{user.reading_count}</span
+                    >
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Storage:</span>
+                    <span class="stat-value stat-cell"
+                      >{formatBytes(user.storage_bytes)}</span
+                    >
+                  </div>
+                </div>
+                <div class="user-actions">
+                  {#if user.id === $authStore?.id}
+                    <span class="muted">-</span>
+                  {:else if deleteUserId === user.id}
+                    <div class="delete-confirm">
+                      <p class="warning-text">
+                        ⚠️ Delete {user.username}?<br />
+                        This will permanently delete:<br />
+                        • {user.deck_count} deck(s)<br />
+                        • {user.reading_count} reading(s)
+                      </p>
+                      <button
+                        class="btn btn-small btn-danger"
+                        on:click={() => handleDeleteUser(user.id)}
+                      >
+                        Yes, Delete
+                      </button>
+                      <button
+                        class="btn btn-small btn-secondary"
+                        on:click={cancelDelete}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  {:else if resetUserId === user.id}
+                    <form
+                      class="reset-form"
+                      on:submit|preventDefault={() =>
+                        handleResetPassword(user.id)}
+                    >
+                      <div class="password-input-wrapper">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          bind:value={newPassword}
+                          placeholder="New password (6+ chars)"
+                          class="reset-input"
+                        />
+                        <button
+                          type="button"
+                          class="password-toggle-btn"
+                          on:click={() => (showPassword = !showPassword)}
+                          aria-label={showPassword
+                            ? "Hide password"
+                            : "Show password"}
+                        >
+                          <span class="material-symbols-outlined">
+                            {showPassword ? "visibility_off" : "visibility"}
+                          </span>
+                        </button>
+                      </div>
+                      <button type="submit" class="btn btn-small btn-primary">
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-small btn-secondary"
+                        on:click={cancelReset}
+                      >
+                        Cancel
+                      </button>
+                      {#if resetError}
+                        <div class="inline-error">{resetError}</div>
+                      {/if}
+                    </form>
+                  {:else}
+                    <div class="action-buttons">
+                      <button
+                        class="btn btn-small btn-warning"
+                        on:click={() => startReset(user.id)}
+                      >
+                        Reset Password
+                      </button>
+                      <button
+                        class="btn btn-small btn-danger"
+                        on:click={() => confirmDelete(user.id)}
+                      >
+                        Delete User
+                      </button>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          </div>
         </div>
       </div>
     {:else}
@@ -548,6 +670,12 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     overflow-x: auto;
+    container-type: inline-size;
+  }
+
+  /* Default: hide cards, show table */
+  .users-cards {
+    display: none;
   }
 
   .users-table {
@@ -753,6 +881,95 @@
 
   .nuke-button {
     align-self: flex-start;
+  }
+
+  /* Container query: show cards on narrow screens, hide table */
+  @container (max-width: 872px) {
+    .users-table {
+      display: none;
+    }
+
+    .users-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .user-card {
+      background: var(--color-bg-section);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+
+    .user-card-header {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--color-text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .user-display-name {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .user-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 0.9rem;
+      color: var(--color-text-primary);
+    }
+
+    .user-actions {
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .user-actions .action-buttons {
+      flex-direction: column;
+    }
+
+    .user-actions .action-buttons .btn {
+      width: 100%;
+    }
+
+    .user-actions .reset-form {
+      flex-direction: column;
+    }
+
+    .user-actions .reset-input {
+      width: 100%;
+    }
+
+    .user-actions .delete-confirm .btn {
+      width: 100%;
+    }
   }
 
   @media (max-width: 768px) {
