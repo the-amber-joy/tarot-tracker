@@ -3,6 +3,7 @@
   import { navigate } from "svelte-routing";
   import { readingsStore } from "../stores/readingsStore";
   import SpreadCanvas from "./SpreadCanvas.svelte";
+  import ConfirmModal from "./ConfirmModal.svelte";
 
   export let params: { id?: string } = {};
 
@@ -36,6 +37,10 @@
   let showDeckModal = false;
   let newDeckName = "";
   let newDeckNotes = "";
+
+  let showTemplateChangeModal = false;
+  let pendingTemplateChange: string | null = null;
+  let templateSelectElement: HTMLSelectElement | null = null;
 
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -140,26 +145,42 @@
     const isChanging = previousSpreadTemplate !== newTemplate;
 
     if (hasCards && isChanging && previousSpreadTemplate) {
-      const confirmed = confirm(
-        "Changing the spread layout will clear all previously selected cards. Are you sure you want to continue?",
-      );
-
-      if (confirmed) {
-        // Clear all cards
-        spreadCards = {};
-        spreadTemplate = newTemplate;
-        previousSpreadTemplate = newTemplate;
-      } else {
-        // Revert to previous template
-        spreadTemplate = previousSpreadTemplate;
-        // Force the select to update
-        (event.target as HTMLSelectElement).value = previousSpreadTemplate;
-      }
+      // Store the pending change and show modal
+      pendingTemplateChange = newTemplate;
+      templateSelectElement = event.target as HTMLSelectElement;
+      showTemplateChangeModal = true;
+      // Revert the select temporarily
+      (event.target as HTMLSelectElement).value = previousSpreadTemplate;
     } else if (isChanging) {
       spreadCards = {};
       spreadTemplate = newTemplate;
       previousSpreadTemplate = newTemplate;
     }
+  }
+
+  function confirmTemplateChange() {
+    if (pendingTemplateChange !== null) {
+      // Clear all cards
+      spreadCards = {};
+      spreadTemplate = pendingTemplateChange;
+      previousSpreadTemplate = pendingTemplateChange;
+      if (templateSelectElement) {
+        templateSelectElement.value = pendingTemplateChange;
+      }
+    }
+    showTemplateChangeModal = false;
+    pendingTemplateChange = null;
+    templateSelectElement = null;
+  }
+
+  function cancelTemplateChange() {
+    // Keep the previous template selected
+    if (templateSelectElement && previousSpreadTemplate) {
+      templateSelectElement.value = previousSpreadTemplate;
+    }
+    showTemplateChangeModal = false;
+    pendingTemplateChange = null;
+    templateSelectElement = null;
   }
 
   function handleTemplateAutoSelected(event: CustomEvent) {
@@ -437,6 +458,17 @@
     </div>
   </div>
 {/if}
+
+<ConfirmModal
+  bind:isOpen={showTemplateChangeModal}
+  title="Change Spread Template"
+  message="Changing the spread layout will clear all previously selected cards. Are you sure you want to continue?"
+  confirmText="Change Template"
+  cancelText="Keep Current"
+  isDanger={false}
+  onConfirm={confirmTemplateChange}
+  onCancel={cancelTemplateChange}
+/>
 
 <style>
   .add-option {

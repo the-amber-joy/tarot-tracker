@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
   import { authStore } from "../stores/authStore";
+  import ConfirmModal from "./ConfirmModal.svelte";
 
   type Deck = {
     id: number;
@@ -65,6 +66,9 @@
 
   let showDeleteModal = false;
   let deckToDelete: { id: number; name: string } | null = null;
+
+  let showDeleteReadingModal = false;
+  let readingToDelete: { id: number; name: string } | null = null;
 
   let readings: Reading[] = [];
 
@@ -227,17 +231,21 @@
   }
 
   async function handleDeleteReading(readingId: number, spreadName: string) {
-    if (!confirm(`Are you sure you want to delete "${spreadName}"?`)) {
-      return;
-    }
+    readingToDelete = { id: readingId, name: spreadName };
+    showDeleteReadingModal = true;
+  }
+
+  async function confirmDeleteReading() {
+    if (!readingToDelete) return;
 
     try {
-      const response = await fetch(`/api/readings/${readingId}`, {
+      const response = await fetch(`/api/readings/${readingToDelete.id}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
         await loadReadings();
+        displayToast(`"${readingToDelete.name}" deleted`);
       } else {
         const error = await response.text();
         alert(`Failed to delete reading: ${error}`);
@@ -245,7 +253,15 @@
     } catch (error) {
       console.error("Error deleting reading:", error);
       alert("Error deleting reading. Please try again.");
+    } finally {
+      showDeleteReadingModal = false;
+      readingToDelete = null;
     }
+  }
+
+  function cancelDeleteReading() {
+    showDeleteReadingModal = false;
+    readingToDelete = null;
   }
 
   function formatDateTime(date: string, time: string): string {
@@ -680,26 +696,27 @@
   </div>
 </div>
 
-{#if showDeleteModal}
-  <div class="modal-overlay" on:click={cancelDeleteDeck}>
-    <div class="modal-dialog" on:click|stopPropagation>
-      <div class="modal-header">
-        <h3>Delete Deck</h3>
-      </div>
-      <div class="modal-body">
-        <p>
-          Are you sure you want to delete "<strong>{deckToDelete?.name}</strong
-          >"?
-        </p>
-        <p class="warning-text">This action cannot be undone.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" on:click={cancelDeleteDeck}>Cancel</button>
-        <button class="btn-danger" on:click={confirmDeleteDeck}>Delete</button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmModal
+  bind:isOpen={showDeleteModal}
+  title="Delete Deck"
+  message="Are you sure you want to delete <strong>{deckToDelete?.name}</strong>?"
+  confirmText="Delete"
+  cancelText="Cancel"
+  isDanger={true}
+  onConfirm={confirmDeleteDeck}
+  onCancel={cancelDeleteDeck}
+/>
+
+<ConfirmModal
+  bind:isOpen={showDeleteReadingModal}
+  title="Delete Reading"
+  message="Are you sure you want to delete <strong>{readingToDelete?.name}</strong>?"
+  confirmText="Delete"
+  cancelText="Cancel"
+  isDanger={true}
+  onConfirm={confirmDeleteReading}
+  onCancel={cancelDeleteReading}
+/>
 
 <style>
   .profile-container {
@@ -1314,107 +1331,6 @@
     to {
       transform: translateX(0);
       opacity: 1;
-    }
-  }
-
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal-dialog {
-    background: white;
-    border-radius: 8px;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    animation: modalFadeIn 0.2s ease-out;
-  }
-
-  .modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #dee2e6;
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    color: #333;
-    font-size: 1.25rem;
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .modal-body p {
-    margin: 0 0 1rem 0;
-    color: #495057;
-  }
-
-  .modal-body p:last-child {
-    margin-bottom: 0;
-  }
-
-  .warning-text {
-    color: #dc3545;
-    font-size: 0.9rem;
-    font-style: italic;
-  }
-
-  .modal-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #dee2e6;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-  }
-
-  .btn-cancel {
-    padding: 0.5rem 1.25rem;
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-cancel:hover {
-    background-color: #5a6268;
-  }
-
-  .btn-danger {
-    padding: 0.5rem 1.25rem;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-danger:hover {
-    background-color: #c82333;
-  }
-
-  @keyframes modalFadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
     }
   }
 </style>
