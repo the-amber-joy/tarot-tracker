@@ -810,7 +810,7 @@
           {/if}
         </button>
       {/each}
-    {:else if currentTemplate.id === "custom"}}
+    {:else if currentTemplate.id === "custom"}
       <!-- Custom template - click-to-add cards -->
       {#each Object.entries(spreadCards) as [indexStr, cardData]}
         {@const index = parseInt(indexStr)}
