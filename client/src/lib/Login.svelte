@@ -52,6 +52,7 @@
           required
           placeholder="Enter username"
           disabled={loading}
+          autocapitalize="none"
         />
       </div>
 

@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
   import { authStore } from "../stores/authStore";
+  import Toast from "./Toast.svelte";
 
   type UserStats = {
     id: number;
@@ -31,6 +32,7 @@
   let deleteUserId: number | null = null;
   let toastMessage = "";
   let showToast = false;
+  let toastType: "success" | "error" | "info" = "success";
   let sortField: SortField = "username";
   let sortDirection: SortDirection = "asc";
   let showNukeConfirm = false;
@@ -87,12 +89,13 @@
     resetError = "";
   }
 
-  function displayToast(message: string) {
+  function displayToast(
+    message: string,
+    type: "success" | "error" | "info" = "success",
+  ) {
     toastMessage = message;
+    toastType = type;
     showToast = true;
-    setTimeout(() => {
-      showToast = false;
-    }, 3000);
   }
 
   async function handleResetPassword(userId: number) {
@@ -225,12 +228,7 @@
 </script>
 
 <div class="admin-container">
-  {#if showToast}
-    <div class="toast success-toast">
-      <span class="material-symbols-outlined"> check </span>
-      {toastMessage}
-    </div>
-  {/if}
+  <Toast bind:isVisible={showToast} message={toastMessage} type={toastType} />
 
   <div class="admin-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
@@ -409,10 +407,24 @@
   {/if}
 
   {#if showNukeConfirm}
-    <div class="modal-overlay" on:click={closeNukeConfirm}>
-      <div class="nuke-modal" on:click|stopPropagation>
+    <div
+      class="modal-overlay"
+      on:click={closeNukeConfirm}
+      on:keydown={(e) => e.key === "Escape" && closeNukeConfirm()}
+      role="button"
+      tabindex="-1"
+    >
+      <div
+        class="nuke-modal"
+        on:click|stopPropagation
+        on:keydown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nuke-modal-title"
+        tabindex="-1"
+      >
         <div class="nuke-header">
-          <h3>☢️ Nuclear Option</h3>
+          <h3 id="nuke-modal-title">☢️ Nuclear Option</h3>
           <button class="modal-close" on:click={closeNukeConfirm}
             >&times;</button
           >
@@ -436,7 +448,6 @@
             class="nuke-input"
             bind:value={nukeConfirmText}
             placeholder="DELETE EVERYTHING"
-            autofocus
           />
         </div>
         <div class="nuke-actions">
@@ -462,35 +473,6 @@
     max-width: 1200px;
     margin: 0 auto;
     position: relative;
-  }
-
-  .toast {
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-weight: 500;
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
-  }
-
-  .success-toast {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
   }
 
   .admin-header {

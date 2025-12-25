@@ -5,15 +5,21 @@
   export let confirmText: string = "Confirm";
   export let cancelText: string = "Cancel";
   export let isDanger: boolean = false;
+  export let isAlert: boolean = false; // If true, show only one button (alert style)
   export let onConfirm: () => void;
-  export let onCancel: () => void;
+  export let onCancel: (() => void) | undefined = undefined;
 
   function handleConfirm() {
     onConfirm();
   }
 
   function handleCancel() {
-    onCancel();
+    if (isAlert) {
+      // For alerts, close button acts like confirm
+      handleConfirm();
+    } else if (onCancel) {
+      onCancel();
+    }
   }
 
   function handleOverlayClick() {
@@ -37,10 +43,12 @@
       <div class="modal-body">
         <p>{@html message}</p>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-cancel" on:click={handleCancel}
-          >{cancelText}</button
-        >
+      <div class="modal-footer" class:single-button={isAlert}>
+        {#if !isAlert}
+          <button type="button" class="btn-cancel" on:click={handleCancel}
+            >{cancelText}</button
+          >
+        {/if}
         <button
           type="button"
           class={isDanger ? "btn-danger" : "btn btn-primary"}

@@ -3,6 +3,7 @@
   import { navigate } from "svelte-routing";
   import { authStore } from "../stores/authStore";
   import ConfirmModal from "./ConfirmModal.svelte";
+  import Toast from "./Toast.svelte";
 
   type Deck = {
     id: number;
@@ -63,6 +64,7 @@
 
   let toastMessage = "";
   let showToast = false;
+  let toastType: "success" | "error" | "info" = "success";
 
   let showDeleteModal = false;
   let deckToDelete: { id: number; name: string } | null = null;
@@ -99,12 +101,13 @@
     }
   }
 
-  function displayToast(message: string) {
+  function displayToast(
+    message: string,
+    type: "success" | "error" | "info" = "success",
+  ) {
     toastMessage = message;
+    toastType = type;
     showToast = true;
-    setTimeout(() => {
-      showToast = false;
-    }, 3000);
   }
 
   async function handleAddDeck() {
@@ -333,14 +336,9 @@
   }
 </script>
 
-<div class="profile-container">
-  {#if showToast}
-    <div class="toast success-toast">
-      <span class="material-symbols-outlined"> check </span>
-      {toastMessage}
-    </div>
-  {/if}
+<Toast bind:isVisible={showToast} message={toastMessage} type={toastType} />
 
+<div class="profile-container">
   <div class="profile-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2>{display_name}'s Profile</h2>
@@ -1302,35 +1300,6 @@
     .btn-edit,
     .btn-remove {
       flex: 1;
-    }
-  }
-
-  .toast {
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-weight: 500;
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
-  }
-
-  .success-toast {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
     }
   }
 </style>
