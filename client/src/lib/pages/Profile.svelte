@@ -87,20 +87,39 @@
   let cardFrequency: CardFrequency[] = [];
   let selectedSuit: string = "All";
 
+  // Suit distribution data
+  type SuitDistribution = {
+    "Major Arcana": number;
+    Wands: number;
+    Cups: number;
+    Swords: number;
+    Pentacles: number;
+  };
+  let suitDistribution: SuitDistribution | null = null;
+
   // Map card names to suits
   const cardSuits: Record<string, string> = {
     "Major Arcana": "Major Arcana",
   };
-  
+
   // Initialize card suits mapping
-  const tarotCards = [
-    "Wands", "Cups", "Swords", "Pentacles"
-  ];
-  
-  tarotCards.forEach(suit => {
+  const tarotCards = ["Wands", "Cups", "Swords", "Pentacles"];
+
+  tarotCards.forEach((suit) => {
     for (let i = 1; i <= 14; i++) {
-      const names = i === 1 ? ["Ace"] : i === 11 ? ["Page"] : i === 12 ? ["Knight"] : i === 13 ? ["Queen"] : i === 14 ? ["King"] : [i.toString()];
-      names.forEach(name => {
+      const names =
+        i === 1
+          ? ["Ace"]
+          : i === 11
+            ? ["Page"]
+            : i === 12
+              ? ["Knight"]
+              : i === 13
+                ? ["Queen"]
+                : i === 14
+                  ? ["King"]
+                  : [i.toString()];
+      names.forEach((name) => {
         cardSuits[`${name} of ${suit}`] = suit;
       });
     }
@@ -108,24 +127,45 @@
 
   // Major Arcana cards
   const majorArcana = [
-    "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
-    "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
-    "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
-    "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"
+    "The Fool",
+    "The Magician",
+    "The High Priestess",
+    "The Empress",
+    "The Emperor",
+    "The Hierophant",
+    "The Lovers",
+    "The Chariot",
+    "Strength",
+    "The Hermit",
+    "Wheel of Fortune",
+    "Justice",
+    "The Hanged Man",
+    "Death",
+    "Temperance",
+    "The Devil",
+    "The Tower",
+    "The Star",
+    "The Moon",
+    "The Sun",
+    "Judgement",
+    "The World",
   ];
-  majorArcana.forEach(card => {
+  majorArcana.forEach((card) => {
     cardSuits[card] = "Major Arcana";
   });
 
   $: filteredCardFrequency = cardFrequency
-    .map(card => ({
+    .map((card) => ({
       ...card,
-      suit: cardSuits[card.card_name] || "Unknown"
+      suit: cardSuits[card.card_name] || "Unknown",
     }))
-    .filter(card => selectedSuit === "All" || card.suit === selectedSuit)
+    .filter((card) => selectedSuit === "All" || card.suit === selectedSuit)
     .sort((a, b) => b.count - a.count);
 
-  $: totalCards = filteredCardFrequency.reduce((sum, card) => sum + card.count, 0);
+  $: totalCards = filteredCardFrequency.reduce(
+    (sum, card) => sum + card.count,
+    0,
+  );
 
   // Calculate reading statistics
   $: readingStats = (() => {
@@ -193,7 +233,7 @@
       activeTab = savedTab;
     }
 
-    await Promise.all([loadDecks(), loadReadings(), loadCardFrequency()]);
+    await Promise.all([loadDecks(), loadReadings(), loadCardFrequency(), loadSuitDistribution()]);
     mounted = true;
   });
 
@@ -217,6 +257,15 @@
       cardFrequency = await response.json();
     } catch (error) {
       console.error("Error loading card frequency:", error);
+    }
+  }
+
+  async function loadSuitDistribution() {
+    try {
+      const response = await fetch("/api/stats/suit-distribution");
+      suitDistribution = await response.json();
+    } catch (error) {
+      console.error("Error loading suit distribution:", error);
     }
   }
 
@@ -936,6 +985,38 @@
               </div>
             </div>
           {/if}
+
+          <!-- Suit Distribution Section -->
+          {#if suitDistribution}
+            <div class="suit-distribution-section">
+              <h4>Suit Distribution</h4>
+              <div class="suit-bars">
+                {#each Object.entries(suitDistribution) as [suit, count]}
+                  {@const total = Object.values(suitDistribution).reduce((sum, val) => sum + val, 0)}
+                  {@const percentage = total > 0 ? (count / total) * 100 : 0}
+                  <div class="suit-bar-container">
+                    <div class="suit-bar-label">
+                      <span class="suit-name">{suit}</span>
+                      <span class="suit-count">{count}</span>
+                    </div>
+                    <div class="suit-bar-track">
+                      <div 
+                        class="suit-bar-fill" 
+                        class:major-arcana={suit === "Major Arcana"}
+                        class:wands={suit === "Wands"}
+                        class:cups={suit === "Cups"}
+                        class:swords={suit === "Swords"}
+                        class:pentacles={suit === "Pentacles"}
+                        style="width: {percentage}%"
+                      >
+                        <span class="suit-percentage">{percentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
@@ -1527,6 +1608,95 @@
     font-style: italic;
   }
 
+  .suit-distribution-section {
+    margin-top: 2rem;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  .suit-distribution-section h4 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.2rem;
+    color: var(--color-text-primary);
+  }
+
+  .suit-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .suit-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .suit-bar-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .suit-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 0.95rem;
+  }
+
+  .suit-count {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .suit-bar-track {
+    height: 32px;
+    background: var(--color-bg-section);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .suit-bar-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.75rem;
+    transition: width 0.5s ease-out;
+    min-width: 50px;
+  }
+
+  .suit-bar-fill.major-arcana {
+    background: linear-gradient(135deg, #7b2cbf 0%, #9d4edd 100%);
+  }
+
+  .suit-bar-fill.wands {
+    background: linear-gradient(135deg, #e63946 0%, #f77f00 100%);
+  }
+
+  .suit-bar-fill.cups {
+    background: linear-gradient(135deg, #2a9d8f 0%, #4ecdc4 100%);
+  }
+
+  .suit-bar-fill.swords {
+    background: linear-gradient(135deg, #457b9d 0%, #5390d9 100%);
+  }
+
+  .suit-bar-fill.pentacles {
+    background: linear-gradient(135deg, #e76f51 0%, #f4a261 100%);
+  }
+
+  .suit-percentage {
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
   @media (max-width: 768px) {
     .profile-container {
       padding: 1rem;
@@ -1586,37 +1756,5 @@
     .reading-actions .btn {
       flex: 1;
     }
-  }
-
-  .reports-placeholder {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .report-card {
-    background: var(--color-bg-white);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-    transition: var(--transition-fast);
-  }
-
-  .report-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--color-primary);
-  }
-
-  .report-card h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    color: var(--color-text-primary);
-  }
-
-  .report-card p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
   }
 </style>

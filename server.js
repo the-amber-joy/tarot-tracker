@@ -558,6 +558,56 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
   );
 });
 
+// Get suit distribution statistics
+app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
+  db.all(
+    `
+    SELECT rc.card_name
+    FROM reading_cards rc
+    INNER JOIN readings r ON rc.reading_id = r.id
+    WHERE r.user_id = ? AND rc.card_name IS NOT NULL AND rc.card_name != ''
+  `,
+    [req.user.id],
+    (err, cards) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      // Categorize cards by suit
+      const suitCounts = {
+        "Major Arcana": 0,
+        "Wands": 0,
+        "Cups": 0,
+        "Swords": 0,
+        "Pentacles": 0,
+      };
+
+      const majorArcana = [
+        "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
+        "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
+        "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
+        "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"
+      ];
+
+      cards.forEach(({ card_name }) => {
+        if (majorArcana.includes(card_name)) {
+          suitCounts["Major Arcana"]++;
+        } else if (card_name.includes("Wands")) {
+          suitCounts["Wands"]++;
+        } else if (card_name.includes("Cups")) {
+          suitCounts["Cups"]++;
+        } else if (card_name.includes("Swords")) {
+          suitCounts["Swords"]++;
+        } else if (card_name.includes("Pentacles")) {
+          suitCounts["Pentacles"]++;
+        }
+      });
+
+      res.json(suitCounts);
+    },
+  );
+});
+
 // Get all readings (for summary table, user's own readings only)
 app.get("/api/readings", requireAuth, (req, res) => {
   db.all(
