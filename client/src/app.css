@@ -213,17 +213,6 @@ header h1 {
 .btn-small {
   padding: 5px 12px;
   font-size: 0.85rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.btn-small:hover {
-  background: #5568d3;
 }
 
 .btn-remove {

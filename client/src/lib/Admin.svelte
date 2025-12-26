@@ -39,6 +39,9 @@
   let nukeConfirmText = "";
   let nukeLoading = false;
   let showPassword = false;
+  let showDeploymentInfo = false;
+  let deploymentContent = "";
+  let deploymentLoading = false;
 
   $: adminUser = users.find((u) => u.id === $authStore?.id);
   $: otherUsers = users
@@ -96,6 +99,27 @@
     toastMessage = message;
     toastType = type;
     showToast = true;
+  }
+
+  async function openDeploymentInfo() {
+    showDeploymentInfo = true;
+    deploymentLoading = true;
+    try {
+      const response = await fetch("/api/deploy-info");
+      if (!response.ok) {
+        throw new Error("Failed to load deployment info");
+      }
+      const data = await response.json();
+      deploymentContent = data.content;
+    } catch (e: any) {
+      deploymentContent = "Failed to load deployment information: " + e.message;
+    } finally {
+      deploymentLoading = false;
+    }
+  }
+
+  function closeDeploymentInfo() {
+    showDeploymentInfo = false;
   }
 
   async function handleResetPassword(userId: number) {
@@ -233,12 +257,21 @@
   <div class="admin-header">
     <button class="back-button" on:click={goBack}>← Back to Home</button>
     <h2><span class="material-symbols-outlined"> build </span> Admin Panel</h2>
-    <button
-      class="btn btn-small btn-danger nuke-button"
-      on:click={openNukeConfirm}
-    >
-      ☢️ Nuclear Option
-    </button>
+    <div class="admin-header-buttons">
+      <button
+        class="btn btn-small btn-secondary"
+        on:click={openDeploymentInfo}
+        title="View deployment information"
+      >
+        🚀 Deployment Info
+      </button>
+      <button
+        class="btn btn-small btn-danger nuke-button"
+        on:click={openNukeConfirm}
+      >
+        ☢️ Nuclear Option
+      </button>
+    </div>
   </div>
 
   {#if loading}
@@ -592,6 +625,33 @@
   {/if}
 </div>
 
+<!-- Deployment Info Modal -->
+{#if showDeploymentInfo}
+  <div class="modal-overlay" on:click={closeDeploymentInfo}>
+    <div class="modal-content deployment-modal" on:click|stopPropagation>
+      <div class="modal-header">
+        <h3 id="deployment-modal-title">
+          <span class="material-symbols-outlined">cloud</span> Deployment Information
+        </h3>
+        <button
+          class="btn-close"
+          on:click={closeDeploymentInfo}
+          aria-label="Close"
+        >
+          &times;
+        </button>
+      </div>
+      <div class="modal-body">
+        {#if deploymentLoading}
+          <div class="loading">Loading deployment info...</div>
+        {:else}
+          <pre class="deployment-content">{deploymentContent}</pre>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .admin-container {
     padding: 2rem;
@@ -881,6 +941,38 @@
 
   .nuke-button {
     align-self: flex-start;
+  }
+
+  .admin-header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  /* Deployment modal styles */
+  .deployment-modal {
+    max-width: 800px;
+    max-height: 85vh;
+  }
+
+  .deployment-content {
+    background: var(--color-bg-dark);
+    color: #a8e6cf;
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    font-family: "Courier New", monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+  }
+
+  .deployment-modal .loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-text-secondary);
   }
 
   /* Container query: show cards on narrow screens, hide table */

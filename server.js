@@ -413,6 +413,23 @@ app.get("/api/spreads", (req, res) => {
   res.json(Object.values(SPREAD_TEMPLATES));
 });
 
+// Get deployment info (admin only)
+app.get("/api/deploy-info", requireAdmin, (req, res) => {
+  const fs = require("fs");
+  const deployPath = path.join(__dirname, "deploy.txt");
+
+  if (fs.existsSync(deployPath)) {
+    fs.readFile(deployPath, "utf8", (err, data) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to read deploy info" });
+      }
+      res.json({ content: data });
+    });
+  } else {
+    res.json({ content: "Deployment info not available (dev mode)" });
+  }
+});
+
 // Deck management endpoints
 
 // Get all decks (user's own decks only)
