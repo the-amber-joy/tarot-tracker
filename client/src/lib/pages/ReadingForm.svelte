@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
-  import { readingsStore } from "../stores/readingsStore";
-  import ConfirmModal from "./ConfirmModal.svelte";
-  import SpreadCanvas from "./SpreadCanvas.svelte";
-  import Toast from "./Toast.svelte";
+  import { readingsStore } from "../../stores/readingsStore";
+  import SpreadCanvas from "../components/SpreadCanvas.svelte";
+  import Toast from "../components/Toast.svelte";
+  import ConfirmModal from "../modals/ConfirmModal.svelte";
 
   export let params: { id?: string } = {};
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { navigate } from "svelte-routing";
-  import SpreadCanvas from "./SpreadCanvas.svelte";
+  import SpreadCanvas from "../components/SpreadCanvas.svelte";
 
   export let params: { id?: string } = { id: "" };
 

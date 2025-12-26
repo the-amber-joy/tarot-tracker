@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
-  import { readingsStore } from "../stores/readingsStore";
+  import { readingsStore } from "../../stores/readingsStore";
 
   type Reading = {
     id: number;

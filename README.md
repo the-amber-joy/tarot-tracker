@@ -62,38 +62,22 @@ A web application to track and analyze your Tarot readings over time.
 ## Project Structure
 
 ```
-tarotStats/
+tarot-tracker/
 ├── server.js              # Express server & API routes
 ├── database.js            # Database schema & initialization
 ├── cards.js               # 78-card Tarot deck definitions
 ├── spreads.js             # Spread management
 ├── auth.js                # Passport authentication config
-├── package.json           # Backend dependencies
-├── tarot.db              # SQLite database (auto-created)
-├── client/               # Svelte frontend application
-│   ├── package.json      # Frontend dependencies
-│   ├── vite.config.ts    # Vite configuration
-│   ├── tsconfig.json     # TypeScript configuration
-│   ├── index.html        # HTML entry point
-│   └── src/
-│       ├── main.ts       # App initialization
-│       ├── App.svelte    # Root component with routing
-│       ├── app.css       # Global styles
-│       ├── lib/          # Svelte components
-│       │   ├── Header.svelte
-│       │   ├── Login.svelte
-│       │   ├── Profile.svelte
-│       │   ├── Admin.svelte
-│       │   ├── ReadingForm.svelte
-│       │   ├── ReadingDetail.svelte
-│       │   ├── ReadingsList.svelte
-│       │   ├── CardModal.svelte
-│       │   ├── DeckModal.svelte
-│       │   └── SpreadCanvas.svelte
-│       └── stores/       # State management
-│           ├── authStore.ts
-│           └── readingsStore.ts
-└── data/                 # Data directory (if needed)
+├── data/                  # SQLite database files
+└── client/                # Svelte frontend application
+    └── src/
+        ├── main.ts        # App initialization
+        ├── App.svelte     # Root component with routing
+        ├── lib/           # Components organized by type
+        │   ├── pages/     # Page-level components (6)
+        │   ├── modals/    # Modal dialogs (4)
+        │   └── components/ # Reusable UI components (3)
+        └── stores/        # State management
 ```
 
 ## Setup
@@ -168,11 +152,12 @@ Visit http://localhost:3000
 ## First Time Setup
 
 1. Start the application
-2. The first user to register automatically becomes an admin
-3. Log in with your credentials
-4. Add your decks from the FAB menu or Profile page
-5. Create custom spreads or use built-in ones
-6. Start recording readings!
+2. Register a new account
+3. **Optional:** Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables before first run to create an admin account
+4. Log in with your credentials
+5. Add your Tarot decks from the Deck Manager (accessible via FAB menu or Profile page)
+6. Create your first reading using the + button
+7. Choose from built-in spread templates or create a custom layout
 
 ## Database
 
@@ -181,14 +166,16 @@ The SQLite database (`tarot.db`) is created automatically on first run with the 
 - `users` - User accounts and authentication
 - `sessions` - Session management
 - `decks` - User-created Tarot decks
-- `spreads` - Custom spread layouts
 - `readings` - Reading records
 - `reading_cards` - Individual cards in readings
 
 ## Environment Variables
 
-- `NODE_ENV` - Set to `production` to disable dangerous admin features
-- `SESSION_SECRET` - Secret for session encryption (auto-generated if not set)
+- `NODE_ENV` - Set to `production` for production mode
+- `SESSION_SECRET` - Secret for session encryption (required in production)
+- `ADMIN_USERNAME` - Optional: Pre-seed admin user on first run
+- `ADMIN_PASSWORD` - Optional: Password for pre-seeded admin user
+- `DB_PATH` - Optional: Custom path for database files (defaults to `./data`)
 
 ## API Endpoints
 
@@ -213,12 +200,6 @@ The SQLite database (`tarot.db`) is created automatically on first run with the 
 - `POST /api/decks` - Create deck
 - `PUT /api/decks/:id` - Update deck
 - `DELETE /api/decks/:id` - Delete deck
-
-### Spreads
-
-- `GET /api/spreads` - Get user's spreads
-- `POST /api/spreads` - Create spread
-- `DELETE /api/spreads/:id` - Delete spread
 
 ### Cards
 

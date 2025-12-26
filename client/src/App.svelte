@@ -1,15 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Route, Router, navigate } from "svelte-routing";
-  import Admin from "./lib/Admin.svelte";
-  import DeckModal from "./lib/DeckModal.svelte";
-  import Header from "./lib/Header.svelte";
-  import Login from "./lib/Login.svelte";
-  import Profile from "./lib/Profile.svelte";
-  import ReadingDetail from "./lib/ReadingDetail.svelte";
-  import ReadingForm from "./lib/ReadingForm.svelte";
-  import ReadingsList from "./lib/ReadingsList.svelte";
-  import SessionExpiredModal from "./lib/SessionExpiredModal.svelte";
+  import Header from "./lib/components/Header.svelte";
+  import DeckModal from "./lib/modals/DeckModal.svelte";
+  import SessionExpiredModal from "./lib/modals/SessionExpiredModal.svelte";
+  import Admin from "./lib/pages/Admin.svelte";
+  import Login from "./lib/pages/Login.svelte";
+  import Profile from "./lib/pages/Profile.svelte";
+  import ReadingDetail from "./lib/pages/ReadingDetail.svelte";
+  import ReadingForm from "./lib/pages/ReadingForm.svelte";
+  import ReadingsList from "./lib/pages/ReadingsList.svelte";
   import { authStore } from "./stores/authStore";
   import { sessionStore } from "./stores/sessionStore";
 

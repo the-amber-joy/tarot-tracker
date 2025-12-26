@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
-  import { authStore } from "../stores/authStore";
-  import Toast from "./Toast.svelte";
+  import { authStore } from "../../stores/authStore";
+  import Toast from "../components/Toast.svelte";
 
   type UserStats = {
     id: number;

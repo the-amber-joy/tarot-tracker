@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import Toast from "../components/Toast.svelte";
   import ConfirmModal from "./ConfirmModal.svelte";
-  import Toast from "./Toast.svelte";
 
   export let isOpen = false;
   export let onClose: () => void;

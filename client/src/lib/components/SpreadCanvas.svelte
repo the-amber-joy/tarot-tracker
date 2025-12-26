@@ -1,7 +1,7 @@
 <script lang="ts">
   import interact from "interactjs";
   import { onMount } from "svelte";
-  import CardModal from "./CardModal.svelte";
+  import CardModal from "../modals/CardModal.svelte";
 
   export let spreadTemplate: string = "";
   export let spreadCards: Record<number, any> = {};

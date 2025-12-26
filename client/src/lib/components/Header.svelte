@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { navigate } from "svelte-routing";
-  import { authStore } from "../stores/authStore";
+  import { authStore } from "../../stores/authStore";
 
   export let onNewReading: () => void;
   export let onHome: () => void;
