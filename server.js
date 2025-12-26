@@ -540,12 +540,13 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
   db.all(
     `
     SELECT 
-      rc.card_name,
+      c.name as card_name,
       COUNT(*) as count
     FROM reading_cards rc
     INNER JOIN readings r ON rc.reading_id = r.id
-    WHERE r.user_id = ? AND rc.card_name IS NOT NULL AND rc.card_name != ''
-    GROUP BY rc.card_name
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ?
+    GROUP BY c.id, c.name
     ORDER BY count DESC
   `,
     [req.user.id],
@@ -562,19 +563,23 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
 app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
   db.all(
     `
-    SELECT rc.card_name
+    SELECT 
+      c.suit,
+      COUNT(*) as count
     FROM reading_cards rc
     INNER JOIN readings r ON rc.reading_id = r.id
-    WHERE r.user_id = ? AND rc.card_name IS NOT NULL AND rc.card_name != ''
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ?
+    GROUP BY c.suit
   `,
     [req.user.id],
-    (err, cards) => {
+    (err, suitCounts) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
 
-      // Categorize cards by suit
-      const suitCounts = {
+      // Convert to expected format
+      const distribution = {
         "Major Arcana": 0,
         Wands: 0,
         Cups: 0,
@@ -582,46 +587,37 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
         Pentacles: 0,
       };
 
-      const majorArcana = [
-        "The Fool",
-        "The Magician",
-        "The High Priestess",
-        "The Empress",
-        "The Emperor",
-        "The Hierophant",
-        "The Lovers",
-        "The Chariot",
-        "Strength",
-        "The Hermit",
-        "Wheel of Fortune",
-        "Justice",
-        "The Hanged Man",
-        "Death",
-        "Temperance",
-        "The Devil",
-        "The Tower",
-        "The Star",
-        "The Moon",
-        "The Sun",
-        "Judgement",
-        "The World",
-      ];
-
-      cards.forEach(({ card_name }) => {
-        if (majorArcana.includes(card_name)) {
-          suitCounts["Major Arcana"]++;
-        } else if (card_name.includes("Wands")) {
-          suitCounts["Wands"]++;
-        } else if (card_name.includes("Cups")) {
-          suitCounts["Cups"]++;
-        } else if (card_name.includes("Swords")) {
-          suitCounts["Swords"]++;
-        } else if (card_name.includes("Pentacles")) {
-          suitCounts["Pentacles"]++;
+      suitCounts.forEach(({ suit, count }) => {
+        if (distribution.hasOwnProperty(suit)) {
+          distribution[suit] = count;
         }
       });
 
-      res.json(suitCounts);
+      res.json(distribution);
+    },
+  );
+});
+
+// Get number distribution statistics
+app.get("/api/stats/number-distribution", requireAuth, (req, res) => {
+  db.all(
+    `
+    SELECT 
+      c.number,
+      COUNT(*) as count
+    FROM reading_cards rc
+    INNER JOIN readings r ON rc.reading_id = r.id
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ? AND c.suit != 'Major Arcana'
+    GROUP BY c.number
+    ORDER BY c.number
+  `,
+    [req.user.id],
+    (err, numberCounts) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(numberCounts);
     },
   );
 });
@@ -728,14 +724,15 @@ app.post("/api/readings", requireAuth, (req, res) => {
 
       const readingId = this.lastID;
 
-      // Insert cards
+      // Insert cards with card_id lookup
       const stmt = db.prepare(
-        "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?)",
       );
 
       cards.forEach((card, index) => {
         stmt.run(
           readingId,
+          card.card_name,
           card.card_name,
           card.position,
           card.interpretation,
@@ -787,14 +784,15 @@ app.put("/api/readings/:id", requireAuth, (req, res) => {
             return res.status(500).json({ error: err.message });
           }
 
-          // Insert updated cards
+          // Insert updated cards with card_id lookup
           const stmt = db.prepare(
-            "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?)",
           );
 
           cards.forEach((card, index) => {
             stmt.run(
               req.params.id,
+              card.card_name,
               card.card_name,
               card.position,
               card.interpretation,
