@@ -254,28 +254,9 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
         LENGTH(COALESCE(u.username, '')) +
         LENGTH(COALESCE(u.display_name, '')) +
         LENGTH(COALESCE(u.password_hash, '')) +
-        COALESCE((
-          SELECT SUM(LENGTH(COALESCE(name, '')))
-          FROM decks WHERE user_id = u.id
-        ), 0) +
-        COALESCE((
-          SELECT SUM(
-            LENGTH(COALESCE(spread_name, '')) +
-            LENGTH(COALESCE(deck_name, '')) +
-            LENGTH(COALESCE(notes, ''))
-          )
-          FROM readings WHERE user_id = u.id
-        ), 0) +
-        COALESCE((
-          SELECT SUM(
-            LENGTH(COALESCE(card_name, '')) +
-            LENGTH(COALESCE(position, '')) +
-            LENGTH(COALESCE(interpretation, ''))
-          )
-          FROM reading_cards rc
-          JOIN readings r ON rc.reading_id = r.id
-          WHERE r.user_id = u.id
-        ), 0)
+        COALESCE((SELECT SUM(LENGTH(COALESCE(name, '')) + LENGTH(COALESCE(notes, ''))) FROM decks WHERE user_id = u.id), 0) +
+        COALESCE((SELECT SUM(LENGTH(COALESCE(title, '')) + LENGTH(COALESCE(deck_name, '')) + LENGTH(COALESCE(notes, '')) + LENGTH(COALESCE(spread_template_id, ''))) FROM readings WHERE user_id = u.id), 0) +
+        COALESCE((SELECT SUM(LENGTH(COALESCE(rc.card_name, '')) + LENGTH(COALESCE(rc.position, '')) + LENGTH(COALESCE(rc.interpretation, ''))) FROM reading_cards rc JOIN readings r ON rc.reading_id = r.id WHERE r.user_id = u.id), 0)
       ) as storage_bytes
     FROM users u
     ORDER BY u.username
@@ -283,6 +264,7 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
     [],
     (err, users) => {
       if (err) {
+        console.error("Error fetching users:", err);
         return res.status(500).json({ error: err.message });
       }
       res.json(users);
