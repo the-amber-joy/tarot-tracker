@@ -2,7 +2,11 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
-const dbPath = path.join(__dirname, "data", "tarot.db");
+// Use DB_PATH environment variable if set (for production), otherwise use local path
+const dbDir = process.env.DB_PATH || path.join(__dirname, "data");
+const dbPath = path.join(dbDir, "tarot.db");
+
+console.log("Database path:", dbPath);
 const db = new sqlite3.Database(dbPath);
 
 console.log("Starting migration: rename spread_name to title...");
