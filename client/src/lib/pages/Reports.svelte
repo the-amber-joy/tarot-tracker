@@ -131,6 +131,24 @@
     0,
   );
 
+  // Get available years from readings
+  $: availableYears = (() => {
+    const years = new Set<number>();
+    readings.forEach((r) => {
+      const year = new Date(r.date).getFullYear();
+      years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b - a); // Sort descending (newest first)
+  })();
+
+  // Check if Selected Year option should be available (multiple years with readings)
+  $: showSelectedYearOption = availableYears.length > 1;
+
+  // Reset to allTime if selectedYear is chosen but not available
+  $: if (selectedTimespan === "selectedYear" && !showSelectedYearOption) {
+    selectedTimespan = "allTime";
+  }
+
   // Calculate reading statistics
   $: readingStats = (() => {
     const now = new Date();
@@ -324,13 +342,15 @@
         <option value="6months">Last 6 Months</option>
         <option value="12months">Last 12 Months</option>
         <option value="yearToDate">This Year to Date</option>
-        <option value="selectedYear">Selected Year</option>
+        {#if showSelectedYearOption}
+          <option value="selectedYear">Selected Year</option>
+        {/if}
         <option value="allTime">All Time</option>
       </select>
 
       {#if selectedTimespan === "selectedYear"}
         <select bind:value={selectedYear}>
-          {#each Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i) as year}
+          {#each availableYears as year}
             <option value={year}>{year}</option>
           {/each}
         </select>
