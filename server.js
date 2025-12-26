@@ -681,8 +681,9 @@ app.delete("/api/decks/:id", requireAuth, (req, res) => {
 
 // Get card frequency statistics
 app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
-  db.all(
-    `
+  const { startDate, endDate } = req.query;
+
+  let query = `
     SELECT 
       c.name as card_name,
       COUNT(*) as count
@@ -690,23 +691,38 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
     INNER JOIN readings r ON rc.reading_id = r.id
     INNER JOIN cards c ON rc.card_id = c.id
     WHERE r.user_id = ?
+  `;
+
+  const params = [req.user.id];
+
+  if (startDate) {
+    query += ` AND r.date >= ?`;
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    query += ` AND r.date <= ?`;
+    params.push(endDate);
+  }
+
+  query += `
     GROUP BY c.id, c.name
     ORDER BY count DESC
-  `,
-    [req.user.id],
-    (err, cardFrequency) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(cardFrequency);
-    },
-  );
+  `;
+
+  db.all(query, params, (err, cardFrequency) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(cardFrequency);
+  });
 });
 
 // Get suit distribution statistics
 app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
-  db.all(
-    `
+  const { startDate, endDate } = req.query;
+
+  let query = `
     SELECT 
       c.suit,
       COUNT(*) as count
@@ -714,32 +730,44 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
     INNER JOIN readings r ON rc.reading_id = r.id
     INNER JOIN cards c ON rc.card_id = c.id
     WHERE r.user_id = ?
-    GROUP BY c.suit
-  `,
-    [req.user.id],
-    (err, suitCounts) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
+  `;
+
+  const params = [req.user.id];
+
+  if (startDate) {
+    query += ` AND r.date >= ?`;
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    query += ` AND r.date <= ?`;
+    params.push(endDate);
+  }
+
+  query += ` GROUP BY c.suit`;
+
+  db.all(query, params, (err, suitCounts) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Convert to expected format
+    const distribution = {
+      "Major Arcana": 0,
+      Wands: 0,
+      Cups: 0,
+      Swords: 0,
+      Pentacles: 0,
+    };
+
+    suitCounts.forEach(({ suit, count }) => {
+      if (distribution.hasOwnProperty(suit)) {
+        distribution[suit] = count;
       }
+    });
 
-      // Convert to expected format
-      const distribution = {
-        "Major Arcana": 0,
-        Wands: 0,
-        Cups: 0,
-        Swords: 0,
-        Pentacles: 0,
-      };
-
-      suitCounts.forEach(({ suit, count }) => {
-        if (distribution.hasOwnProperty(suit)) {
-          distribution[suit] = count;
-        }
-      });
-
-      res.json(distribution);
-    },
-  );
+    res.json(distribution);
+  });
 });
 
 // Get number distribution statistics
@@ -768,6 +796,22 @@ app.get("/api/stats/number-distribution", requireAuth, (req, res) => {
 
 // Get consolidated analytics (user-scoped)
 app.get("/api/stats/analytics", requireAuth, (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  // Build WHERE clause for date filtering
+  let dateFilter = "";
+  const dateParams = [];
+
+  if (startDate) {
+    dateFilter += " AND r.date >= ?";
+    dateParams.push(startDate);
+  }
+
+  if (endDate) {
+    dateFilter += " AND r.date <= ?";
+    dateParams.push(endDate);
+  }
+
   db.serialize(() => {
     // Number distribution (Ace through King, all suits)
     db.all(
@@ -778,11 +822,11 @@ app.get("/api/stats/analytics", requireAuth, (req, res) => {
       FROM reading_cards rc
       JOIN readings r ON rc.reading_id = r.id
       JOIN cards c ON rc.card_id = c.id
-      WHERE r.user_id = ?
+      WHERE r.user_id = ?${dateFilter}
       GROUP BY c.number
       ORDER BY c.number
     `,
-      [req.user.id],
+      [req.user.id, ...dateParams],
       (err, numberDist) => {
         if (err) {
           return res.status(500).json({ error: err.message });
@@ -799,11 +843,11 @@ app.get("/api/stats/analytics", requireAuth, (req, res) => {
           JOIN readings r ON rc.reading_id = r.id
           JOIN cards c ON rc.card_id = c.id
           JOIN elements e ON c.element_id = e.id
-          WHERE r.user_id = ?
+          WHERE r.user_id = ?${dateFilter}
           GROUP BY e.name, e.polarity
           ORDER BY count DESC
         `,
-          [req.user.id],
+          [req.user.id, ...dateParams],
           (err, elementDist) => {
             if (err) {
               return res.status(500).json({ error: err.message });
@@ -819,12 +863,12 @@ app.get("/api/stats/analytics", requireAuth, (req, res) => {
               FROM reading_cards rc
               JOIN readings r ON rc.reading_id = r.id
               JOIN cards c ON rc.card_id = c.id
-              WHERE r.user_id = ?
+              WHERE r.user_id = ?${dateFilter}
               GROUP BY c.id
               ORDER BY count DESC
               LIMIT 10
             `,
-              [req.user.id],
+              [req.user.id, ...dateParams],
               (err, topCards) => {
                 if (err) {
                   return res.status(500).json({ error: err.message });
@@ -838,9 +882,9 @@ app.get("/api/stats/analytics", requireAuth, (req, res) => {
                     COUNT(*) as total_cards_drawn
                   FROM readings r
                   LEFT JOIN reading_cards rc ON r.id = rc.reading_id
-                  WHERE r.user_id = ?
+                  WHERE r.user_id = ?${dateFilter}
                 `,
-                  [req.user.id],
+                  [req.user.id, ...dateParams],
                   (err, totals) => {
                     if (err) {
                       return res.status(500).json({ error: err.message });

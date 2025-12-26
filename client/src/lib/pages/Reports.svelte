@@ -11,6 +11,20 @@
     is_incomplete?: boolean;
   };
 
+  // Timespan filter
+  type TimespanOption =
+    | "7days"
+    | "30days"
+    | "3months"
+    | "6months"
+    | "12months"
+    | "yearToDate"
+    | "selectedYear"
+    | "allTime";
+
+  let selectedTimespan: TimespanOption = "allTime";
+  let selectedYear: number = new Date().getFullYear();
+
   // Card frequency data
   type CardFrequency = {
     card_name: string;
@@ -171,18 +185,81 @@
     };
   })();
 
-  onMount(async () => {
+  // Calculate date range based on selected timespan
+  function getDateRange(): {
+    startDate: string | null;
+    endDate: string | null;
+  } {
+    const now = new Date();
+    let startDate: Date | null = null;
+
+    switch (selectedTimespan) {
+      case "7days":
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case "30days":
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case "3months":
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case "6months":
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 6);
+        break;
+      case "12months":
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 12);
+        break;
+      case "yearToDate":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      case "selectedYear":
+        startDate = new Date(selectedYear, 0, 1);
+        const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+        return {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endOfYear.toISOString().split("T")[0],
+        };
+      case "allTime":
+        return { startDate: null, endDate: null };
+    }
+
+    return {
+      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
+      endDate: now.toISOString().split("T")[0],
+    };
+  }
+
+  // Reload data when timespan changes
+  $: if (selectedTimespan || selectedYear) {
+    loadData();
+  }
+
+  async function loadData() {
     await Promise.all([
       loadReadings(),
       loadCardFrequency(),
       loadSuitDistribution(),
       loadAnalytics(),
     ]);
+  }
+
+  onMount(async () => {
+    await loadData();
   });
 
   async function loadCardFrequency() {
     try {
-      const response = await fetch("/api/stats/card-frequency");
+      const { startDate, endDate } = getDateRange();
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const response = await fetch(`/api/stats/card-frequency?${params}`);
       cardFrequency = await response.json();
     } catch (error) {
       console.error("Error loading card frequency:", error);
@@ -191,7 +268,12 @@
 
   async function loadSuitDistribution() {
     try {
-      const response = await fetch("/api/stats/suit-distribution");
+      const { startDate, endDate } = getDateRange();
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const response = await fetch(`/api/stats/suit-distribution?${params}`);
       suitDistribution = await response.json();
     } catch (error) {
       console.error("Error loading suit distribution:", error);
@@ -200,7 +282,12 @@
 
   async function loadAnalytics() {
     try {
-      const response = await fetch("/api/stats/analytics");
+      const { startDate, endDate } = getDateRange();
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const response = await fetch(`/api/stats/analytics?${params}`);
       analytics = await response.json();
     } catch (error) {
       console.error("Error loading analytics:", error);
@@ -226,6 +313,29 @@
   <!-- Reports Section -->
   <section class="reports-section">
     <h3>Reading Statistics</h3>
+
+    <!-- Timespan Selector -->
+    <div class="timespan-selector">
+      <label for="timespan">Time Period:</label>
+      <select id="timespan" bind:value={selectedTimespan}>
+        <option value="7days">Last 7 Days</option>
+        <option value="30days">Last 30 Days</option>
+        <option value="3months">Last 3 Months</option>
+        <option value="6months">Last 6 Months</option>
+        <option value="12months">Last 12 Months</option>
+        <option value="yearToDate">This Year to Date</option>
+        <option value="selectedYear">Selected Year</option>
+        <option value="allTime">All Time</option>
+      </select>
+
+      {#if selectedTimespan === "selectedYear"}
+        <select bind:value={selectedYear}>
+          {#each Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i) as year}
+            <option value={year}>{year}</option>
+          {/each}
+        </select>
+      {/if}
+    </div>
 
     {#if readings.length === 0}
       <p class="empty-message">
@@ -465,6 +575,50 @@
     color: var(--color-text-secondary);
     border-bottom: 2px solid var(--color-border);
     padding-bottom: 0.5rem;
+  }
+
+  /* Timespan Selector Styles */
+  .timespan-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+  }
+
+  .timespan-selector label {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .timespan-selector select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    background: var(--color-bg-white);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+  }
+
+  .timespan-selector select:hover {
+    border-color: var(--color-primary);
+  }
+
+  .timespan-selector select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
   }
 
   .reports-section h4 {
