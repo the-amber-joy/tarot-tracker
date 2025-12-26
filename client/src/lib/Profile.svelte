@@ -76,10 +76,27 @@
   let validationMessage = "";
 
   let readings: Reading[] = [];
+  let mounted = false;
 
   onMount(async () => {
+    // Restore the active tab from localStorage
+    const savedTab = localStorage.getItem("profileActiveTab");
+    if (
+      savedTab === "profile" ||
+      savedTab === "decks" ||
+      savedTab === "readings"
+    ) {
+      activeTab = savedTab;
+    }
+
     await Promise.all([loadDecks(), loadReadings()]);
+    mounted = true;
   });
+
+  // Save active tab when it changes (only after mount)
+  $: if (mounted && activeTab) {
+    localStorage.setItem("profileActiveTab", activeTab);
+  }
 
   async function loadDecks() {
     try {

@@ -2,8 +2,8 @@
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
   import { readingsStore } from "../stores/readingsStore";
-  import SpreadCanvas from "./SpreadCanvas.svelte";
   import ConfirmModal from "./ConfirmModal.svelte";
+  import SpreadCanvas from "./SpreadCanvas.svelte";
   import Toast from "./Toast.svelte";
 
   export let params: { id?: string } = {};
@@ -321,9 +321,7 @@
     <button
       type="button"
       class="btn btn-secondary"
-      on:click={() =>
-        isEditMode ? navigate(`/reading/${readingId}`) : navigate("/")}
-      >Cancel</button
+      on:click={() => window.history.back()}>Cancel</button
     >
   </div>
 
@@ -420,9 +418,7 @@
       <button
         type="button"
         class="btn btn-secondary"
-        on:click={() =>
-          isEditMode ? navigate(`/reading/${readingId}`) : navigate("/")}
-        >Cancel</button
+        on:click={() => window.history.back()}>Cancel</button
       >
       <button type="submit" class="btn btn-primary"
         >{isEditMode ? "Update Reading" : "Save Reading"}</button
