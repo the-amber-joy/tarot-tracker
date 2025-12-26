@@ -72,21 +72,6 @@ function initDatabase() {
 
     // Create reference tables for card metadata
     db.run(`
-      CREATE TABLE IF NOT EXISTS zodiac_signs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS elements (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        polarity TEXT
-      )
-    `);
-
-    db.run(`
       CREATE TABLE IF NOT EXISTS qualities (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE
@@ -100,6 +85,25 @@ function initDatabase() {
       )
     `);
 
+    db.run(`
+      CREATE TABLE IF NOT EXISTS zodiac_signs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        quality_id INTEGER,
+        planet_id INTEGER,
+        FOREIGN KEY (quality_id) REFERENCES qualities(id),
+        FOREIGN KEY (planet_id) REFERENCES planets(id)
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS elements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        polarity TEXT
+      )
+    `);
+
     // Create master cards table with all 78 tarot cards
     db.run(`
       CREATE TABLE IF NOT EXISTS cards (
@@ -109,25 +113,20 @@ function initDatabase() {
         suit TEXT NOT NULL,
         zodiac_sign_id INTEGER,
         element_id INTEGER,
-        quality_id INTEGER,
         planet_id INTEGER,
-        primary_correspondence_type TEXT,
-        primary_correspondence_id INTEGER,
-        secondary_correspondence_type TEXT,
-        secondary_correspondence_id INTEGER,
         keywords TEXT,
         FOREIGN KEY (zodiac_sign_id) REFERENCES zodiac_signs(id),
         FOREIGN KEY (element_id) REFERENCES elements(id),
-        FOREIGN KEY (quality_id) REFERENCES qualities(id),
         FOREIGN KEY (planet_id) REFERENCES planets(id)
       )
     `);
 
-    // Create cards table (for cards in each reading)
+    // Create reading_cards table (cards in each reading)
     db.run(`
       CREATE TABLE IF NOT EXISTS reading_cards (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         reading_id INTEGER NOT NULL,
+        card_id INTEGER,
         card_name TEXT NOT NULL,
         position TEXT NOT NULL,
         interpretation TEXT,
@@ -135,134 +134,12 @@ function initDatabase() {
         position_x REAL,
         position_y REAL,
         rotation REAL DEFAULT 0,
-        FOREIGN KEY (reading_id) REFERENCES readings(id) ON DELETE CASCADE
+        FOREIGN KEY (reading_id) REFERENCES readings(id) ON DELETE CASCADE,
+        FOREIGN KEY (card_id) REFERENCES cards(id)
       )
     `);
 
     console.log("Database initialized successfully");
-
-    // Migration: Add polarity column to elements if it doesn't exist
-    db.all("PRAGMA table_info(elements)", [], (err, columns) => {
-      if (err) {
-        console.error("Error checking elements schema:", err.message);
-      } else {
-        const hasPolarity = columns.some((col) => col.name === "polarity");
-        if (!hasPolarity) {
-          console.log("Adding polarity column to elements...");
-          db.run("ALTER TABLE elements ADD COLUMN polarity TEXT", (err) => {
-            if (err) {
-              console.error("Error adding polarity column:", err.message);
-            } else {
-              console.log("✓ polarity column added to elements");
-              // Update existing elements with polarity
-              db.run(
-                "UPDATE elements SET polarity = 'Active' WHERE name IN ('Fire', 'Air')",
-                (err) => {
-                  if (err)
-                    console.error(
-                      "Error updating Fire/Air polarity:",
-                      err.message,
-                    );
-                },
-              );
-              db.run(
-                "UPDATE elements SET polarity = 'Passive' WHERE name IN ('Earth', 'Water')",
-                (err) => {
-                  if (err)
-                    console.error(
-                      "Error updating Earth/Water polarity:",
-                      err.message,
-                    );
-                },
-              );
-            }
-          });
-        }
-      }
-    });
-
-    // Migration: Add card_id column to reading_cards if it doesn't exist
-    db.all("PRAGMA table_info(reading_cards)", [], (err, columns) => {
-      if (err) {
-        console.error("Error checking reading_cards schema:", err.message);
-        return;
-      }
-
-      const hasCardId = columns.some((col) => col.name === "card_id");
-
-      if (!hasCardId) {
-        console.log("Adding card_id column to reading_cards...");
-        db.run(
-          "ALTER TABLE reading_cards ADD COLUMN card_id INTEGER REFERENCES cards(id)",
-          (err) => {
-            if (err) {
-              console.error("Error adding card_id column:", err.message);
-            } else {
-              console.log("✓ card_id column added to reading_cards");
-
-              // Migrate existing data: populate card_id from card_name
-              console.log("Migrating existing reading_cards data...");
-              db.all(
-                "SELECT id, card_name FROM reading_cards WHERE card_id IS NULL",
-                [],
-                (err, readingCards) => {
-                  if (err) {
-                    console.error("Error fetching reading_cards:", err.message);
-                    return;
-                  }
-
-                  if (readingCards.length === 0) {
-                    console.log("No cards to migrate");
-                    return;
-                  }
-
-                  let migrated = 0;
-                  let failed = 0;
-
-                  readingCards.forEach((rc) => {
-                    db.get(
-                      "SELECT id FROM cards WHERE name = ?",
-                      [rc.card_name],
-                      (err, card) => {
-                        if (err || !card) {
-                          console.error(
-                            `Failed to find card: ${rc.card_name}`,
-                            err?.message,
-                          );
-                          failed++;
-                          return;
-                        }
-
-                        db.run(
-                          "UPDATE reading_cards SET card_id = ? WHERE id = ?",
-                          [card.id, rc.id],
-                          (err) => {
-                            if (err) {
-                              console.error(
-                                `Error updating reading_card ${rc.id}:`,
-                                err.message,
-                              );
-                              failed++;
-                            } else {
-                              migrated++;
-                              if (migrated + failed === readingCards.length) {
-                                console.log(
-                                  `✓ Migration complete: ${migrated} cards migrated, ${failed} failed`,
-                                );
-                              }
-                            }
-                          },
-                        );
-                      },
-                    );
-                  });
-                },
-              );
-            }
-          },
-        );
-      }
-    });
 
     // Seed admin user if configured
     const adminUsername = process.env.ADMIN_USERNAME;
