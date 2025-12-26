@@ -27,6 +27,10 @@ deploy.txt
 # Local test users
 test-users.md
 
+# Seed scripts
+seed-readings.js
+seed-users.js
+
 # Environment variables
 .env
 
