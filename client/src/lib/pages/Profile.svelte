@@ -78,6 +78,60 @@
   let readings: Reading[] = [];
   let mounted = false;
 
+  // Calculate reading statistics
+  $: readingStats = (() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const thisYearReadings = readings.filter((r) => {
+      const readingDate = new Date(r.date);
+      return readingDate.getFullYear() === currentYear;
+    });
+
+    const thisMonthReadings = readings.filter((r) => {
+      const readingDate = new Date(r.date);
+      return (
+        readingDate.getFullYear() === currentYear &&
+        readingDate.getMonth() === currentMonth
+      );
+    });
+
+    // Find most used deck
+    const deckCounts: Record<string, number> = {};
+    readings.forEach((r) => {
+      if (r.deck_name) {
+        deckCounts[r.deck_name] = (deckCounts[r.deck_name] || 0) + 1;
+      }
+    });
+    const mostUsedDeck = Object.keys(deckCounts).length
+      ? Object.entries(deckCounts).sort((a, b) => b[1] - a[1])[0]
+      : null;
+
+    // Calculate average per month (all time)
+    let avgPerMonth = 0;
+    if (readings.length > 0) {
+      const dates = readings.map((r) => new Date(r.date).getTime());
+      const earliest = new Date(Math.min(...dates));
+      const latest = new Date(Math.max(...dates));
+      const monthsDiff =
+        (latest.getFullYear() - earliest.getFullYear()) * 12 +
+        (latest.getMonth() - earliest.getMonth()) +
+        1;
+      avgPerMonth = readings.length / monthsDiff;
+    }
+
+    return {
+      total: readings.length,
+      thisYear: thisYearReadings.length,
+      thisMonth: thisMonthReadings.length,
+      mostUsedDeck: mostUsedDeck
+        ? { name: mostUsedDeck[0], count: mostUsedDeck[1] }
+        : null,
+      avgPerMonth: avgPerMonth,
+    };
+  })();
+
   onMount(async () => {
     // Restore the active tab from localStorage
     const savedTab = localStorage.getItem("profileActiveTab");
@@ -732,28 +786,52 @@
     {:else if activeTab === "reports"}
       <!-- Reports Section -->
       <section class="profile-section">
-        <h3>Reading Analytics</h3>
-        <p class="empty-message">
-          Data analysis and visualizations will be displayed here.
-        </p>
-        <div class="reports-placeholder">
-          <div class="report-card">
-            <h4>Card Frequency</h4>
-            <p>View which cards appear most often in your readings</p>
+        <h3>Reading Statistics</h3>
+
+        {#if readings.length === 0}
+          <p class="empty-message">
+            No readings yet. Create your first reading to see statistics!
+          </p>
+        {:else}
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">{readingStats.total}</div>
+              <div class="stat-label">Total Readings</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-value">{readingStats.thisYear}</div>
+              <div class="stat-label">This Year</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-value">{readingStats.thisMonth}</div>
+              <div class="stat-label">This Month</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-value">
+                {readingStats.avgPerMonth.toFixed(1)}
+              </div>
+              <div class="stat-label">Avg Per Month</div>
+            </div>
           </div>
-          <div class="report-card">
-            <h4>Suit Distribution</h4>
-            <p>Analyze the distribution of suits across your readings</p>
-          </div>
-          <div class="report-card">
-            <h4>Number Patterns</h4>
-            <p>Discover patterns in card numbers you pull</p>
-          </div>
-          <div class="report-card">
-            <h4>Reading Frequency</h4>
-            <p>Track how often you perform readings over time</p>
-          </div>
-        </div>
+
+          {#if readingStats.mostUsedDeck}
+            <div class="most-used-deck">
+              <h4>Most Used Deck</h4>
+              <div class="deck-stat">
+                <span class="deck-name">{readingStats.mostUsedDeck.name}</span>
+                <span class="deck-count"
+                  >{readingStats.mostUsedDeck.count}
+                  {readingStats.mostUsedDeck.count === 1
+                    ? "reading"
+                    : "readings"}</span
+                >
+              </div>
+            </div>
+          {/if}
+        {/if}
       </section>
     {/if}
   </div>
@@ -1169,6 +1247,78 @@
     gap: 0.5rem;
     padding: 1rem;
     flex-shrink: 0;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    transition: var(--transition-fast);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .most-used-deck {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  .most-used-deck h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+  }
+
+  .deck-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--color-bg-section);
+    border-radius: var(--radius-md);
+  }
+
+  .deck-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .deck-count {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    background: var(--color-primary-light);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-pill);
   }
 
   @media (max-width: 768px) {
