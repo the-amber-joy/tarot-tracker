@@ -179,6 +179,36 @@ function initDatabase() {
         },
       );
     }
+
+    // Seed card data automatically on first run
+    seedCardData();
+  });
+}
+
+// Seed card reference data (qualities, planets, zodiac, elements, cards)
+async function seedCardData() {
+  // Check if cards table is already populated
+  db.get("SELECT COUNT(*) as count FROM cards", async (err, row) => {
+    if (err) {
+      console.error("Error checking cards table:", err.message);
+      return;
+    }
+
+    if (row.count > 0) {
+      console.log("✓ Card data already seeded");
+      return;
+    }
+
+    console.log("Seeding card reference data...");
+    
+    try {
+      // Run the seed-cards script
+      const { seedReferenceTablesAndCards } = require("./seed-cards");
+      await seedReferenceTablesAndCards();
+      console.log("✓ Card data seeded successfully");
+    } catch (error) {
+      console.error("Error seeding card data:", error.message);
+    }
   });
 }
 
