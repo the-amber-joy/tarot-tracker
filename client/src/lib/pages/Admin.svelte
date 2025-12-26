@@ -187,12 +187,12 @@
     }
 
     await loadUsers();
-    
+
     // Load cards if that tab was active
     if (activeTab === "cards") {
       await loadCards();
     }
-    
+
     mounted = true;
   });
 
@@ -413,7 +413,7 @@
   <Toast bind:isVisible={showToast} message={toastMessage} type={toastType} />
 
   <div class="admin-header">
-    <button class="back-button" on:click={goBack}>← Back to Home</button>
+    <button class="back-button" on:click={goBack}>← Back to Dashboard</button>
     <h2><span class="material-symbols-outlined"> build </span> Admin Panel</h2>
     <div class="admin-header-buttons">
       <button
