@@ -96,6 +96,7 @@
     Pentacles: number;
   };
   let suitDistribution: SuitDistribution | null = null;
+  let includeMajorArcana: boolean = true;
 
   // Map card names to suits
   const cardSuits: Record<string, string> = {
@@ -233,7 +234,12 @@
       activeTab = savedTab;
     }
 
-    await Promise.all([loadDecks(), loadReadings(), loadCardFrequency(), loadSuitDistribution()]);
+    await Promise.all([
+      loadDecks(),
+      loadReadings(),
+      loadCardFrequency(),
+      loadSuitDistribution(),
+    ]);
     mounted = true;
   });
 
@@ -989,10 +995,22 @@
           <!-- Suit Distribution Section -->
           {#if suitDistribution}
             <div class="suit-distribution-section">
-              <h4>Suit Distribution</h4>
+              <div class="section-header">
+                <h4>Suit Distribution</h4>
+                <label class="major-arcana-toggle">
+                  <input type="checkbox" bind:checked={includeMajorArcana} />
+                  <span>Include Major Arcana</span>
+                </label>
+              </div>
               <div class="suit-bars">
-                {#each Object.entries(suitDistribution) as [suit, count]}
-                  {@const total = Object.values(suitDistribution).reduce((sum, val) => sum + val, 0)}
+                {#each Object.entries(suitDistribution).filter(([suit]) => includeMajorArcana || suit !== "Major Arcana") as [suit, count]}
+                  {@const filteredEntries = Object.entries(
+                    suitDistribution,
+                  ).filter(([s]) => includeMajorArcana || s !== "Major Arcana")}
+                  {@const total = filteredEntries.reduce(
+                    (sum, [, val]) => sum + val,
+                    0,
+                  )}
                   {@const percentage = total > 0 ? (count / total) * 100 : 0}
                   <div class="suit-bar-container">
                     <div class="suit-bar-label">
@@ -1000,8 +1018,8 @@
                       <span class="suit-count">{count}</span>
                     </div>
                     <div class="suit-bar-track">
-                      <div 
-                        class="suit-bar-fill" 
+                      <div
+                        class="suit-bar-fill"
                         class:major-arcana={suit === "Major Arcana"}
                         class:wands={suit === "Wands"}
                         class:cups={suit === "Cups"}
@@ -1009,7 +1027,9 @@
                         class:pentacles={suit === "Pentacles"}
                         style="width: {percentage}%"
                       >
-                        <span class="suit-percentage">{percentage.toFixed(1)}%</span>
+                        <span class="suit-percentage"
+                          >{percentage.toFixed(1)}%</span
+                        >
                       </div>
                     </div>
                   </div>
@@ -1695,6 +1715,25 @@
     font-weight: 600;
     font-size: 0.85rem;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .major-arcana-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .major-arcana-toggle input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+  }
+
+  .major-arcana-toggle span {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
   }
 
   @media (max-width: 768px) {

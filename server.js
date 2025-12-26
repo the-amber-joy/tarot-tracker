@@ -576,17 +576,35 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
       // Categorize cards by suit
       const suitCounts = {
         "Major Arcana": 0,
-        "Wands": 0,
-        "Cups": 0,
-        "Swords": 0,
-        "Pentacles": 0,
+        Wands: 0,
+        Cups: 0,
+        Swords: 0,
+        Pentacles: 0,
       };
 
       const majorArcana = [
-        "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
-        "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
-        "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
-        "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"
+        "The Fool",
+        "The Magician",
+        "The High Priestess",
+        "The Empress",
+        "The Emperor",
+        "The Hierophant",
+        "The Lovers",
+        "The Chariot",
+        "Strength",
+        "The Hermit",
+        "Wheel of Fortune",
+        "Justice",
+        "The Hanged Man",
+        "Death",
+        "Temperance",
+        "The Devil",
+        "The Tower",
+        "The Star",
+        "The Moon",
+        "The Sun",
+        "Judgement",
+        "The World",
       ];
 
       cards.forEach(({ card_name }) => {
