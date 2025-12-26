@@ -55,29 +55,7 @@ passport.deserializeUser((id, done) => {
         return done(null, false);
       }
 
-      // Auto-promote admin user if configured
-      const adminUsername = process.env.ADMIN_USERNAME;
-      if (
-        adminUsername &&
-        user &&
-        user.username === adminUsername &&
-        !user.is_admin
-      ) {
-        console.log(`Auto-promoting ${user.username} to admin`);
-        db.run(
-          "UPDATE users SET is_admin = 1 WHERE id = ?",
-          [user.id],
-          (updateErr) => {
-            if (updateErr) {
-              console.error("Failed to promote admin:", updateErr);
-            }
-            user.is_admin = 1;
-            done(null, user);
-          },
-        );
-      } else {
-        done(null, user);
-      }
+      done(null, user);
     },
   );
 });
@@ -90,17 +68,9 @@ async function createUser(username, password) {
         return reject(err);
       }
 
-      // Check if this user should be admin
-      const adminUsername = process.env.ADMIN_USERNAME;
-      const isAdmin = adminUsername && username === adminUsername ? 1 : 0;
-
-      if (isAdmin) {
-        console.log(`Creating admin user: ${username}`);
-      }
-
       db.run(
-        "INSERT INTO users (username, password_hash, display_name, is_admin) VALUES (?, ?, ?, ?)",
-        [username, hash, username, isAdmin],
+        "INSERT INTO users (username, password_hash, display_name, is_admin) VALUES (?, ?, ?, 0)",
+        [username, hash, username],
         function (err) {
           if (err) {
             if (err.message.includes("UNIQUE")) {
@@ -112,7 +82,7 @@ async function createUser(username, password) {
             id: this.lastID,
             username,
             display_name: username,
-            is_admin: isAdmin,
+            is_admin: 0,
           });
         },
       );

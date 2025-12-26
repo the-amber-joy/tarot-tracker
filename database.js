@@ -99,6 +99,45 @@ function initDatabase() {
     `);
 
     console.log("Database initialized successfully");
+
+    // Seed admin user if configured
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminUsername && adminPassword) {
+      db.get(
+        "SELECT id FROM users WHERE username = ?",
+        [adminUsername],
+        (err, existing) => {
+          if (err) {
+            console.error("Error checking for admin user:", err.message);
+            return;
+          }
+          if (!existing) {
+            const bcrypt = require("bcrypt");
+            bcrypt.hash(adminPassword, 10, (err, hash) => {
+              if (err) {
+                console.error("Error hashing admin password:", err.message);
+                return;
+              }
+              db.run(
+                "INSERT INTO users (username, password_hash, display_name, is_admin) VALUES (?, ?, ?, 1)",
+                [adminUsername, hash, adminUsername],
+                function (err) {
+                  if (err) {
+                    console.error("Error creating admin user:", err.message);
+                  } else {
+                    console.log(`✓ Admin user '${adminUsername}' created`);
+                  }
+                },
+              );
+            });
+          } else {
+            console.log(`Admin user '${adminUsername}' already exists`);
+          }
+        },
+      );
+    }
   });
 }
 
