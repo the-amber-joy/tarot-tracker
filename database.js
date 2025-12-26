@@ -1,6 +1,7 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 const fs = require("fs");
+const MigrationRunner = require("./migrations/migrate");
 
 // Use environment variable for data directory, fallback to local ./data
 const dataDir = process.env.DB_PATH || path.join(__dirname, "data");
@@ -13,133 +14,49 @@ const db = new sqlite3.Database(path.join(dataDir, "tarot.db"), (err) => {
     console.error("Error opening database:", err.message);
   } else {
     console.log("Connected to the SQLite database.");
-    // Enable foreign key constraints
-    db.run("PRAGMA foreign_keys = ON", (err) => {
-      if (err) {
-        console.error("Error enabling foreign keys:", err.message);
-      } else {
-        console.log("Foreign key constraints enabled.");
-      }
-    });
     initDatabase();
   }
 });
 
-// Initialize database schema
-function initDatabase() {
-  db.serialize(() => {
-    // Create users table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        display_name TEXT,
-        is_admin INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_login DATETIME
-      )
-    `);
+// Auto-seed card data if cards table is empty
+async function seedCardData() {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT COUNT(*) as count FROM cards", async (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
 
-    // Create decks table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS decks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        notes TEXT,
-        user_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE(name, user_id)
-      )
-    `);
+      if (row.count === 0) {
+        console.log("Cards table is empty, seeding card data...");
+        try {
+          const { seedReferenceTablesAndCards } = require("./seed-cards");
+          await seedReferenceTablesAndCards();
+          console.log("✓ Card data seeded successfully");
+          resolve();
+        } catch (seedErr) {
+          console.error("Error seeding card data:", seedErr);
+          reject(seedErr);
+        }
+      } else {
+        console.log(`Cards table already contains ${row.count} cards`);
+        resolve();
+      }
+    });
+  });
+}
 
-    // Create readings table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS readings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        date TEXT NOT NULL,
-        time TEXT NOT NULL,
-        title TEXT NOT NULL,
-        spread_template_id TEXT,
-        deck_name TEXT NOT NULL,
-        notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Create reference tables for card metadata
-    db.run(`
-      CREATE TABLE IF NOT EXISTS qualities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS planets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS zodiac_signs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        quality_id INTEGER,
-        planet_id INTEGER,
-        FOREIGN KEY (quality_id) REFERENCES qualities(id),
-        FOREIGN KEY (planet_id) REFERENCES planets(id)
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS elements (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        polarity TEXT
-      )
-    `);
-
-    // Create master cards table with all 78 tarot cards
-    db.run(`
-      CREATE TABLE IF NOT EXISTS cards (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        number INTEGER,
-        suit TEXT NOT NULL,
-        zodiac_sign_id INTEGER,
-        element_id INTEGER,
-        planet_id INTEGER,
-        keywords TEXT,
-        FOREIGN KEY (zodiac_sign_id) REFERENCES zodiac_signs(id),
-        FOREIGN KEY (element_id) REFERENCES elements(id),
-        FOREIGN KEY (planet_id) REFERENCES planets(id)
-      )
-    `);
-
-    // Create reading_cards table (cards in each reading)
-    db.run(`
-      CREATE TABLE IF NOT EXISTS reading_cards (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        reading_id INTEGER NOT NULL,
-        card_id INTEGER,
-        card_name TEXT NOT NULL,
-        position TEXT NOT NULL,
-        interpretation TEXT,
-        card_order INTEGER NOT NULL,
-        position_x REAL,
-        position_y REAL,
-        rotation REAL DEFAULT 0,
-        FOREIGN KEY (reading_id) REFERENCES readings(id) ON DELETE CASCADE,
-        FOREIGN KEY (card_id) REFERENCES cards(id)
-      )
-    `);
+// Initialize database schema using migrations
+async function initDatabase() {
+  try {
+    // Run all pending migrations
+    const migrationRunner = new MigrationRunner(db);
+    await migrationRunner.runPending();
 
     console.log("Database initialized successfully");
+
+    // Auto-seed card data if needed
+    await seedCardData();
 
     // Seed admin user if configured
     const adminUsername = process.env.ADMIN_USERNAME;
@@ -179,37 +96,10 @@ function initDatabase() {
         },
       );
     }
-
-    // Seed card data automatically on first run
-    seedCardData();
-  });
-}
-
-// Seed card reference data (qualities, planets, zodiac, elements, cards)
-async function seedCardData() {
-  // Check if cards table is already populated
-  db.get("SELECT COUNT(*) as count FROM cards", async (err, row) => {
-    if (err) {
-      console.error("Error checking cards table:", err.message);
-      return;
-    }
-
-    if (row.count > 0) {
-      console.log("✓ Card data already seeded");
-      return;
-    }
-
-    console.log("Seeding card reference data...");
-    
-    try {
-      // Run the seed-cards script
-      const { seedReferenceTablesAndCards } = require("./seed-cards");
-      await seedReferenceTablesAndCards();
-      console.log("✓ Card data seeded successfully");
-    } catch (error) {
-      console.error("Error seeding card data:", error.message);
-    }
-  });
+  } catch (err) {
+    console.error("Error running migrations:", err.message);
+    process.exit(1);
+  }
 }
 
 module.exports = db;
