@@ -126,7 +126,11 @@
       </button>
     {/if}
 
-    <DeckModal isOpen={isDeckModalOpen} onClose={closeDeckModal} />
+    <DeckModal
+      isOpen={isDeckModalOpen}
+      onClose={closeDeckModal}
+      onDeckAdded={() => {}}
+    />
   </Router>
 {/if}
 

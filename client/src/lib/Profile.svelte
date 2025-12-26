@@ -1143,10 +1143,6 @@
       font-size: 0.9rem;
     }
 
-    .btn-add {
-      width: 100%;
-    }
-
     .deck-info {
       flex-direction: column;
       align-items: stretch;

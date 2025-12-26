@@ -213,7 +213,7 @@
         }
         break;
       case "Escape":
-        eventfpreventDefault();
+        event.preventDefault();
         showDropdown = false;
         highlightedIndex = -1;
         break;

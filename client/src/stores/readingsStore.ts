@@ -5,6 +5,7 @@ type Reading = {
   date: string;
   time: string;
   spread_name: string;
+  spread_template_id?: string;
   deck_name: string;
   is_incomplete?: boolean;
 };

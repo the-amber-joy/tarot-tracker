@@ -2,8 +2,8 @@
   export let onClose: () => void;
 </script>
 
-<div class="modal-overlay" on:click={onClose}>
-  <div class="modal-content" on:click|stopPropagation>
+<div class="modal-overlay" onclick={onClose} role="button" tabindex="-1">
+  <div class="modal-content" onclick={(e) => e.stopPropagation()} role="dialog">
     <div class="modal-header">
       <h3>Session Expired</h3>
     </div>
@@ -11,7 +11,7 @@
       <p>Your session has expired. Please log in again to continue.</p>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" on:click={onClose}>
+      <button class="btn btn-primary" onclick={onClose}>
         Return to Login
       </button>
     </div>
