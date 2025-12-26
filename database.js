@@ -18,6 +18,34 @@ const db = new sqlite3.Database(path.join(dataDir, "tarot.db"), (err) => {
   }
 });
 
+// Auto-seed card data if cards table is empty
+async function seedCardData() {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT COUNT(*) as count FROM cards", async (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      if (row.count === 0) {
+        console.log("Cards table is empty, seeding card data...");
+        try {
+          const { seedReferenceTablesAndCards } = require("./seed-cards");
+          await seedReferenceTablesAndCards();
+          console.log("✓ Card data seeded successfully");
+          resolve();
+        } catch (seedErr) {
+          console.error("Error seeding card data:", seedErr);
+          reject(seedErr);
+        }
+      } else {
+        console.log(`Cards table already contains ${row.count} cards`);
+        resolve();
+      }
+    });
+  });
+}
+
 // Initialize database schema using migrations
 async function initDatabase() {
   try {
@@ -26,6 +54,9 @@ async function initDatabase() {
     await migrationRunner.runPending();
 
     console.log("Database initialized successfully");
+
+    // Auto-seed card data if needed
+    await seedCardData();
 
     // Seed admin user if configured
     const adminUsername = process.env.ADMIN_USERNAME;
