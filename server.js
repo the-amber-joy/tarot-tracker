@@ -419,6 +419,117 @@ app.post("/api/admin/nuke", requireAdmin, (req, res) => {
   });
 });
 
+// Get analytics data (admin only)
+app.get("/api/admin/analytics", requireAdmin, (req, res) => {
+  db.serialize(() => {
+    // Number distribution (Ace through 10, including courts and major arcana)
+    db.all(
+      `
+      SELECT 
+        c.number,
+        COUNT(*) as count
+      FROM reading_cards rc
+      JOIN cards c ON rc.card_id = c.id
+      GROUP BY c.number
+      ORDER BY c.number
+    `,
+      [],
+      (err, numberDist) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        // Suit distribution
+        db.all(
+          `
+          SELECT 
+            COALESCE(c.suit, 'Major Arcana') as suit,
+            COUNT(*) as count
+          FROM reading_cards rc
+          JOIN cards c ON rc.card_id = c.id
+          GROUP BY c.suit
+          ORDER BY count DESC
+        `,
+          [],
+          (err, suitDist) => {
+            if (err) {
+              return res.status(500).json({ error: err.message });
+            }
+
+            // Element distribution
+            db.all(
+              `
+              SELECT 
+                e.name as element,
+                e.polarity,
+                COUNT(*) as count
+              FROM reading_cards rc
+              JOIN cards c ON rc.card_id = c.id
+              JOIN elements e ON c.element_id = e.id
+              GROUP BY e.name, e.polarity
+              ORDER BY count DESC
+            `,
+              [],
+              (err, elementDist) => {
+                if (err) {
+                  return res.status(500).json({ error: err.message });
+                }
+
+                // Top 10 most drawn cards
+                db.all(
+                  `
+                  SELECT 
+                    c.name,
+                    c.suit,
+                    COUNT(*) as count
+                  FROM reading_cards rc
+                  JOIN cards c ON rc.card_id = c.id
+                  GROUP BY c.id
+                  ORDER BY count DESC
+                  LIMIT 10
+                `,
+                  [],
+                  (err, topCards) => {
+                    if (err) {
+                      return res.status(500).json({ error: err.message });
+                    }
+
+                    // Total readings and cards
+                    db.get(
+                      `
+                      SELECT 
+                        COUNT(DISTINCT r.id) as total_readings,
+                        COUNT(*) as total_cards_drawn
+                      FROM readings r
+                      LEFT JOIN reading_cards rc ON r.id = rc.reading_id
+                    `,
+                      [],
+                      (err, totals) => {
+                        if (err) {
+                          return res.status(500).json({ error: err.message });
+                        }
+
+                        res.json({
+                          numberDistribution: numberDist,
+                          suitDistribution: suitDist,
+                          elementDistribution: elementDist,
+                          topCards: topCards,
+                          totalReadings: totals.total_readings,
+                          totalCardsDrawn: totals.total_cards_drawn,
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  });
+});
+
 // Get all tarot cards (public)
 app.get("/api/cards", (req, res) => {
   res.json(TAROT_CARDS);
@@ -623,6 +734,104 @@ app.get("/api/stats/number-distribution", requireAuth, (req, res) => {
       res.json(numberCounts);
     },
   );
+});
+
+// Get consolidated analytics (user-scoped)
+app.get("/api/stats/analytics", requireAuth, (req, res) => {
+  db.serialize(() => {
+    // Number distribution (Ace through King, all suits)
+    db.all(
+      `
+      SELECT 
+        c.number,
+        COUNT(*) as count
+      FROM reading_cards rc
+      JOIN readings r ON rc.reading_id = r.id
+      JOIN cards c ON rc.card_id = c.id
+      WHERE r.user_id = ?
+      GROUP BY c.number
+      ORDER BY c.number
+    `,
+      [req.user.id],
+      (err, numberDist) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        // Element distribution
+        db.all(
+          `
+          SELECT 
+            e.name as element,
+            e.polarity,
+            COUNT(*) as count
+          FROM reading_cards rc
+          JOIN readings r ON rc.reading_id = r.id
+          JOIN cards c ON rc.card_id = c.id
+          JOIN elements e ON c.element_id = e.id
+          WHERE r.user_id = ?
+          GROUP BY e.name, e.polarity
+          ORDER BY count DESC
+        `,
+          [req.user.id],
+          (err, elementDist) => {
+            if (err) {
+              return res.status(500).json({ error: err.message });
+            }
+
+            // Top 10 most drawn cards
+            db.all(
+              `
+              SELECT 
+                c.name,
+                c.suit,
+                COUNT(*) as count
+              FROM reading_cards rc
+              JOIN readings r ON rc.reading_id = r.id
+              JOIN cards c ON rc.card_id = c.id
+              WHERE r.user_id = ?
+              GROUP BY c.id
+              ORDER BY count DESC
+              LIMIT 10
+            `,
+              [req.user.id],
+              (err, topCards) => {
+                if (err) {
+                  return res.status(500).json({ error: err.message });
+                }
+
+                // Total readings and cards
+                db.get(
+                  `
+                  SELECT 
+                    COUNT(DISTINCT r.id) as total_readings,
+                    COUNT(*) as total_cards_drawn
+                  FROM readings r
+                  LEFT JOIN reading_cards rc ON r.id = rc.reading_id
+                  WHERE r.user_id = ?
+                `,
+                  [req.user.id],
+                  (err, totals) => {
+                    if (err) {
+                      return res.status(500).json({ error: err.message });
+                    }
+
+                    res.json({
+                      numberDistribution: numberDist,
+                      elementDistribution: elementDist,
+                      topCards: topCards,
+                      totalReadings: totals.total_readings,
+                      totalCardsDrawn: totals.total_cards_drawn,
+                    });
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  });
 });
 
 // Get all readings (for summary table, user's own readings only)

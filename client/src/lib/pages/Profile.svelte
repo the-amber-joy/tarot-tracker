@@ -98,6 +98,20 @@
   let suitDistribution: SuitDistribution | null = null;
   let includeMajorArcana: boolean = true;
 
+  // Analytics data (number, element distributions)
+  type Analytics = {
+    numberDistribution: Array<{ number: number; count: number }>;
+    elementDistribution: Array<{
+      element: string;
+      polarity: string;
+      count: number;
+    }>;
+    topCards: Array<{ name: string; suit: string | null; count: number }>;
+    totalReadings: number;
+    totalCardsDrawn: number;
+  };
+  let analytics: Analytics | null = null;
+
   // Map card names to suits
   const cardSuits: Record<string, string> = {
     "Major Arcana": "Major Arcana",
@@ -239,6 +253,7 @@
       loadReadings(),
       loadCardFrequency(),
       loadSuitDistribution(),
+      loadAnalytics(),
     ]);
     mounted = true;
   });
@@ -272,6 +287,15 @@
       suitDistribution = await response.json();
     } catch (error) {
       console.error("Error loading suit distribution:", error);
+    }
+  }
+
+  async function loadAnalytics() {
+    try {
+      const response = await fetch("/api/stats/analytics");
+      analytics = await response.json();
+    } catch (error) {
+      console.error("Error loading analytics:", error);
     }
   }
 
@@ -1037,6 +1061,87 @@
               </div>
             </div>
           {/if}
+
+          <!-- Number Distribution Section -->
+          {#if analytics && analytics.numberDistribution.length > 0}
+            <div class="analytics-section">
+              <h4>📊 Number Distribution</h4>
+              <div class="chart-container">
+                {#each analytics.numberDistribution as item}
+                  {@const maxCount = Math.max(
+                    ...analytics.numberDistribution.map((n) => n.count),
+                  )}
+                  {@const percentage = (item.count / maxCount) * 100}
+                  {@const numberLabel =
+                    item.number === 0
+                      ? "Fool"
+                      : item.number === 1
+                        ? "Ace/Magician"
+                        : item.number <= 10
+                          ? `${item.number}`
+                          : item.number === 11
+                            ? "Page/Justice"
+                            : item.number === 12
+                              ? "Knight/Hanged"
+                              : item.number === 13
+                                ? "Queen/Death"
+                                : item.number === 14
+                                  ? "King/Temperance"
+                                  : item.number === 15
+                                    ? "Devil"
+                                    : item.number === 16
+                                      ? "Tower"
+                                      : item.number === 17
+                                        ? "Star"
+                                        : item.number === 18
+                                          ? "Moon"
+                                          : item.number === 19
+                                            ? "Sun"
+                                            : item.number === 20
+                                              ? "Judgement"
+                                              : "World"}
+                  <div class="chart-bar">
+                    <div class="chart-label">{numberLabel}</div>
+                    <div class="chart-bar-container">
+                      <div
+                        class="chart-bar-fill"
+                        style="width: {percentage}%"
+                      ></div>
+                    </div>
+                    <div class="chart-value">{item.count}</div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          <!-- Element Distribution Section -->
+          {#if analytics && analytics.elementDistribution.length > 0}
+            <div class="analytics-section">
+              <h4>🔥 Element Distribution</h4>
+              <div class="chart-container">
+                {#each analytics.elementDistribution as item}
+                  {@const maxCount = Math.max(
+                    ...analytics.elementDistribution.map((e) => e.count),
+                  )}
+                  {@const percentage = (item.count / maxCount) * 100}
+                  <div class="chart-bar">
+                    <div class="chart-label">
+                      {item.element}
+                      <span class="element-polarity">({item.polarity})</span>
+                    </div>
+                    <div class="chart-bar-container">
+                      <div
+                        class="chart-bar-fill element-{item.element.toLowerCase()}"
+                        style="width: {percentage}%"
+                      ></div>
+                    </div>
+                    <div class="chart-value">{item.count}</div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
@@ -1794,6 +1899,94 @@
 
     .reading-actions .btn {
       flex: 1;
+    }
+  }
+
+  /* Analytics Styles */
+  .analytics-section {
+    background: var(--color-bg-white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-top: 2rem;
+  }
+
+  .analytics-section h4 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.2rem;
+    color: var(--color-text-primary);
+  }
+
+  .chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .chart-bar {
+    display: grid;
+    grid-template-columns: 150px 1fr 60px;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .chart-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    text-align: right;
+  }
+
+  .element-polarity {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+
+  .chart-bar-container {
+    background: var(--color-bg-section);
+    border-radius: var(--radius-sm);
+    height: 32px;
+    overflow: hidden;
+  }
+
+  .chart-bar-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: var(--radius-sm);
+    transition: width 0.3s ease;
+  }
+
+  .chart-bar-fill.element-fire {
+    background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+  }
+
+  .chart-bar-fill.element-water {
+    background: linear-gradient(90deg, #4ecdc4, #44a8d8);
+  }
+
+  .chart-bar-fill.element-air {
+    background: linear-gradient(90deg, #f7b731, #fed330);
+  }
+
+  .chart-bar-fill.element-earth {
+    background: linear-gradient(90deg, #26de81, #20bf6b);
+  }
+
+  .chart-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .chart-bar {
+      grid-template-columns: 100px 1fr 50px;
+      gap: 0.5rem;
+    }
+
+    .chart-label {
+      font-size: 0.8rem;
     }
   }
 </style>
