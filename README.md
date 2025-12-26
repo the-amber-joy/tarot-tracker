@@ -1,6 +1,6 @@
 # Tarot Tracker
 
-A full-featured web application for tracking and managing your Tarot readings over time with multi-user support.
+A web application to track and analyze your Tarot readings over time.
 
 ## Features
 
