@@ -37,7 +37,7 @@
     return spreadTemplates[templateId] || "-";
   }
 
-  let activeTab: "profile" | "decks" | "readings" = "profile";
+  let activeTab: "profile" | "decks" | "readings" | "reports" = "profile";
   let display_name = $authStore?.display_name || $authStore?.username || "";
   let currentPassword = "";
   let newPassword = "";
@@ -84,7 +84,8 @@
     if (
       savedTab === "profile" ||
       savedTab === "decks" ||
-      savedTab === "readings"
+      savedTab === "readings" ||
+      savedTab === "reports"
     ) {
       activeTab = savedTab;
     }
@@ -387,6 +388,13 @@
       on:click={() => (activeTab = "readings")}
     >
       Readings
+    </button>
+    <button
+      class="tab"
+      class:active={activeTab === "reports"}
+      on:click={() => (activeTab = "reports")}
+    >
+      Reports
     </button>
   </div>
 
@@ -721,6 +729,32 @@
           </ul>
         {/if}
       </section>
+    {:else if activeTab === "reports"}
+      <!-- Reports Section -->
+      <section class="profile-section">
+        <h3>Reading Analytics</h3>
+        <p class="empty-message">
+          Data analysis and visualizations will be displayed here.
+        </p>
+        <div class="reports-placeholder">
+          <div class="report-card">
+            <h4>Card Frequency</h4>
+            <p>View which cards appear most often in your readings</p>
+          </div>
+          <div class="report-card">
+            <h4>Suit Distribution</h4>
+            <p>Analyze the distribution of suits across your readings</p>
+          </div>
+          <div class="report-card">
+            <h4>Number Patterns</h4>
+            <p>Discover patterns in card numbers you pull</p>
+          </div>
+          <div class="report-card">
+            <h4>Reading Frequency</h4>
+            <p>Track how often you perform readings over time</p>
+          </div>
+        </div>
+      </section>
     {/if}
   </div>
 </div>
@@ -792,7 +826,7 @@
     display: flex;
     gap: 0.5rem;
     border-bottom: 2px solid var(--color-border);
-    margin-bottom: 2rem;
+    margin-bottom: 0.25rem;
   }
 
   .tab {
@@ -826,7 +860,7 @@
 
   .profile-section {
     background: var(--color-bg-section);
-    padding: 2rem;
+    padding: 1rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
   }
@@ -1142,10 +1176,6 @@
       padding: 1rem;
     }
 
-    .profile-section {
-      padding: 1.5rem;
-    }
-
     .profile-header h2 {
       font-size: 1.5rem;
     }
@@ -1200,5 +1230,37 @@
     .reading-actions .btn {
       flex: 1;
     }
+  }
+
+  .reports-placeholder {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .report-card {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    transition: var(--transition-fast);
+  }
+
+  .report-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+  }
+
+  .report-card h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+  }
+
+  .report-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
   }
 </style>
