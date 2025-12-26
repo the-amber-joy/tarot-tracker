@@ -78,6 +78,55 @@
   let readings: Reading[] = [];
   let mounted = false;
 
+  // Card frequency data
+  type CardFrequency = {
+    card_name: string;
+    count: number;
+    suit?: string;
+  };
+  let cardFrequency: CardFrequency[] = [];
+  let selectedSuit: string = "All";
+
+  // Map card names to suits
+  const cardSuits: Record<string, string> = {
+    "Major Arcana": "Major Arcana",
+  };
+  
+  // Initialize card suits mapping
+  const tarotCards = [
+    "Wands", "Cups", "Swords", "Pentacles"
+  ];
+  
+  tarotCards.forEach(suit => {
+    for (let i = 1; i <= 14; i++) {
+      const names = i === 1 ? ["Ace"] : i === 11 ? ["Page"] : i === 12 ? ["Knight"] : i === 13 ? ["Queen"] : i === 14 ? ["King"] : [i.toString()];
+      names.forEach(name => {
+        cardSuits[`${name} of ${suit}`] = suit;
+      });
+    }
+  });
+
+  // Major Arcana cards
+  const majorArcana = [
+    "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
+    "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
+    "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
+    "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"
+  ];
+  majorArcana.forEach(card => {
+    cardSuits[card] = "Major Arcana";
+  });
+
+  $: filteredCardFrequency = cardFrequency
+    .map(card => ({
+      ...card,
+      suit: cardSuits[card.card_name] || "Unknown"
+    }))
+    .filter(card => selectedSuit === "All" || card.suit === selectedSuit)
+    .sort((a, b) => b.count - a.count);
+
+  $: totalCards = filteredCardFrequency.reduce((sum, card) => sum + card.count, 0);
+
   // Calculate reading statistics
   $: readingStats = (() => {
     const now = new Date();
@@ -144,7 +193,7 @@
       activeTab = savedTab;
     }
 
-    await Promise.all([loadDecks(), loadReadings()]);
+    await Promise.all([loadDecks(), loadReadings(), loadCardFrequency()]);
     mounted = true;
   });
 
@@ -159,6 +208,15 @@
       decks = await response.json();
     } catch (error) {
       console.error("Error loading decks:", error);
+    }
+  }
+
+  async function loadCardFrequency() {
+    try {
+      const response = await fetch("/api/stats/card-frequency");
+      cardFrequency = await response.json();
+    } catch (error) {
+      console.error("Error loading card frequency:", error);
     }
   }
 
@@ -831,6 +889,53 @@
               </div>
             </div>
           {/if}
+
+          <!-- Card Frequency Section -->
+          {#if cardFrequency.length > 0}
+            <div class="card-frequency-section">
+              <div class="section-header">
+                <h4>Card Frequency</h4>
+                <div class="suit-filter">
+                  <select bind:value={selectedSuit}>
+                    <option value="All">All Cards</option>
+                    <option value="Major Arcana">Major Arcana</option>
+                    <option value="Wands">Wands</option>
+                    <option value="Cups">Cups</option>
+                    <option value="Swords">Swords</option>
+                    <option value="Pentacles">Pentacles</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="card-frequency-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Card</th>
+                      <th>Count</th>
+                      <th>Percentage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each filteredCardFrequency.slice(0, 20) as card}
+                      <tr>
+                        <td class="card-name">{card.card_name}</td>
+                        <td class="card-count">{card.count}</td>
+                        <td class="card-percentage">
+                          {((card.count / totalCards) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+                {#if filteredCardFrequency.length > 20}
+                  <p class="table-note">
+                    Showing top 20 of {filteredCardFrequency.length} cards
+                  </p>
+                {/if}
+              </div>
+            </div>
+          {/if}
         {/if}
       </section>
     {/if}
@@ -1319,6 +1424,107 @@
     background: var(--color-primary-light);
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-pill);
+  }
+
+  .card-frequency-section {
+    margin-top: 2rem;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .section-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--color-text-primary);
+  }
+
+  .suit-filter select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-white);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+  }
+
+  .suit-filter select:hover {
+    border-color: var(--color-primary);
+  }
+
+  .suit-filter select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+
+  .card-frequency-table {
+    overflow-x: auto;
+  }
+
+  .card-frequency-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .card-frequency-table thead {
+    background: var(--color-bg-section);
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  .card-frequency-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card-frequency-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .card-frequency-table tbody tr:hover {
+    background: var(--color-bg-section);
+  }
+
+  .card-name {
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .card-count {
+    font-weight: 600;
+    color: var(--color-primary);
+    text-align: center;
+  }
+
+  .card-percentage {
+    color: var(--color-text-secondary);
+    text-align: right;
+  }
+
+  .table-note {
+    margin-top: 1rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
   }
 
   @media (max-width: 768px) {

@@ -535,6 +535,29 @@ app.delete("/api/decks/:id", requireAuth, (req, res) => {
   );
 });
 
+// Get card frequency statistics
+app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
+  db.all(
+    `
+    SELECT 
+      rc.card_name,
+      COUNT(*) as count
+    FROM reading_cards rc
+    INNER JOIN readings r ON rc.reading_id = r.id
+    WHERE r.user_id = ? AND rc.card_name IS NOT NULL AND rc.card_name != ''
+    GROUP BY rc.card_name
+    ORDER BY count DESC
+  `,
+    [req.user.id],
+    (err, cardFrequency) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(cardFrequency);
+    },
+  );
+});
+
 // Get all readings (for summary table, user's own readings only)
 app.get("/api/readings", requireAuth, (req, res) => {
   db.all(
