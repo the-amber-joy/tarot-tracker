@@ -561,17 +561,10 @@
   <div class="tabs">
     <button
       class="tab"
-      class:active={activeTab === "profile"}
-      on:click={() => (activeTab = "profile")}
+      class:active={activeTab === "reports"}
+      on:click={() => (activeTab = "reports")}
     >
-      Account
-    </button>
-    <button
-      class="tab"
-      class:active={activeTab === "decks"}
-      on:click={() => (activeTab = "decks")}
-    >
-      Decks
+      Reports
     </button>
     <button
       class="tab"
@@ -582,10 +575,17 @@
     </button>
     <button
       class="tab"
-      class:active={activeTab === "reports"}
-      on:click={() => (activeTab = "reports")}
+      class:active={activeTab === "decks"}
+      on:click={() => (activeTab = "decks")}
     >
-      Reports
+      Decks
+    </button>
+    <button
+      class="tab"
+      class:active={activeTab === "profile"}
+      on:click={() => (activeTab = "profile")}
+    >
+      Account
     </button>
   </div>
 
