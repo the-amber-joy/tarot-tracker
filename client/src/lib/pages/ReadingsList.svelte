@@ -35,6 +35,7 @@
   let statusFilter: string = ""; // '', 'complete', or 'incomplete'
   let spreadFilter: string = "";
   let activeTab: "readings" | "reports" = "readings";
+  let mounted = false;
 
   $: readings = $readingsStore;
 
@@ -84,8 +85,20 @@
   });
 
   onMount(async () => {
+    // Restore the active tab from localStorage
+    const savedTab = localStorage.getItem("dashboardActiveTab");
+    if (savedTab === "readings" || savedTab === "reports") {
+      activeTab = savedTab;
+    }
+
     await readingsStore.load();
+    mounted = true;
   });
+
+  // Save active tab when it changes (only after mount)
+  $: if (mounted) {
+    localStorage.setItem("dashboardActiveTab", activeTab);
+  }
 
   function toggleDateSort() {
     sortAscending = !sortAscending;
@@ -290,41 +303,6 @@
 <style>
   .summary-view {
     container-type: inline-size;
-  }
-
-  .tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid var(--color-border);
-  }
-
-  .tab {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    color: var(--color-text-secondary);
-    border: none;
-    border-bottom: 3px solid transparent;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: var(--transition-fast);
-    margin-bottom: -2px;
-  }
-
-  .tab:hover {
-    color: var(--color-text-primary);
-    background: var(--color-bg-hover);
-  }
-
-  .tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-  }
-
-  .tab:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
   }
 
   .filters-section {

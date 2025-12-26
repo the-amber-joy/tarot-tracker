@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import BarChart from "../components/BarChart.svelte";
+  import PieChart from "../components/PieChart.svelte";
 
   type Reading = {
     id: number;
@@ -24,6 +26,13 @@
 
   let selectedTimespan: TimespanOption = "allTime";
   let selectedYear: number = new Date().getFullYear();
+
+  // Track screen orientation for chart layout
+  let isLandscape: boolean = false;
+
+  function updateOrientation() {
+    isLandscape = window.innerWidth > window.innerHeight;
+  }
 
   // Card frequency data
   type CardFrequency = {
@@ -268,6 +277,12 @@
 
   onMount(async () => {
     await loadData();
+    updateOrientation();
+    window.addEventListener("resize", updateOrientation);
+  });
+
+  onDestroy(() => {
+    window.removeEventListener("resize", updateOrientation);
   });
 
   async function loadCardFrequency() {
@@ -362,41 +377,124 @@
         No readings yet. Create your first reading to see statistics!
       </p>
     {:else}
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value">{readingStats.total}</div>
-          <div class="stat-label">Total Readings</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-value">{readingStats.thisYear}</div>
-          <div class="stat-label">This Year</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-value">{readingStats.thisMonth}</div>
-          <div class="stat-label">This Month</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-value">
-            {readingStats.avgPerMonth.toFixed(1)}
+      <!-- Top 3 Cards -->
+      {#if analytics?.topCards && analytics.topCards.length > 0}
+        <div class="top-cards-section">
+          <h4>Top 3 Most Drawn Cards</h4>
+          <div class="top-cards-grid">
+            {#each analytics.topCards.slice(0, 3) as card, index}
+              <div class="top-card-item">
+                <div class="card-rank">#{index + 1}</div>
+                <div class="card-placeholder">
+                  <div class="card-placeholder-text">Card Image</div>
+                </div>
+                <div class="card-info">
+                  <div class="card-name-top">{card.name}</div>
+                  {#if card.suit}
+                    <div class="card-suit">{card.suit}</div>
+                  {/if}
+                  <div class="card-count-badge">{card.count} times</div>
+                </div>
+              </div>
+            {/each}
           </div>
-          <div class="stat-label">Avg Per Month</div>
         </div>
-      </div>
+      {/if}
 
-      {#if readingStats.mostUsedDeck}
-        <div class="most-used-deck">
-          <h4>Most Used Deck</h4>
-          <div class="deck-stat">
-            <span class="deck-name">{readingStats.mostUsedDeck.name}</span>
-            <span class="deck-count"
-              >{readingStats.mostUsedDeck.count}
-              {readingStats.mostUsedDeck.count === 1
-                ? "reading"
-                : "readings"}</span
-            >
+      <!-- Top 15 Cards Chart -->
+      {#if cardFrequency.length > 0}
+        <div class="chart-section">
+          <h4>Top 15 Most Drawn Cards</h4>
+          <div class="chart-container-bar">
+            <BarChart
+              labels={cardFrequency.slice(0, 15).map((c) => c.card_name)}
+              data={cardFrequency.slice(0, 15).map((c) => c.count)}
+              title="Card Frequency"
+              horizontal={!isLandscape}
+              backgroundColor={[
+                "rgba(255, 99, 132, 0.7)",
+                "rgba(54, 162, 235, 0.7)",
+                "rgba(255, 206, 86, 0.7)",
+                "rgba(75, 192, 192, 0.7)",
+                "rgba(153, 102, 255, 0.7)",
+                "rgba(255, 159, 64, 0.7)",
+                "rgba(199, 199, 199, 0.7)",
+                "rgba(83, 102, 255, 0.7)",
+                "rgba(255, 99, 255, 0.7)",
+                "rgba(99, 255, 132, 0.7)",
+                "rgba(255, 206, 132, 0.7)",
+                "rgba(132, 162, 235, 0.7)",
+                "rgba(235, 132, 192, 0.7)",
+                "rgba(192, 235, 132, 0.7)",
+                "rgba(132, 192, 235, 0.7)",
+              ]}
+              borderColor={[
+                "rgba(255, 99, 132, 1)",
+                "rgba(54, 162, 235, 1)",
+                "rgba(255, 206, 86, 1)",
+                "rgba(75, 192, 192, 1)",
+                "rgba(153, 102, 255, 1)",
+                "rgba(255, 159, 64, 1)",
+                "rgba(199, 199, 199, 1)",
+                "rgba(83, 102, 255, 1)",
+                "rgba(255, 99, 255, 1)",
+                "rgba(99, 255, 132, 1)",
+                "rgba(255, 206, 132, 1)",
+                "rgba(132, 162, 235, 1)",
+                "rgba(235, 132, 192, 1)",
+                "rgba(192, 235, 132, 1)",
+                "rgba(132, 192, 235, 1)",
+              ]}
+            />
+          </div>
+        </div>
+      {/if}
+
+      <!-- Suit Distribution Chart -->
+      {#if suitDistribution}
+        <div class="chart-section">
+          <div class="section-header-with-toggle">
+            <h4>Suit Distribution</h4>
+            <label class="major-arcana-toggle">
+              <input type="checkbox" bind:checked={includeMajorArcana} />
+              <span>Include Major Arcana</span>
+            </label>
+          </div>
+          <div class="chart-container-pie">
+            <PieChart
+              labels={includeMajorArcana
+                ? ["Major Arcana", "Wands", "Cups", "Swords", "Pentacles"]
+                : ["Wands", "Cups", "Swords", "Pentacles"]}
+              data={includeMajorArcana
+                ? [
+                    suitDistribution["Major Arcana"],
+                    suitDistribution.Wands,
+                    suitDistribution.Cups,
+                    suitDistribution.Swords,
+                    suitDistribution.Pentacles,
+                  ]
+                : [
+                    suitDistribution.Wands,
+                    suitDistribution.Cups,
+                    suitDistribution.Swords,
+                    suitDistribution.Pentacles,
+                  ]}
+              title="Suit Distribution"
+              backgroundColors={includeMajorArcana
+                ? [
+                    "rgba(153, 102, 255, 0.7)",
+                    "rgba(255, 99, 132, 0.7)",
+                    "rgba(54, 162, 235, 0.7)",
+                    "rgba(255, 206, 86, 0.7)",
+                    "rgba(75, 192, 192, 0.7)",
+                  ]
+                : [
+                    "rgba(255, 99, 132, 0.7)",
+                    "rgba(54, 162, 235, 0.7)",
+                    "rgba(255, 206, 86, 0.7)",
+                    "rgba(75, 192, 192, 0.7)",
+                  ]}
+            />
           </div>
         </div>
       {/if}
@@ -654,76 +752,135 @@
     padding: 2rem;
   }
 
-  .stats-grid {
+  /* Top Cards Section */
+  .top-cards-section {
+    margin-top: 2rem;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  .top-cards-section h4 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.2rem;
+    color: var(--color-text-primary);
+  }
+
+  .top-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
   }
 
-  .stat-card {
-    background: var(--color-bg-white);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-    text-align: center;
-    transition: var(--transition-fast);
-  }
-
-  .stat-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--color-primary);
-  }
-
-  .stat-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    line-height: 1;
-    margin-bottom: 0.5rem;
-  }
-
-  .stat-label {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .most-used-deck {
-    background: var(--color-bg-white);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-  }
-
-  .most-used-deck h4 {
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
-    color: var(--color-text-secondary);
-  }
-
-  .deck-stat {
+  .top-card-item {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
     padding: 1rem;
     background: var(--color-bg-section);
     border-radius: var(--radius-md);
+    transition: var(--transition-fast);
   }
 
-  .deck-name {
-    font-size: 1.1rem;
+  .top-card-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-rank {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .card-placeholder {
+    width: 120px;
+    height: 200px;
+    background: linear-gradient(
+      135deg,
+      var(--color-bg-section) 0%,
+      var(--color-border) 100%
+    );
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .card-placeholder-text {
+    color: var(--color-text-light);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .card-info {
+    text-align: center;
+    width: 100%;
+  }
+
+  .card-name-top {
+    font-size: 1rem;
     font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .card-suit {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .card-count-badge {
+    display: inline-block;
+    background: var(--color-primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Chart Sections */
+  .chart-section {
+    margin-top: 2rem;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+
+  .chart-section h4 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.2rem;
     color: var(--color-text-primary);
   }
 
-  .deck-count {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    background: var(--color-primary-light);
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-pill);
+  .section-header-with-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-header-with-toggle h4 {
+    margin: 0;
+  }
+
+  .chart-container-bar {
+    height: 600px;
+    width: 100%;
+  }
+
+  .chart-container-pie {
+    height: 400px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
   }
 
   .card-frequency-section {
@@ -1020,6 +1177,24 @@
 
     .chart-label {
       font-size: 0.8rem;
+    }
+
+    .top-cards-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-container-bar {
+      height: 500px;
+    }
+
+    .chart-container-pie {
+      height: 350px;
+    }
+
+    .section-header-with-toggle {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
     }
   }
 </style>

@@ -788,36 +788,6 @@
     color: #333;
   }
 
-  .tabs {
-    display: flex;
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--color-border);
-    margin-bottom: 0.25rem;
-  }
-
-  .tab {
-    background: none;
-    border: none;
-    padding: 1rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: var(--transition-normal);
-    position: relative;
-    top: 2px;
-  }
-
-  .tab:hover {
-    color: var(--color-primary);
-  }
-
-  .tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-  }
-
   .profile-content {
     display: flex;
     flex-direction: column;
@@ -1049,13 +1019,6 @@
   .deck-edit-actions {
     display: flex;
     gap: 0.5rem;
-  }
-
-  .empty-message {
-    color: var(--color-text-secondary);
-    font-style: italic;
-    text-align: center;
-    padding: 2rem;
   }
 
   .readings-list {
