@@ -280,14 +280,14 @@
           {readonly ? "View Card" : existingCard ? "Edit Card" : "Add Card"}
         </h2>
         <button class="btn-close" on:click={handleCancel} aria-label="Close"
-          >&times;</button
+          ><span class="material-symbols-outlined">close</span></button
         >
       </div>
 
       <div class="modal-body">
         <form on:submit={handleSubmit}>
           <div class="form-group">
-            <label for="cardPositionName">Position</label>
+            <label for="cardPositionName">Positional Meaning</label>
             <input
               type="text"
               id="cardPositionName"
@@ -297,7 +297,7 @@
           </div>
 
           <div class="form-group">
-            <label for="cardName">Card Name</label>
+            <label for="cardName">Card Pulled</label>
             <div class="search-container">
               <input
                 type="text"
@@ -322,7 +322,7 @@
                   aria-label="Clear search"
                   title="Clear"
                 >
-                  &times;
+                  <span class="material-symbols-outlined">close_small</span>
                 </button>
               {/if}
               {#if showDropdown && filteredCards.length > 0 && !readonly}

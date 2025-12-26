@@ -548,7 +548,7 @@
         <div class="nuke-header">
           <h3 id="nuke-modal-title">☢️ Nuclear Option</h3>
           <button class="modal-close" on:click={closeNukeConfirm}
-            >&times;</button
+            ><span class="material-symbols-outlined">close</span></button
           >
         </div>
         <div class="nuke-body">

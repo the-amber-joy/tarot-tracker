@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Toast from "./Toast.svelte";
   import ConfirmModal from "./ConfirmModal.svelte";
+  import Toast from "./Toast.svelte";
 
   export let isOpen = false;
   export let onClose: () => void;
@@ -148,7 +148,7 @@
       <div class="modal-header">
         <h2 id="deck-modal-title">Manage Decks</h2>
         <button class="btn-close" on:click={onClose} aria-label="Close"
-          >&times;</button
+          ><span class="material-symbols-outlined">close</span></button
         >
       </div>
 
