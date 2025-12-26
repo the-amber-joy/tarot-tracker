@@ -36,7 +36,8 @@ function initDatabase() {
         password_hash TEXT NOT NULL,
         display_name TEXT,
         is_admin INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_login DATETIME
       )
     `);
 
@@ -52,19 +53,6 @@ function initDatabase() {
         UNIQUE(name, user_id)
       )
     `);
-
-    // Add notes column to existing decks table if it doesn't exist
-    db.run(
-      `
-      ALTER TABLE decks ADD COLUMN notes TEXT
-    `,
-      (err) => {
-        // Ignore error if column already exists
-        if (err && !err.message.includes("duplicate column")) {
-          console.error("Error adding notes column:", err.message);
-        }
-      },
-    );
 
     // Create readings table
     db.run(`
