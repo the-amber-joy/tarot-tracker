@@ -9,6 +9,7 @@
     username: string;
     display_name: string;
     created_at: string;
+    last_login: string | null;
     deck_count: number;
     reading_count: number;
     storage_bytes: number;
@@ -18,6 +19,7 @@
     | "username"
     | "display_name"
     | "created_at"
+    | "last_login"
     | "deck_count"
     | "reading_count"
     | "storage_bytes";
@@ -50,6 +52,11 @@
       const aVal = a[sortField];
       const bVal = b[sortField];
       const multiplier = sortDirection === "asc" ? 1 : -1;
+
+      // Handle null values (put them at the end)
+      if (aVal === null && bVal === null) return 0;
+      if (aVal === null) return 1;
+      if (bVal === null) return -1;
 
       if (typeof aVal === "string" && typeof bVal === "string") {
         return aVal.localeCompare(bVal) * multiplier;
@@ -293,6 +300,12 @@
               <strong>Created:</strong>
               {formatDate(adminUser.created_at)}
             </div>
+            <div>
+              <strong>Last Login:</strong>
+              {adminUser.last_login
+                ? formatDate(adminUser.last_login)
+                : "Never"}
+            </div>
             <div><strong>Decks:</strong> {adminUser.deck_count}</div>
             <div><strong>Readings:</strong> {adminUser.reading_count}</div>
             <div>
@@ -323,6 +336,9 @@
                 <th class="sortable" on:click={() => handleSort("created_at")}>
                   Created {sortIcon("created_at")}
                 </th>
+                <th class="sortable" on:click={() => handleSort("last_login")}>
+                  Last Login {sortIcon("last_login")}
+                </th>
                 <th class="sortable" on:click={() => handleSort("deck_count")}>
                   Decks {sortIcon("deck_count")}
                 </th>
@@ -347,6 +363,11 @@
                   <td>{user.username}</td>
                   <td>{user.display_name || "-"}</td>
                   <td>{formatDate(user.created_at)}</td>
+                  <td
+                    >{user.last_login
+                      ? formatDate(user.last_login)
+                      : "Never"}</td
+                  >
                   <td class="stat-cell">{user.deck_count}</td>
                   <td class="stat-cell">{user.reading_count}</td>
                   <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
@@ -451,6 +472,14 @@
                   <div class="stat-item">
                     <span class="stat-label">Created:</span>
                     <span class="stat-value">{formatDate(user.created_at)}</span
+                    >
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Last Login:</span>
+                    <span class="stat-value"
+                      >{user.last_login
+                        ? formatDate(user.last_login)
+                        : "Never"}</span
                     >
                   </div>
                   <div class="stat-item">

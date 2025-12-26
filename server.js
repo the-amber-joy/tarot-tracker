@@ -108,6 +108,18 @@ app.post("/api/auth/login", (req, res, next) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
+
+      // Update last_login timestamp
+      db.run(
+        "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+        [user.id],
+        (err) => {
+          if (err) {
+            console.error("Error updating last_login:", err.message);
+          }
+        },
+      );
+
       res.json({
         id: user.id,
         username: user.username,
@@ -248,6 +260,7 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
       u.username,
       u.display_name,
       u.created_at,
+      u.last_login,
       (SELECT COUNT(*) FROM decks WHERE user_id = u.id) as deck_count,
       (SELECT COUNT(*) FROM readings WHERE user_id = u.id) as reading_count,
       (
