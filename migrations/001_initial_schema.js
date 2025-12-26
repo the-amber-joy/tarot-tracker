@@ -160,7 +160,9 @@ async function up(db) {
   console.log("    ✓ Created users table");
   console.log("    ✓ Created decks table with notes column");
   console.log("    ✓ Created readings table");
-  console.log("    ✓ Created card reference tables (qualities, planets, zodiac_signs, elements, cards)");
+  console.log(
+    "    ✓ Created card reference tables (qualities, planets, zodiac_signs, elements, cards)",
+  );
   console.log("    ✓ Created reading_cards table with card_id reference");
 }
 
