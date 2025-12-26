@@ -111,7 +111,7 @@
         {#each reading.cards as card, index}
           <div class="card-detail">
             <h4>Card {index + 1}: {card.position}</h4>
-            <p class="card-name">{card.card_name}</p>
+            <p class="card-detail-name">{card.card_name}</p>
             {#if card.interpretation}
               <p class="card-interpretation">{card.interpretation}</p>
             {/if}

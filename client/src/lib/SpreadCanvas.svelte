@@ -740,7 +740,7 @@
             {cardData.position_label || `Card ${index + 1}`}
           </div>
           {#if cardData.card_name}
-            <div class="card-name">{cardData.card_name}</div>
+            <div class="card-position-name">{cardData.card_name}</div>
           {:else}
             <div
               class="empty-card-btn"
@@ -807,7 +807,7 @@
             {cardData.position_label || `Card ${index + 1}`}
           </div>
           {#if cardData.card_name}
-            <div class="card-name">{cardData.card_name}</div>
+            <div class="card-position-name">{cardData.card_name}</div>
           {:else}
             <div
               class="empty-card-btn"
@@ -868,7 +868,7 @@
             {/if}
             <div class="position-number">{position.order}</div>
             <div class="position-label">{position.label}</div>
-            <div class="card-name">{cardData.card_name}</div>
+            <div class="card-position-name">{cardData.card_name}</div>
           {:else}
             <div class="position-number">{position.order}</div>
             <div class="position-label">{position.label}</div>
