@@ -49,6 +49,12 @@ passport.deserializeUser((id, done) => {
         return done(err);
       }
 
+      // Handle deleted user - session exists but user doesn't
+      if (!user) {
+        console.log(`Session found for deleted user ID: ${id}`);
+        return done(null, false);
+      }
+
       // Auto-promote admin user if configured
       const adminUsername = process.env.ADMIN_USERNAME;
       if (

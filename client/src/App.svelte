@@ -9,7 +9,9 @@
   import ReadingDetail from "./lib/ReadingDetail.svelte";
   import ReadingForm from "./lib/ReadingForm.svelte";
   import ReadingsList from "./lib/ReadingsList.svelte";
+  import SessionExpiredModal from "./lib/SessionExpiredModal.svelte";
   import { authStore } from "./stores/authStore";
+  import { sessionStore } from "./stores/sessionStore";
 
   let currentPath = "";
   let authInitialized = false;
@@ -23,6 +25,15 @@
     (currentPath.startsWith("/reading/") &&
       currentPath !== "/reading/new" &&
       !currentPath.includes("/edit"));
+
+  // Start/stop polling based on auth state
+  $: if (authInitialized) {
+    if ($authStore) {
+      sessionStore.startPolling();
+    } else {
+      sessionStore.stopPolling();
+    }
+  }
 
   onMount(() => {
     // Initialize auth
@@ -50,6 +61,7 @@
     return () => {
       window.removeEventListener("popstate", updatePath);
       clearInterval(intervalId);
+      sessionStore.stopPolling();
     };
   });
 
@@ -60,6 +72,12 @@
 
   function closeDeckModal() {
     isDeckModalOpen = false;
+  }
+
+  function handleSessionExpired() {
+    sessionStore.stopPolling();
+    sessionStore.hideExpiredModal();
+    authStore.logout();
   }
 </script>
 
@@ -110,6 +128,11 @@
 
     <DeckModal isOpen={isDeckModalOpen} onClose={closeDeckModal} />
   </Router>
+{/if}
+
+<!-- Session expired modal - shown globally -->
+{#if $sessionStore.showExpiredModal}
+  <SessionExpiredModal onClose={handleSessionExpired} />
 {/if}
 
 <style>
