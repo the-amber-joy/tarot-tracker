@@ -7,7 +7,7 @@
     id: number;
     date: string;
     time: string;
-    spread_name: string;
+    title: string;
     spread_template_id?: string;
     deck_name: string;
     is_incomplete?: boolean;
@@ -207,7 +207,7 @@
               {#if reading.is_incomplete}
                 <span class="incomplete-icon" title="Incomplete">⚠️</span>
               {/if}
-              {reading.spread_name}
+              {reading.title}
             </td>
             <td
               ><span class="spread-badge"
@@ -239,7 +239,7 @@
               {#if reading.is_incomplete}
                 <span class="incomplete-icon" title="Incomplete">⚠️</span>
               {/if}
-              {reading.spread_name}
+              {reading.title}
             </span>
             <span class="spread-badge"
               >{getSpreadLayout(reading.spread_template_id)}</span

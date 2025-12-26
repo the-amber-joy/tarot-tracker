@@ -531,7 +531,7 @@ app.get("/api/readings", requireAuth, (req, res) => {
       r.id,
       r.date,
       r.time,
-      r.spread_name,
+      r.title,
       r.spread_template_id,
       r.deck_name,
       r.notes,
@@ -612,27 +612,12 @@ app.get("/api/readings/:id", requireAuth, (req, res) => {
 
 // Create a new reading
 app.post("/api/readings", requireAuth, (req, res) => {
-  const {
-    date,
-    time,
-    spread_name,
-    spread_template_id,
-    deck_name,
-    notes,
-    cards,
-  } = req.body;
+  const { date, time, title, spread_template_id, deck_name, notes, cards } =
+    req.body;
 
   db.run(
-    "INSERT INTO readings (user_id, date, time, spread_name, spread_template_id, deck_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [
-      req.user.id,
-      date,
-      time,
-      spread_name,
-      spread_template_id,
-      deck_name,
-      notes,
-    ],
+    "INSERT INTO readings (user_id, date, time, title, spread_template_id, deck_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [req.user.id, date, time, title, spread_template_id, deck_name, notes],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -670,22 +655,15 @@ app.post("/api/readings", requireAuth, (req, res) => {
 
 // Update a reading
 app.put("/api/readings/:id", requireAuth, (req, res) => {
-  const {
-    date,
-    time,
-    spread_name,
-    spread_template_id,
-    deck_name,
-    notes,
-    cards,
-  } = req.body;
+  const { date, time, title, spread_template_id, deck_name, notes, cards } =
+    req.body;
 
   db.run(
-    "UPDATE readings SET date = ?, time = ?, spread_name = ?, spread_template_id = ?, deck_name = ?, notes = ? WHERE id = ? AND user_id = ?",
+    "UPDATE readings SET date = ?, time = ?, title = ?, spread_template_id = ?, deck_name = ?, notes = ? WHERE id = ? AND user_id = ?",
     [
       date,
       time,
-      spread_name,
+      title,
       spread_template_id,
       deck_name,
       notes,

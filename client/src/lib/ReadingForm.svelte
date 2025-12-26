@@ -32,7 +32,7 @@
   let deckSelectElement: HTMLSelectElement;
   let spreadTemplate = "";
   let previousSpreadTemplate = "";
-  let spreadName = "";
+  let title = "";
   let notes = "";
   let spreadCards: Record<number, any> = {};
   let showDeckModal = false;
@@ -71,7 +71,7 @@
         reading.deck_name === "No Deck Specified" ? "" : reading.deck_name;
       spreadTemplate = reading.spread_template_id || "custom";
       previousSpreadTemplate = reading.spread_template_id || "custom";
-      spreadName = reading.spread_name;
+      title = reading.title;
       notes = reading.notes || "";
 
       // Transform cards into spreadCards format using card_order as the key
@@ -268,8 +268,8 @@
       time: time,
       deck_name: deckName || "No Deck Specified",
       spread_template_id: spreadTemplate || "custom",
-      spread_name:
-        spreadName ||
+      title:
+        title ||
         (spreadTemplate === "celtic-cross" ? "Celtic Cross" : "Custom Spread"),
       notes: notes,
       cards: Object.entries(spreadCards).map(([indexStr, card]) => ({
@@ -382,11 +382,11 @@
       </div>
 
       <div class="form-group">
-        <label for="spreadName">Spread Name</label>
+        <label for="title">Reading Title or Question</label>
         <input
           type="text"
-          id="spreadName"
-          bind:value={spreadName}
+          id="title"
+          bind:value={title}
           placeholder="e.g., Daily Pull, Should I quit my job?"
         />
       </div>

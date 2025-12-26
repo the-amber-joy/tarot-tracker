@@ -15,7 +15,7 @@
     id: number;
     date: string;
     time: string;
-    spread_name: string;
+    title: string;
     spread_template_id?: string;
     deck_name: string;
     is_incomplete?: boolean;
@@ -685,7 +685,7 @@
                           >⚠️</span
                         >
                       {/if}
-                      {reading.spread_name}
+                      {reading.title}
                     </span>
                     <p class="reading-details">
                       {formatDateTime(reading.date, reading.time)}
@@ -702,7 +702,7 @@
                   <button
                     class="btn btn-primary"
                     on:click={() => navigate(`/reading/${reading.id}/edit`)}
-                    aria-label="Edit {reading.spread_name}"
+                    aria-label="Edit {reading.title}"
                     title="Edit"
                   >
                     Edit
@@ -710,8 +710,8 @@
                   <button
                     class="btn btn-danger"
                     on:click={() =>
-                      handleDeleteReading(reading.id, reading.spread_name)}
-                    aria-label="Delete {reading.spread_name}"
+                      handleDeleteReading(reading.id, reading.title)}
+                    aria-label="Delete {reading.title}"
                   >
                     Delete
                   </button>

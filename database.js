@@ -73,7 +73,7 @@ function initDatabase() {
         user_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         time TEXT NOT NULL,
-        spread_name TEXT NOT NULL,
+        title TEXT NOT NULL,
         spread_template_id TEXT,
         deck_name TEXT NOT NULL,
         notes TEXT,
