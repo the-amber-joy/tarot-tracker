@@ -15,6 +15,19 @@
     storage_bytes: number;
   };
 
+  type Card = {
+    id: number;
+    name: string;
+    number: number | null;
+    suit: string | null;
+    element_name: string | null;
+    element_polarity: string | null;
+    zodiac_sign_name: string | null;
+    zodiac_quality: string | null;
+    planet_name: string | null;
+    keywords: string | null;
+  };
+
   type SortField =
     | "username"
     | "display_name"
@@ -25,8 +38,11 @@
     | "storage_bytes";
   type SortDirection = "asc" | "desc";
 
+  let activeTab: "users" | "cards" = "users";
   let users: UserStats[] = [];
+  let cards: Card[] = [];
   let loading = true;
+  let cardsLoading = false;
   let error = "";
   let resetUserId: number | null = null;
   let newPassword = "";
@@ -44,6 +60,100 @@
   let showDeploymentInfo = false;
   let deploymentContent = "";
   let deploymentLoading = false;
+  let mounted = false;
+
+  // Card filters
+  let numberFilter = "";
+  let suitFilter = "";
+  let elementFilter = "";
+  let polarityFilter = "";
+  let signFilter = "";
+  let qualityFilter = "";
+  let planetFilter = "";
+
+  // Get unique values for filters
+  $: uniqueNumbers = [
+    ...new Set(cards.map((c) => c.number).filter((n) => n !== null)),
+  ].sort((a, b) => a! - b!);
+
+  $: uniqueSuits = [
+    ...new Set(cards.map((c) => c.suit).filter((s) => s !== null)),
+  ].sort();
+
+  $: uniqueElements = [
+    ...new Set(cards.map((c) => c.element_name).filter((e) => e !== null)),
+  ].sort();
+
+  $: uniquePolarities = [
+    ...new Set(cards.map((c) => c.element_polarity).filter((p) => p !== null)),
+  ].sort();
+
+  $: uniqueSigns = [
+    ...new Set(cards.map((c) => c.zodiac_sign_name).filter((z) => z !== null)),
+  ].sort();
+
+  $: uniqueQualities = [
+    ...new Set(cards.map((c) => c.zodiac_quality).filter((q) => q !== null)),
+  ].sort();
+
+  $: uniquePlanets = [
+    ...new Set(cards.map((c) => c.planet_name).filter((p) => p !== null)),
+  ].sort();
+
+  // Filter cards based on selections
+  $: filteredCards = cards.filter((card) => {
+    if (numberFilter && card.number?.toString() !== numberFilter) return false;
+    if (suitFilter && card.suit !== suitFilter) return false;
+    if (elementFilter && card.element_name !== elementFilter) return false;
+    if (polarityFilter && card.element_polarity !== polarityFilter)
+      return false;
+    if (signFilter && card.zodiac_sign_name !== signFilter) return false;
+    if (qualityFilter && card.zodiac_quality !== qualityFilter) return false;
+    if (planetFilter && card.planet_name !== planetFilter) return false;
+    return true;
+  });
+
+  function clearCardFilters() {
+    numberFilter = "";
+    suitFilter = "";
+    elementFilter = "";
+    polarityFilter = "";
+    signFilter = "";
+    qualityFilter = "";
+    planetFilter = "";
+  }
+
+  function toRoman(num: number): string {
+    const romanNumerals: [number, string][] = [
+      [10, "X"],
+      [9, "IX"],
+      [5, "V"],
+      [4, "IV"],
+      [1, "I"],
+    ];
+
+    if (num === 0) return "0";
+
+    let result = "";
+    for (const [value, numeral] of romanNumerals) {
+      while (num >= value) {
+        result += numeral;
+        num -= value;
+      }
+    }
+    return result;
+  }
+
+  function formatCardName(card: Card): string {
+    // Major Arcana cards have no suit or suit is "Major Arcana"
+    if (
+      (card.suit === null || card.suit === "Major Arcana") &&
+      card.number !== null
+    ) {
+      return `${card.name} (${toRoman(card.number)})`;
+    }
+    return card.name;
+  }
 
   $: adminUser = users.find((u) => u.id === $authStore?.id);
   $: otherUsers = users
@@ -69,8 +179,27 @@
       navigate("/");
       return;
     }
+
+    // Restore the active tab from localStorage
+    const savedTab = localStorage.getItem("adminActiveTab");
+    if (savedTab === "users" || savedTab === "cards") {
+      activeTab = savedTab;
+    }
+
     await loadUsers();
+    
+    // Load cards if that tab was active
+    if (activeTab === "cards") {
+      await loadCards();
+    }
+    
+    mounted = true;
   });
+
+  // Save active tab when it changes (only after mount)
+  $: if (mounted && activeTab) {
+    localStorage.setItem("adminActiveTab", activeTab);
+  }
 
   async function loadUsers() {
     try {
@@ -83,6 +212,28 @@
       error = e.message;
     } finally {
       loading = false;
+    }
+  }
+
+  async function loadCards() {
+    cardsLoading = true;
+    try {
+      const response = await fetch("/api/admin/cards");
+      if (!response.ok) {
+        throw new Error("Failed to load cards");
+      }
+      cards = await response.json();
+    } catch (e: any) {
+      displayToast("Failed to load cards: " + e.message, "error");
+    } finally {
+      cardsLoading = false;
+    }
+  }
+
+  function handleTabChange(tab: "users" | "cards") {
+    activeTab = tab;
+    if (tab === "cards" && cards.length === 0) {
+      loadCards();
     }
   }
 
@@ -281,97 +432,258 @@
     </div>
   </div>
 
-  {#if loading}
-    <div class="loading">Loading users...</div>
-  {:else if error}
-    <div class="message-box error">{error}</div>
-  {:else}
-    {#if adminUser}
-      <div class="admin-user-section">
-        <h3>Your Account</h3>
-        <div class="admin-user-card">
-          <div class="admin-user-info">
-            <div><strong>Username:</strong> {adminUser.username}</div>
-            <div>
-              <strong>Display Name:</strong>
-              {adminUser.display_name || "-"}
-            </div>
-            <div>
-              <strong>Created:</strong>
-              {formatDate(adminUser.created_at)}
-            </div>
-            <div>
-              <strong>Last Login:</strong>
-              {adminUser.last_login
-                ? formatDate(adminUser.last_login)
-                : "Never"}
-            </div>
-            <div><strong>Decks:</strong> {adminUser.deck_count}</div>
-            <div><strong>Readings:</strong> {adminUser.reading_count}</div>
-            <div>
-              <strong>Storage:</strong>
-              {formatBytes(adminUser.storage_bytes)}
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      class="tab"
+      class:active={activeTab === "users"}
+      on:click={() => handleTabChange("users")}
+    >
+      Users
+    </button>
+    <button
+      class="tab"
+      class:active={activeTab === "cards"}
+      on:click={() => handleTabChange("cards")}
+    >
+      Cards Database
+    </button>
+  </div>
+
+  {#if activeTab === "users"}
+    {#if loading}
+      <div class="loading">Loading users...</div>
+    {:else if error}
+      <div class="message-box error">{error}</div>
+    {:else}
+      {#if adminUser}
+        <div class="admin-user-section">
+          <h3>Your Account</h3>
+          <div class="admin-user-card">
+            <div class="admin-user-info">
+              <div><strong>Username:</strong> {adminUser.username}</div>
+              <div>
+                <strong>Display Name:</strong>
+                {adminUser.display_name || "-"}
+              </div>
+              <div>
+                <strong>Created:</strong>
+                {formatDate(adminUser.created_at)}
+              </div>
+              <div>
+                <strong>Last Login:</strong>
+                {adminUser.last_login
+                  ? formatDate(adminUser.last_login)
+                  : "Never"}
+              </div>
+              <div><strong>Decks:</strong> {adminUser.deck_count}</div>
+              <div><strong>Readings:</strong> {adminUser.reading_count}</div>
+              <div>
+                <strong>Storage:</strong>
+                {formatBytes(adminUser.storage_bytes)}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    {/if}
+      {/if}
 
-    {#if otherUsers.length > 0}
-      <div class="other-users-section">
-        <h3>Other Users</h3>
-        <div class="users-table-container">
-          <table class="users-table">
-            <thead>
-              <tr>
-                <th class="sortable" on:click={() => handleSort("username")}>
-                  Username {sortIcon("username")}
-                </th>
-                <th
-                  class="sortable"
-                  on:click={() => handleSort("display_name")}
-                >
-                  Display Name {sortIcon("display_name")}
-                </th>
-                <th class="sortable" on:click={() => handleSort("created_at")}>
-                  Created {sortIcon("created_at")}
-                </th>
-                <th class="sortable" on:click={() => handleSort("last_login")}>
-                  Last Login {sortIcon("last_login")}
-                </th>
-                <th class="sortable" on:click={() => handleSort("deck_count")}>
-                  Decks {sortIcon("deck_count")}
-                </th>
-                <th
-                  class="sortable"
-                  on:click={() => handleSort("reading_count")}
-                >
-                  Readings {sortIcon("reading_count")}
-                </th>
-                <th
-                  class="sortable"
-                  on:click={() => handleSort("storage_bytes")}
-                >
-                  Storage {sortIcon("storage_bytes")}
-                </th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each otherUsers as user}
+      {#if otherUsers.length > 0}
+        <div class="other-users-section">
+          <h3>Other Users</h3>
+          <div class="users-table-container">
+            <table class="users-table">
+              <thead>
                 <tr>
-                  <td>{user.username}</td>
-                  <td>{user.display_name || "-"}</td>
-                  <td>{formatDate(user.created_at)}</td>
-                  <td
-                    >{user.last_login
-                      ? formatDate(user.last_login)
-                      : "Never"}</td
+                  <th class="sortable" on:click={() => handleSort("username")}>
+                    Username {sortIcon("username")}
+                  </th>
+                  <th
+                    class="sortable"
+                    on:click={() => handleSort("display_name")}
                   >
-                  <td class="stat-cell">{user.deck_count}</td>
-                  <td class="stat-cell">{user.reading_count}</td>
-                  <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
-                  <td>
+                    Display Name {sortIcon("display_name")}
+                  </th>
+                  <th
+                    class="sortable"
+                    on:click={() => handleSort("created_at")}
+                  >
+                    Created {sortIcon("created_at")}
+                  </th>
+                  <th
+                    class="sortable"
+                    on:click={() => handleSort("last_login")}
+                  >
+                    Last Login {sortIcon("last_login")}
+                  </th>
+                  <th
+                    class="sortable"
+                    on:click={() => handleSort("deck_count")}
+                  >
+                    Decks {sortIcon("deck_count")}
+                  </th>
+                  <th
+                    class="sortable"
+                    on:click={() => handleSort("reading_count")}
+                  >
+                    Readings {sortIcon("reading_count")}
+                  </th>
+                  <th
+                    class="sortable"
+                    on:click={() => handleSort("storage_bytes")}
+                  >
+                    Storage {sortIcon("storage_bytes")}
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each otherUsers as user}
+                  <tr>
+                    <td>{user.username}</td>
+                    <td>{user.display_name || "-"}</td>
+                    <td>{formatDate(user.created_at)}</td>
+                    <td
+                      >{user.last_login
+                        ? formatDate(user.last_login)
+                        : "Never"}</td
+                    >
+                    <td class="stat-cell">{user.deck_count}</td>
+                    <td class="stat-cell">{user.reading_count}</td>
+                    <td class="stat-cell">{formatBytes(user.storage_bytes)}</td>
+                    <td>
+                      {#if user.id === $authStore?.id}
+                        <span class="muted">-</span>
+                      {:else if deleteUserId === user.id}
+                        <div class="delete-confirm">
+                          <p class="warning-text">
+                            ⚠️ Delete {user.username}?<br />
+                            This will permanently delete:<br />
+                            • {user.deck_count} deck(s)<br />
+                            • {user.reading_count} reading(s)
+                          </p>
+                          <button
+                            class="btn btn-small btn-danger"
+                            on:click={() => handleDeleteUser(user.id)}
+                          >
+                            Yes, Delete
+                          </button>
+                          <button
+                            class="btn btn-small btn-secondary"
+                            on:click={cancelDelete}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      {:else if resetUserId === user.id}
+                        <form
+                          class="reset-form"
+                          on:submit|preventDefault={() =>
+                            handleResetPassword(user.id)}
+                        >
+                          <div class="password-input-wrapper">
+                            <input
+                              type={showPassword ? "text" : "password"}
+                              bind:value={newPassword}
+                              placeholder="New password (6+ chars)"
+                              class="reset-input"
+                            />
+                            <button
+                              type="button"
+                              class="password-toggle-btn"
+                              on:click={() => (showPassword = !showPassword)}
+                              aria-label={showPassword
+                                ? "Hide password"
+                                : "Show password"}
+                            >
+                              <span class="material-symbols-outlined">
+                                {showPassword ? "visibility_off" : "visibility"}
+                              </span>
+                            </button>
+                          </div>
+                          <button
+                            type="submit"
+                            class="btn btn-small btn-primary"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-small btn-secondary"
+                            on:click={cancelReset}
+                          >
+                            Cancel
+                          </button>
+                          {#if resetError}
+                            <div class="inline-error">{resetError}</div>
+                          {/if}
+                        </form>
+                      {:else}
+                        <div class="action-buttons">
+                          <button
+                            class="btn btn-small btn-warning"
+                            on:click={() => startReset(user.id)}
+                          >
+                            Reset Password
+                          </button>
+                          <button
+                            class="btn btn-small btn-danger"
+                            on:click={() => confirmDelete(user.id)}
+                          >
+                            Delete User
+                          </button>
+                        </div>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+            <!-- Mobile cards view -->
+            <div class="users-cards">
+              {#each otherUsers as user}
+                <div class="user-card">
+                  <div class="user-card-header">
+                    <div>
+                      <div class="user-name">{user.username}</div>
+                      <div class="user-display-name">
+                        {user.display_name || "-"}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="user-stats">
+                    <div class="stat-item">
+                      <span class="stat-label">Created:</span>
+                      <span class="stat-value"
+                        >{formatDate(user.created_at)}</span
+                      >
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Last Login:</span>
+                      <span class="stat-value"
+                        >{user.last_login
+                          ? formatDate(user.last_login)
+                          : "Never"}</span
+                      >
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Decks:</span>
+                      <span class="stat-value stat-cell">{user.deck_count}</span
+                      >
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Readings:</span>
+                      <span class="stat-value stat-cell"
+                        >{user.reading_count}</span
+                      >
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Storage:</span>
+                      <span class="stat-value stat-cell"
+                        >{formatBytes(user.storage_bytes)}</span
+                      >
+                    </div>
+                  </div>
+                  <div class="user-actions">
                     {#if user.id === $authStore?.id}
                       <span class="muted">-</span>
                     {:else if deleteUserId === user.id}
@@ -451,143 +763,164 @@
                         </button>
                       </div>
                     {/if}
-                  </td>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {:else}
+        <div class="empty-state">No other users found</div>
+      {/if}
+    {/if}
+  {/if}
+
+  {#if activeTab === "cards"}
+    <div class="cards-section">
+      <h3>Tarot Cards Database</h3>
+
+      {#if cardsLoading}
+        <div class="loading">Loading cards...</div>
+      {:else if cards.length === 0}
+        <div class="empty-state">No cards found in database</div>
+      {:else}
+        <div class="cards-count">
+          Total Cards: {filteredCards.length}
+          {#if filteredCards.length !== cards.length}
+            (filtered from {cards.length})
+          {/if}
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+          <div class="controls">
+            <select class="filter-select" bind:value={numberFilter}>
+              <option value="">All Numbers</option>
+              {#each uniqueNumbers as num}
+                <option value={num?.toString()}>{num}</option>
+              {/each}
+            </select>
+            <select class="filter-select" bind:value={suitFilter}>
+              <option value="">All Suits</option>
+              {#each uniqueSuits as suit}
+                <option value={suit}>{suit}</option>
+              {/each}
+            </select>
+            <select class="filter-select" bind:value={elementFilter}>
+              <option value="">All Elements</option>
+              {#each uniqueElements as element}
+                <option value={element}>{element}</option>
+              {/each}
+            </select>
+            <select class="filter-select" bind:value={polarityFilter}>
+              <option value="">All Polarities</option>
+              {#each uniquePolarities as polarity}
+                <option value={polarity}>{polarity}</option>
+              {/each}
+            </select>
+            <select class="filter-select" bind:value={signFilter}>
+              <option value="">All Signs</option>
+              {#each uniqueSigns as sign}
+                <option value={sign}>{sign}</option>
+              {/each}
+            </select>
+            <select class="filter-select" bind:value={qualityFilter}>
+              <option value="">All Qualities</option>
+              {#each uniqueQualities as quality}
+                <option value={quality}>{quality}</option>
+              {/each}
+            </select>
+            <select class="filter-select" bind:value={planetFilter}>
+              <option value="">All Planets</option>
+              {#each uniquePlanets as planet}
+                <option value={planet}>{planet}</option>
+              {/each}
+            </select>
+            {#if numberFilter || suitFilter || elementFilter || polarityFilter || signFilter || qualityFilter || planetFilter}
+              <button class="clear-filters-btn" on:click={clearCardFilters}>
+                Clear Filters
+              </button>
+            {/if}
+          </div>
+        </div>
+
+        <div class="cards-table-container">
+          <table class="cards-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Planet</th>
+                <th>Element</th>
+                <th>Polarity</th>
+                <th>Sign</th>
+                <th>Quality</th>
+                <th>Keywords</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each filteredCards as card}
+                <tr>
+                  <td class="card-name-cell">{formatCardName(card)}</td>
+                  <td>{card.planet_name || "-"}</td>
+                  <td>{card.element_name || "-"}</td>
+                  <td>{card.element_polarity || "-"}</td>
+                  <td>{card.zodiac_sign_name || "-"}</td>
+                  <td>{card.zodiac_quality || "-"}</td>
+                  <td class="keywords-cell">{card.keywords || "-"}</td>
                 </tr>
               {/each}
             </tbody>
           </table>
-          <!-- Mobile cards view -->
-          <div class="users-cards">
-            {#each otherUsers as user}
-              <div class="user-card">
-                <div class="user-card-header">
-                  <div>
-                    <div class="user-name">{user.username}</div>
-                    <div class="user-display-name">
-                      {user.display_name || "-"}
-                    </div>
-                  </div>
-                </div>
-                <div class="user-stats">
-                  <div class="stat-item">
-                    <span class="stat-label">Created:</span>
-                    <span class="stat-value">{formatDate(user.created_at)}</span
-                    >
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Last Login:</span>
-                    <span class="stat-value"
-                      >{user.last_login
-                        ? formatDate(user.last_login)
-                        : "Never"}</span
-                    >
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Decks:</span>
-                    <span class="stat-value stat-cell">{user.deck_count}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Readings:</span>
-                    <span class="stat-value stat-cell"
-                      >{user.reading_count}</span
-                    >
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">Storage:</span>
-                    <span class="stat-value stat-cell"
-                      >{formatBytes(user.storage_bytes)}</span
-                    >
-                  </div>
-                </div>
-                <div class="user-actions">
-                  {#if user.id === $authStore?.id}
-                    <span class="muted">-</span>
-                  {:else if deleteUserId === user.id}
-                    <div class="delete-confirm">
-                      <p class="warning-text">
-                        ⚠️ Delete {user.username}?<br />
-                        This will permanently delete:<br />
-                        • {user.deck_count} deck(s)<br />
-                        • {user.reading_count} reading(s)
-                      </p>
-                      <button
-                        class="btn btn-small btn-danger"
-                        on:click={() => handleDeleteUser(user.id)}
-                      >
-                        Yes, Delete
-                      </button>
-                      <button
-                        class="btn btn-small btn-secondary"
-                        on:click={cancelDelete}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  {:else if resetUserId === user.id}
-                    <form
-                      class="reset-form"
-                      on:submit|preventDefault={() =>
-                        handleResetPassword(user.id)}
-                    >
-                      <div class="password-input-wrapper">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          bind:value={newPassword}
-                          placeholder="New password (6+ chars)"
-                          class="reset-input"
-                        />
-                        <button
-                          type="button"
-                          class="password-toggle-btn"
-                          on:click={() => (showPassword = !showPassword)}
-                          aria-label={showPassword
-                            ? "Hide password"
-                            : "Show password"}
-                        >
-                          <span class="material-symbols-outlined">
-                            {showPassword ? "visibility_off" : "visibility"}
-                          </span>
-                        </button>
-                      </div>
-                      <button type="submit" class="btn btn-small btn-primary">
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-small btn-secondary"
-                        on:click={cancelReset}
-                      >
-                        Cancel
-                      </button>
-                      {#if resetError}
-                        <div class="inline-error">{resetError}</div>
-                      {/if}
-                    </form>
-                  {:else}
-                    <div class="action-buttons">
-                      <button
-                        class="btn btn-small btn-warning"
-                        on:click={() => startReset(user.id)}
-                      >
-                        Reset Password
-                      </button>
-                      <button
-                        class="btn btn-small btn-danger"
-                        on:click={() => confirmDelete(user.id)}
-                      >
-                        Delete User
-                      </button>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/each}
-          </div>
         </div>
-      </div>
-    {:else}
-      <div class="empty-state">No other users found</div>
-    {/if}
+
+        <!-- Mobile cards view -->
+        <div class="cards-mobile">
+          {#each filteredCards as card}
+            <div class="card-mobile-item">
+              <div class="card-mobile-header">{formatCardName(card)}</div>
+              <div class="card-mobile-details">
+                {#if card.planet_name}
+                  <div class="detail-item">
+                    <span class="detail-label">Planet:</span>
+                    <span class="detail-value">{card.planet_name}</span>
+                  </div>
+                {/if}
+                {#if card.element_name}
+                  <div class="detail-item">
+                    <span class="detail-label">Element:</span>
+                    <span class="detail-value">{card.element_name}</span>
+                  </div>
+                {/if}
+                {#if card.element_polarity}
+                  <div class="detail-item">
+                    <span class="detail-label">Polarity:</span>
+                    <span class="detail-value">{card.element_polarity}</span>
+                  </div>
+                {/if}
+                {#if card.zodiac_sign_name}
+                  <div class="detail-item">
+                    <span class="detail-label">Sign:</span>
+                    <span class="detail-value">{card.zodiac_sign_name}</span>
+                  </div>
+                {/if}
+                {#if card.zodiac_quality}
+                  <div class="detail-item">
+                    <span class="detail-label">Quality:</span>
+                    <span class="detail-value">{card.zodiac_quality}</span>
+                  </div>
+                {/if}
+                {#if card.keywords}
+                  <div class="detail-item">
+                    <span class="detail-label">Keywords:</span>
+                    <span class="detail-value">{card.keywords}</span>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
   {/if}
 
   {#if showNukeConfirm}
@@ -712,6 +1045,41 @@
     margin: 0;
     font-size: 2rem;
     color: var(--color-text-primary);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: 2rem;
+  }
+
+  .tab {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: var(--transition-fast);
+    margin-bottom: -2px;
+  }
+
+  .tab:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-hover);
+  }
+
+  .tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .tab:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 
   .admin-user-section {
@@ -1114,6 +1482,132 @@
 
     .reset-input {
       min-width: unset;
+    }
+  }
+
+  /* Cards Section Styles */
+  .cards-section {
+    margin-top: 2rem;
+  }
+
+  .cards-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+  }
+
+  .cards-count {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .cards-table-container {
+    overflow-x: auto;
+    background: var(--color-bg-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  .cards-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .cards-table thead {
+    background: var(--color-bg-section);
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  .cards-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .cards-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .cards-table tbody tr:hover {
+    background-color: var(--color-bg-section);
+  }
+
+  .card-name-cell {
+    font-weight: 600;
+    color: var(--color-primary);
+    white-space: nowrap;
+  }
+
+  .center-cell {
+    text-align: center;
+  }
+
+  .keywords-cell {
+    max-width: 300px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  .cards-mobile {
+    display: none;
+  }
+
+  .card-mobile-item {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-mobile-header {
+    font-weight: 600;
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .card-mobile-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .detail-label {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .detail-value {
+    color: var(--color-text-primary);
+    text-align: right;
+  }
+
+  /* Mobile view for cards */
+  @media (max-width: 768px) {
+    .cards-table-container {
+      display: none;
+    }
+
+    .cards-mobile {
+      display: block;
     }
   }
 </style>
