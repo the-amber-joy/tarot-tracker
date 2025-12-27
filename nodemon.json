@@ -1,0 +1,5 @@
+{
+  "watch": ["*.js", "migrations/"],
+  "ignore": ["data/", "client/", "node_modules/"],
+  "ext": "js,json"
+}
