@@ -131,7 +131,6 @@
       {#if loading}
         <div class="loading">
           <div class="loading-spinner"></div>
-          <span>Loading card details...</span>
         </div>
       {:else if error}
         <div class="error">{error}</div>
@@ -290,30 +289,6 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
-  }
-
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 3rem;
-    color: var(--color-text-secondary);
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--color-border);
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .error {

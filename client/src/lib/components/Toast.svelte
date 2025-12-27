@@ -23,11 +23,11 @@
   <div class="toast toast-{type}" role="alert">
     <span class="toast-icon">
       {#if type === "success"}
-        ✓
+        <span class="material-symbols-outlined"> check </span>
       {:else if type === "error"}
-        ✕
+        <span class="material-symbols-outlined"> error </span>
       {:else}
-        ℹ
+        <span class="material-symbols-outlined"> info </span>
       {/if}
     </span>
     <span class="toast-message">{message}</span>
@@ -87,9 +87,10 @@
   }
 
   .toast-icon {
-    font-size: 1.25rem;
-    font-weight: bold;
+    font-size: 4rem;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
   }
 
   .toast-message {

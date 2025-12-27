@@ -39,7 +39,7 @@
     | "storage_bytes";
   type SortDirection = "asc" | "desc";
 
-  let activeTab: "users" | "cards" = "users";
+  let activeTab: "users" | "cards" | "styles" = "users";
   let users: UserStats[] = [];
   let cards: Card[] = [];
   let loading = true;
@@ -183,7 +183,7 @@
 
     // Restore the active tab from localStorage
     const savedTab = localStorage.getItem("adminActiveTab");
-    if (savedTab === "users" || savedTab === "cards") {
+    if (savedTab === "users" || savedTab === "cards" || savedTab === "styles") {
       activeTab = savedTab;
     }
 
@@ -448,11 +448,20 @@
     >
       Cards Database
     </button>
+    <button
+      class="tab"
+      class:active={activeTab === "styles"}
+      on:click={() => (activeTab = "styles")}
+    >
+      Style Guide
+    </button>
   </div>
 
   {#if activeTab === "users"}
     {#if loading}
-      <div class="loading">Loading users...</div>
+      <div class="loading">
+        <div class="loading-spinner"></div>
+      </div>
     {:else if error}
       <div class="message-box error">{error}</div>
     {:else}
@@ -780,7 +789,9 @@
       <h3>Tarot Cards Database</h3>
 
       {#if cardsLoading}
-        <div class="loading">Loading cards...</div>
+        <div class="loading">
+          <div class="loading-spinner"></div>
+        </div>
       {:else if cards.length === 0}
         <div class="empty-state">No cards found in database</div>
       {:else}
@@ -944,6 +955,96 @@
     </div>
   {/if}
 
+  {#if activeTab === "styles"}
+    <div class="style-guide-section">
+      <h3>Style Guide</h3>
+      <p class="style-guide-intro">
+        Global UI components and styles used throughout the app.
+      </p>
+
+      <div class="style-demo">
+        <h4>Loading Spinner</h4>
+        <div class="demo-box">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="style-demo">
+        <h4>Empty State</h4>
+        <div class="demo-box">
+          <div class="empty-state">No items found</div>
+        </div>
+      </div>
+
+      <div class="style-demo">
+        <h4>Buttons</h4>
+        <div class="demo-box button-row">
+          <button class="btn btn-primary">Primary</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-danger">Danger</button>
+          <button class="btn btn-warning">Warning</button>
+          <button class="btn btn-small btn-primary">Small</button>
+        </div>
+      </div>
+
+      <div class="style-demo">
+        <h4>Styled Select</h4>
+        <div class="demo-box">
+          <select class="styled-select">
+            <option>Option 1</option>
+            <option>Option 2</option>
+            <option>Option 3</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="style-demo">
+        <h4>Tabs</h4>
+        <div class="demo-box">
+          <div class="tabs demo-tabs">
+            <button class="tab active">Active Tab</button>
+            <button class="tab">Inactive Tab</button>
+            <button class="tab">Another Tab</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="style-demo">
+        <h4>Message Boxes</h4>
+        <div class="demo-box">
+          <div class="message-box error">This is an error message</div>
+          <div class="message-box success">This is a success message</div>
+        </div>
+      </div>
+
+      <div class="style-demo">
+        <h4>Toasts</h4>
+        <div class="demo-box button-row">
+          <button
+            class="btn btn-primary"
+            on:click={() => displayToast("This is a success toast!", "success")}
+          >
+            Success Toast
+          </button>
+          <button
+            class="btn btn-danger"
+            on:click={() => displayToast("This is an error toast!", "error")}
+          >
+            Error Toast
+          </button>
+          <button
+            class="btn btn-secondary"
+            on:click={() => displayToast("This is an info toast!", "info")}
+          >
+            Info Toast
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   {#if showNukeConfirm}
     <div
       class="modal-overlay"
@@ -1042,7 +1143,9 @@
       </div>
       <div class="modal-body">
         {#if deploymentLoading}
-          <div class="loading">Loading deployment info...</div>
+          <div class="loading">
+            <div class="loading-spinner"></div>
+          </div>
         {:else}
           <pre class="deployment-content">{deploymentContent}</pre>
         {/if}
@@ -1100,13 +1203,6 @@
     margin: 0 0 1rem 0;
     font-size: 1.25rem;
     color: var(--color-text-primary);
-  }
-
-  .loading {
-    text-align: center;
-    padding: 3rem;
-    color: var(--color-text-secondary);
-    font-size: 1.1rem;
   }
 
   .users-table-container {
@@ -1351,12 +1447,6 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     margin: 0;
-  }
-
-  .deployment-modal .loading {
-    text-align: center;
-    padding: 2rem;
-    color: var(--color-text-secondary);
   }
 
   /* Container query: show cards on narrow screens, hide table */
@@ -1661,5 +1751,49 @@
     .cards-mobile {
       display: block;
     }
+  }
+
+  /* Style Guide Section */
+  .style-guide-section {
+    margin-top: 1rem;
+  }
+
+  .style-guide-section h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+  }
+
+  .style-guide-intro {
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .style-demo {
+    margin-bottom: 2rem;
+  }
+
+  .style-demo h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+  }
+
+  .demo-box {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+  }
+
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .demo-tabs {
+    margin-bottom: 0;
   }
 </style>

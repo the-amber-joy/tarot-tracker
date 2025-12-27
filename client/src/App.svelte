@@ -83,7 +83,10 @@
 </script>
 
 {#if !authInitialized}
-  <div class="loading">Loading...</div>
+  <div class="loading">
+    <div class="loading-spinner"></div>
+    <span>Loading...</span>
+  </div>
 {:else if !$authStore}
   <Login />
 {:else}
@@ -141,12 +144,7 @@
 
 <style>
   .loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100vh;
-    font-size: 1.2rem;
-    color: var(--color-text-secondary);
   }
 
   /* Floating Action Button */
