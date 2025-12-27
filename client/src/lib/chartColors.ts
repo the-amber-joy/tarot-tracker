@@ -31,11 +31,11 @@ export const suitColors = {
 export function getSuitColorsArray(includeMajorArcana: boolean = true) {
   const suits = includeMajorArcana
     ? [
+        suitColors.majorArcana,
         suitColors.wands,
         suitColors.cups,
         suitColors.swords,
         suitColors.pentacles,
-        suitColors.majorArcana,
       ]
     : [
         suitColors.wands,

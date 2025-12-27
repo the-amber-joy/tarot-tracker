@@ -60,6 +60,7 @@
   };
   let suitFrequencyOverTime: SuitFrequencyOverTime[] = [];
   let includeMajorArcanaOverTime: boolean = true;
+  let allTimeGroupBy: "month" | "year" = "month"; // Grouping option for All Time view
 
   // Analytics data (element distribution and top cards)
   type Analytics = {
@@ -235,6 +236,11 @@
     loadData();
   }
 
+  // Reload suit frequency when allTimeGroupBy changes (only relevant for allTime)
+  $: if (selectedTimespan === "allTime" && allTimeGroupBy) {
+    loadSuitFrequencyOverTime();
+  }
+
   async function loadData() {
     await Promise.all([
       loadReadings(),
@@ -273,11 +279,15 @@
     try {
       const { startDate, endDate } = getDateRange();
 
-      // Determine grouping: day for 7days/30days, month for others
-      const groupBy =
-        selectedTimespan === "7days" || selectedTimespan === "30days"
-          ? "day"
-          : "month";
+      // Determine grouping: day for 7days/30days, user choice for allTime, month for others
+      let groupBy: string;
+      if (selectedTimespan === "7days" || selectedTimespan === "30days") {
+        groupBy = "day";
+      } else if (selectedTimespan === "allTime") {
+        groupBy = allTimeGroupBy;
+      } else {
+        groupBy = "month";
+      }
 
       const params = new URLSearchParams();
       params.append("groupBy", groupBy);
@@ -440,15 +450,15 @@
           <div class="chart-container-pie">
             <PieChart
               labels={includeMajorArcana
-                ? ["Wands", "Cups", "Swords", "Pentacles", "Major Arcana"]
+                ? ["Major Arcana", "Wands", "Cups", "Swords", "Pentacles"]
                 : ["Wands", "Cups", "Swords", "Pentacles"]}
               data={includeMajorArcana
                 ? [
+                    suitDistribution["Major Arcana"],
                     suitDistribution.Wands,
                     suitDistribution.Cups,
                     suitDistribution.Swords,
                     suitDistribution.Pentacles,
-                    suitDistribution["Major Arcana"],
                   ]
                 : [
                     suitDistribution.Wands,
@@ -469,19 +479,43 @@
         <div class="chart-section">
           <div class="section-header-with-toggle">
             <h4>Suit Frequency Over Time</h4>
-            <label class="major-arcana-toggle">
-              <input
-                type="checkbox"
-                bind:checked={includeMajorArcanaOverTime}
-              />
-              <span>Include Major Arcana</span>
-            </label>
+            <div class="toggle-group">
+              {#if selectedTimespan === "allTime"}
+                <div class="group-by-toggle">
+                  <span class="toggle-label">Group by:</span>
+                  <button
+                    class="toggle-btn"
+                    class:active={allTimeGroupBy === "month"}
+                    on:click={() => (allTimeGroupBy = "month")}
+                  >
+                    Month
+                  </button>
+                  <button
+                    class="toggle-btn"
+                    class:active={allTimeGroupBy === "year"}
+                    on:click={() => (allTimeGroupBy = "year")}
+                  >
+                    Year
+                  </button>
+                </div>
+              {/if}
+              <label class="major-arcana-toggle">
+                <input
+                  type="checkbox"
+                  bind:checked={includeMajorArcanaOverTime}
+                />
+                <span>Include Major Arcana</span>
+              </label>
+            </div>
           </div>
           <div class="chart-container-bar">
             <GroupedBarChart
               labels={suitFrequencyOverTime.map((item) => {
                 // Format period label based on grouping
-                if (item.period.length === 10) {
+                if (item.period.length === 4) {
+                  // Year format: YYYY -> 2024
+                  return item.period;
+                } else if (item.period.length === 10) {
                   // Day format: YYYY-MM-DD -> Mon, Jan 1
                   const date = new Date(item.period);
                   return date.toLocaleDateString("en-US", {
@@ -829,10 +863,60 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
   .section-header-with-toggle h4 {
     margin: 0;
+  }
+
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .group-by-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .toggle-label {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+  }
+
+  .toggle-btn {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-white);
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+  }
+
+  .toggle-btn:first-of-type {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+  }
+
+  .toggle-btn:last-of-type {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    border-left: none;
+  }
+
+  .toggle-btn:hover {
+    background: var(--color-bg-hover);
+  }
+
+  .toggle-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
   }
 
   .chart-container-bar {

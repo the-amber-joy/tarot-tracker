@@ -824,14 +824,21 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
 app.get("/api/stats/suit-frequency-over-time", requireAuth, (req, res) => {
   const { startDate, endDate, groupBy } = req.query;
 
-  if (!groupBy || !["day", "month"].includes(groupBy)) {
+  if (!groupBy || !["day", "month", "year"].includes(groupBy)) {
     return res
       .status(400)
-      .json({ error: "groupBy parameter required (day or month)" });
+      .json({ error: "groupBy parameter required (day, month, or year)" });
   }
 
   // Determine date format based on grouping
-  const dateFormat = groupBy === "day" ? "%Y-%m-%d" : "%Y-%m";
+  let dateFormat;
+  if (groupBy === "day") {
+    dateFormat = "%Y-%m-%d";
+  } else if (groupBy === "month") {
+    dateFormat = "%Y-%m";
+  } else {
+    dateFormat = "%Y";
+  }
 
   let query = `
     SELECT 

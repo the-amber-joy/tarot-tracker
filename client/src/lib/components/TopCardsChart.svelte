@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { suitColors } from "../chartColors";
-
   type CardData = {
     name: string;
     suit: string | null;
@@ -14,20 +12,8 @@
   // Find max count for scaling bars
   $: maxCount = Math.max(...cards.map((c) => c.count), 1);
 
-  function getSuitColor(suit: string | null): string {
-    switch (suit) {
-      case "Wands":
-        return suitColors.wands.background;
-      case "Cups":
-        return suitColors.cups.background;
-      case "Swords":
-        return suitColors.swords.background;
-      case "Pentacles":
-        return suitColors.pentacles.background;
-      default:
-        return suitColors.majorArcana.background;
-    }
-  }
+  // Gold color for all bars
+  const barColor = "rgba(255, 200, 50, 0.85)";
 </script>
 
 <div class="top-cards-chart">
@@ -55,7 +41,7 @@
         <div
           class="bar"
           style="width: {(card.count / maxCount) *
-            100}%; background-color: {getSuitColor(card.suit)};"
+            100}%; background-color: {barColor};"
         ></div>
         <span class="count-label">{card.count}</span>
       </div>
