@@ -58,7 +58,10 @@
         on:click={handleProfileClick}
         title="View Profile"
       >
-        <span class="material-symbols-outlined"> user_attributes </span>
+        <span class="material-symbols-outlined profile-icon">
+          user_attributes
+        </span>
+        <span class="profile-text">My Profile</span>
       </button>
     {/if}
     {#if $authStore}
@@ -131,6 +134,10 @@
     background-color: rgba(255, 255, 255, 0.1);
   }
 
+  .profile-text {
+    display: none;
+  }
+
   /* Container query: show hamburger when header is narrow */
   @container (max-width: 600px) {
     .app-header h1 {
@@ -139,6 +146,14 @@
 
     .hamburger {
       display: flex;
+    }
+
+    .profile-icon {
+      display: none;
+    }
+
+    .profile-text {
+      display: inline;
     }
 
     .header-actions {
