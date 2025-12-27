@@ -1,15 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
-  import {
-    cardFrequencyColors,
-    elementColors,
-    getSuitColorsArray,
-    suitColors,
-  } from "../chartColors";
-  import BarChart from "../components/BarChart.svelte";
+  import { getSuitColorsArray, suitColors } from "../chartColors";
   import CardHeatmap from "../components/CardHeatmap.svelte";
   import GroupedBarChart from "../components/GroupedBarChart.svelte";
   import PieChart from "../components/PieChart.svelte";
+  import TopCardsChart from "../components/TopCardsChart.svelte";
 
   type Reading = {
     id: number;
@@ -399,16 +394,7 @@
       {#if analytics?.topCards && analytics.topCards.length > 0}
         <div class="chart-section">
           <h4>Top 15 Most Drawn Cards</h4>
-          <div class="chart-container-bar">
-            <BarChart
-              labels={analytics.topCards.map((c) => c.name)}
-              data={analytics.topCards.map((c) => c.count)}
-              title="Card Frequency"
-              horizontal={true}
-              backgroundColor={cardFrequencyColors.backgrounds}
-              borderColor={cardFrequencyColors.borders}
-            />
-          </div>
+          <TopCardsChart cards={analytics.topCards} />
         </div>
       {/if}
 
@@ -420,56 +406,39 @@
         </div>
       {/if}
 
-      <!-- Suit and Element Distribution Charts -->
-      {#if suitDistribution && analytics && analytics.elementDistribution.length > 0}
+      <!-- Suit Distribution Chart -->
+      {#if suitDistribution}
         <div class="chart-section">
           <div class="section-header-with-toggle">
-            <h4>Suit & Element Distribution</h4>
+            <h4>Suit Distribution</h4>
             <label class="major-arcana-toggle">
               <input type="checkbox" bind:checked={includeMajorArcana} />
-              <span>Include Major Arcana (Suits)</span>
+              <span>Include Major Arcana</span>
             </label>
           </div>
-          <div class="distribution-charts-container">
-            <div class="distribution-chart">
-              <h5>By Suit</h5>
-              <div class="chart-container-pie">
-                <PieChart
-                  labels={includeMajorArcana
-                    ? ["Major Arcana", "Wands", "Cups", "Swords", "Pentacles"]
-                    : ["Wands", "Cups", "Swords", "Pentacles"]}
-                  data={includeMajorArcana
-                    ? [
-                        suitDistribution["Major Arcana"],
-                        suitDistribution.Wands,
-                        suitDistribution.Cups,
-                        suitDistribution.Swords,
-                        suitDistribution.Pentacles,
-                      ]
-                    : [
-                        suitDistribution.Wands,
-                        suitDistribution.Cups,
-                        suitDistribution.Swords,
-                        suitDistribution.Pentacles,
-                      ]}
-                  backgroundColors={includeMajorArcana
-                    ? getSuitColorsArray(true).backgrounds
-                    : getSuitColorsArray(false).backgrounds}
-                />
-              </div>
-            </div>
-            <div class="distribution-chart">
-              <h5>By Element</h5>
-              <div class="chart-container-pie">
-                <PieChart
-                  labels={analytics.elementDistribution.map(
-                    (e) => `${e.element} (${e.polarity})`,
-                  )}
-                  data={analytics.elementDistribution.map((e) => e.count)}
-                  backgroundColors={elementColors.backgrounds}
-                />
-              </div>
-            </div>
+          <div class="chart-container-pie">
+            <PieChart
+              labels={includeMajorArcana
+                ? ["Wands", "Cups", "Swords", "Pentacles", "Major Arcana"]
+                : ["Wands", "Cups", "Swords", "Pentacles"]}
+              data={includeMajorArcana
+                ? [
+                    suitDistribution.Wands,
+                    suitDistribution.Cups,
+                    suitDistribution.Swords,
+                    suitDistribution.Pentacles,
+                    suitDistribution["Major Arcana"],
+                  ]
+                : [
+                    suitDistribution.Wands,
+                    suitDistribution.Cups,
+                    suitDistribution.Swords,
+                    suitDistribution.Pentacles,
+                  ]}
+              backgroundColors={includeMajorArcana
+                ? getSuitColorsArray(true).backgrounds
+                : getSuitColorsArray(false).backgrounds}
+            />
           </div>
         </div>
       {/if}
@@ -610,10 +579,6 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     flex-wrap: wrap;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .timespan-selector label {

@@ -66,9 +66,9 @@
   }
 
   function getOpacity(count: number): number {
-    if (count === 0) return 0.1;
-    // Scale from 0.3 to 1.0 based on count
-    return 0.3 + (count / maxCount) * 0.7;
+    if (count === 0) return 0.03;
+    // Scale from 0.08 to 1.0 based on count for maximum contrast
+    return 0.08 + (count / maxCount) * 0.92;
   }
 
   function getSuitColor(suit: string): string {
