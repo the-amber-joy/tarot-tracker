@@ -8,7 +8,9 @@
   import ProfileReadings from "./ProfileReadings.svelte";
 
   let activeTab: "profile" | "decks" | "readings" = "decks";
-  let display_name = $authStore?.display_name || $authStore?.username || "";
+
+  // Reactive display name that updates when authStore changes
+  $: display_name = $authStore?.display_name || $authStore?.username || "";
 
   let toastMessage = "";
   let showToast = false;
