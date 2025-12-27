@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { Route, Router, navigate } from "svelte-routing";
   import Header from "./lib/components/Header.svelte";
-  import DeckModal from "./lib/modals/DeckModal.svelte";
+  import ManageDeckModal from "./lib/modals/ManageDeckModal.svelte";
   import SessionExpiredModal from "./lib/modals/SessionExpiredModal.svelte";
   import Admin from "./lib/pages/Admin.svelte";
   import Login from "./lib/pages/Login.svelte";
@@ -130,7 +130,7 @@
       </button>
     {/if}
 
-    <DeckModal
+    <ManageDeckModal
       isOpen={isDeckModalOpen}
       onClose={closeDeckModal}
       onDeckAdded={() => {}}

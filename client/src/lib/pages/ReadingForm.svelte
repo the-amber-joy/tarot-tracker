@@ -4,6 +4,7 @@
   import { readingsStore } from "../../stores/readingsStore";
   import SpreadCanvas from "../components/SpreadCanvas.svelte";
   import Toast from "../components/Toast.svelte";
+  import AddDeckModal from "../modals/AddDeckModal.svelte";
   import ConfirmModal from "../modals/ConfirmModal.svelte";
 
   export let params: { id?: string } = {};
@@ -36,8 +37,6 @@
   let notes = "";
   let spreadCards: Record<number, any> = {};
   let showDeckModal = false;
-  let newDeckName = "";
-  let newDeckNotes = "";
 
   let showTemplateChangeModal = false;
   let pendingTemplateChange: string | null = null;
@@ -46,9 +45,6 @@
   let toastMessage = "";
   let showToast = false;
   let toastType: "success" | "error" | "info" = "success";
-
-  let showValidationModal = false;
-  let validationMessage = "";
 
   onMount(async () => {
     await Promise.all([loadDecks(), loadSpreadTemplates()]);
@@ -211,49 +207,13 @@
     }
   }
 
-  async function handleAddDeck() {
-    if (!newDeckName.trim()) {
-      validationMessage = "Please enter a deck name.";
-      showValidationModal = true;
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/decks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: newDeckName.trim(),
-          notes: newDeckNotes.trim() || null,
-        }),
-      });
-
-      if (response.ok) {
-        await loadDecks();
-        deckName = newDeckName.trim();
-        newDeckName = "";
-        newDeckNotes = "";
-        showDeckModal = false;
-      } else {
-        const error = await response.text();
-        toastMessage = `Failed to add deck: ${error}`;
-        toastType = "error";
-        showToast = true;
-      }
-    } catch (error) {
-      console.error("Error adding deck:", error);
-      toastMessage = "Error adding deck. Please try again.";
-      toastType = "error";
-      showToast = true;
-    }
+  async function handleDeckAdded(addedDeckName: string) {
+    await loadDecks();
+    deckName = addedDeckName;
   }
 
   function closeDeckModal() {
     showDeckModal = false;
-    newDeckName = "";
-    newDeckNotes = "";
   }
 
   async function handleSubmit(e: Event) {
@@ -427,67 +387,11 @@
   </form>
 </div>
 
-{#if showDeckModal}
-  <div
-    class="modal-overlay"
-    on:click={closeDeckModal}
-    on:keydown={(e) => e.key === "Escape" && closeDeckModal()}
-    role="button"
-    tabindex="-1"
-  >
-    <div
-      class="modal-content"
-      on:click|stopPropagation
-      on:keydown={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="deck-modal-title"
-      tabindex="-1"
-    >
-      <div class="modal-header">
-        <h3 id="deck-modal-title">Add New Deck</h3>
-        <button type="button" class="close-button" on:click={closeDeckModal}
-          ><span class="material-symbols-outlined"> close </span></button
-        >
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="newDeckName"
-            >Deck Name<span class="required">*</span></label
-          >
-          <input
-            type="text"
-            id="newDeckName"
-            bind:value={newDeckName}
-            placeholder="Enter deck name..."
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="newDeckNotes">Notes (optional)</label>
-          <textarea
-            id="newDeckNotes"
-            bind:value={newDeckNotes}
-            placeholder="Add notes about this deck..."
-            rows="3"
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          on:click={closeDeckModal}>Cancel</button
-        >
-        <button type="button" class="btn btn-primary" on:click={handleAddDeck}
-          >Add Deck</button
-        >
-      </div>
-    </div>
-  </div>
-{/if}
+<AddDeckModal
+  bind:isOpen={showDeckModal}
+  onClose={closeDeckModal}
+  onDeckAdded={handleDeckAdded}
+/>
 
 <ConfirmModal
   bind:isOpen={showTemplateChangeModal}
@@ -498,15 +402,6 @@
   isDanger={false}
   onConfirm={confirmTemplateChange}
   onCancel={cancelTemplateChange}
-/>
-
-<ConfirmModal
-  bind:isOpen={showValidationModal}
-  title="Validation Error"
-  message={validationMessage}
-  confirmText="OK"
-  isAlert={true}
-  onConfirm={() => (showValidationModal = false)}
 />
 
 <style>

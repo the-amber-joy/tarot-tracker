@@ -477,23 +477,39 @@ tbody tr:hover {
 }
 
 .btn-close {
-  background: none;
+  background: var(--color-bg-section);
   border: none;
-  font-size: 2rem;
-  color: #6c757d;
+  font-size: 1.25rem;
   cursor: pointer;
-  line-height: 1;
+  color: var(--color-text-light);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-fast);
   padding: 0;
-  width: 30px;
-  height: 30px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .btn-close:hover {
-  color: #333;
+  background: var(--color-border);
+  color: var(--color-text-primary);
+  transform: rotate(90deg);
 }
 
 .modal-body {
   padding: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .deck-list {

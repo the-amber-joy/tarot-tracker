@@ -70,6 +70,13 @@
     fetchCardDetails();
   }
 
+  // Prevent body scroll when modal is open
+  $: if (isOpen) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "";
+  }
+
   async function fetchCardDetails() {
     loading = true;
     error = "";
@@ -117,7 +124,9 @@
       {#if elementStyle}
         <div class="accent-bar" style="background: {elementStyle.color}"></div>
       {/if}
-      <button class="close-button" on:click={onClose}>×</button>
+      <button class="btn-close" on:click={onClose}
+        ><span class="material-symbols-outlined">close</span></button
+      >
 
       {#if loading}
         <div class="loading">
@@ -277,28 +286,10 @@
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 
-  .close-button {
+  .btn-close {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: var(--color-bg-section);
-    border: none;
-    font-size: 1.25rem;
-    cursor: pointer;
-    color: var(--color-text-light);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: var(--transition-fast);
-  }
-
-  .close-button:hover {
-    background: var(--color-border);
-    color: var(--color-text-primary);
-    transform: rotate(90deg);
   }
 
   .loading {
