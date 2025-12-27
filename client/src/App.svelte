@@ -94,10 +94,6 @@
           navigate("/");
           setTimeout(() => (currentPath = window.location.pathname), 0);
         }}
-        onNewReading={() => {
-          navigate("/reading/new");
-          setTimeout(() => (currentPath = window.location.pathname), 0);
-        }}
       />
 
       <Route path="/">

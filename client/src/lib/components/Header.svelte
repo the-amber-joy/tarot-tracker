@@ -1,21 +1,13 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { navigate } from "svelte-routing";
   import { authStore } from "../../stores/authStore";
 
-  export let onNewReading: () => void;
   export let onHome: () => void;
 
-  const dispatch = createEventDispatcher();
   let isMenuOpen = false;
 
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
-  }
-
-  function handleNewReading() {
-    isMenuOpen = false; // Close menu when opening new reading
-    onNewReading();
   }
 
   async function handleLogout() {

@@ -7,7 +7,6 @@
 
   export let labels: string[] = [];
   export let data: number[] = [];
-  export let title: string = "";
   export let backgroundColors: string[] = [
     "rgba(255, 99, 132, 0.7)",
     "rgba(54, 162, 235, 0.7)",
@@ -44,7 +43,6 @@
         labels,
         datasets: [
           {
-            label: title,
             data,
             backgroundColor: backgroundColors,
             borderColor: backgroundColors.map((color) =>
