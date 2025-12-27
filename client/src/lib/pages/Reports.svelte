@@ -379,7 +379,7 @@
               labels={analytics.topCards.map((c) => c.name)}
               data={analytics.topCards.map((c) => c.count)}
               title="Card Frequency"
-              horizontal={!isLandscape}
+              horizontal={true}
               backgroundColor={cardFrequencyColors.backgrounds}
               borderColor={cardFrequencyColors.borders}
             />
@@ -387,40 +387,56 @@
         </div>
       {/if}
 
-      <!-- Suit Distribution Chart -->
-      {#if suitDistribution}
+      <!-- Suit and Element Distribution Charts -->
+      {#if suitDistribution && analytics && analytics.elementDistribution.length > 0}
         <div class="chart-section">
           <div class="section-header-with-toggle">
-            <h4>Suit Distribution</h4>
+            <h4>Suit & Element Distribution</h4>
             <label class="major-arcana-toggle">
               <input type="checkbox" bind:checked={includeMajorArcana} />
-              <span>Include Major Arcana</span>
+              <span>Include Major Arcana (Suits)</span>
             </label>
           </div>
-          <div class="chart-container-pie">
-            <PieChart
-              labels={includeMajorArcana
-                ? ["Major Arcana", "Wands", "Cups", "Swords", "Pentacles"]
-                : ["Wands", "Cups", "Swords", "Pentacles"]}
-              data={includeMajorArcana
-                ? [
-                    suitDistribution["Major Arcana"],
-                    suitDistribution.Wands,
-                    suitDistribution.Cups,
-                    suitDistribution.Swords,
-                    suitDistribution.Pentacles,
-                  ]
-                : [
-                    suitDistribution.Wands,
-                    suitDistribution.Cups,
-                    suitDistribution.Swords,
-                    suitDistribution.Pentacles,
-                  ]}
-              title="Suit Distribution"
-              backgroundColors={includeMajorArcana
-                ? getSuitColorsArray(true).backgrounds
-                : getSuitColorsArray(false).backgrounds}
-            />
+          <div class="distribution-charts-container">
+            <div class="distribution-chart">
+              <h5>By Suit</h5>
+              <div class="chart-container-pie">
+                <PieChart
+                  labels={includeMajorArcana
+                    ? ["Major Arcana", "Wands", "Cups", "Swords", "Pentacles"]
+                    : ["Wands", "Cups", "Swords", "Pentacles"]}
+                  data={includeMajorArcana
+                    ? [
+                        suitDistribution["Major Arcana"],
+                        suitDistribution.Wands,
+                        suitDistribution.Cups,
+                        suitDistribution.Swords,
+                        suitDistribution.Pentacles,
+                      ]
+                    : [
+                        suitDistribution.Wands,
+                        suitDistribution.Cups,
+                        suitDistribution.Swords,
+                        suitDistribution.Pentacles,
+                      ]}
+                  backgroundColors={includeMajorArcana
+                    ? getSuitColorsArray(true).backgrounds
+                    : getSuitColorsArray(false).backgrounds}
+                />
+              </div>
+            </div>
+            <div class="distribution-chart">
+              <h5>By Element</h5>
+              <div class="chart-container-pie">
+                <PieChart
+                  labels={analytics.elementDistribution.map(
+                    (e) => `${e.element} (${e.polarity})`,
+                  )}
+                  data={analytics.elementDistribution.map((e) => e.count)}
+                  backgroundColors={elementColors.backgrounds}
+                />
+              </div>
+            </div>
           </div>
         </div>
       {/if}
@@ -522,22 +538,6 @@
                     },
                   ]}
               horizontal={!isLandscape}
-            />
-          </div>
-        </div>
-      {/if}
-
-      <!-- Element Distribution Chart -->
-      {#if analytics && analytics.elementDistribution.length > 0}
-        <div class="chart-section">
-          <h4>Element Distribution</h4>
-          <div class="chart-container-pie">
-            <PieChart
-              labels={analytics.elementDistribution.map(
-                (e) => `${e.element} (${e.polarity})`,
-              )}
-              data={analytics.elementDistribution.map((e) => e.count)}
-              backgroundColors={elementColors.backgrounds}
             />
           </div>
         </div>
@@ -745,6 +745,40 @@
     margin: 0 0 1.5rem 0;
     font-size: 1.2rem;
     color: var(--color-text-primary);
+  }
+
+  .chart-section h5 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .distribution-charts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .distribution-chart {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+  }
+
+  .distribution-chart .chart-container-pie {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .distribution-charts-container {
+      grid-template-columns: 1fr;
+    }
   }
 
   .section-header-with-toggle {
