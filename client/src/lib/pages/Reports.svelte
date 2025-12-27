@@ -579,6 +579,9 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
   .timespan-selector label {
