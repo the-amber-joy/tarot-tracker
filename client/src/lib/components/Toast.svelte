@@ -12,11 +12,6 @@
       isVisible = false;
     }, duration);
   }
-
-  function handleClose() {
-    isVisible = false;
-    clearTimeout(timeoutId);
-  }
 </script>
 
 {#if isVisible}
@@ -31,14 +26,6 @@
       {/if}
     </span>
     <span class="toast-message">{message}</span>
-    <button
-      type="button"
-      class="toast-close"
-      on:click={handleClose}
-      aria-label="Close"
-    >
-      ×
-    </button>
   </div>
 {/if}
 
@@ -57,7 +44,6 @@
     gap: 0.75rem;
     z-index: var(--z-toast);
     animation: slideIn 0.3s ease-out;
-    font-size: 0.95rem;
   }
 
   @keyframes slideIn {
@@ -96,28 +82,6 @@
   .toast-message {
     flex: 1;
     line-height: 1.4;
-  }
-
-  .toast-close {
-    background: none;
-    border: none;
-    color: inherit;
-    font-size: 1.5rem;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.8;
-    transition: var(--transition-fast);
-    flex-shrink: 0;
-  }
-
-  .toast-close:hover {
-    opacity: 1;
   }
 
   @media (max-width: 768px) {
