@@ -378,7 +378,8 @@
 
     {#if readings.length === 0}
       <p class="empty-message">
-        Create your first reading to start seeing reports. Tap the + button below to get started!
+        Create your first reading to start seeing reports. Tap the + button
+        below to get started!
       </p>
     {:else}
       <!-- Top 3 Cards -->
@@ -797,40 +798,6 @@
     margin: 0 0 1.5rem 0;
     font-size: 1.2rem;
     color: var(--color-text-primary);
-  }
-
-  .chart-section h5 {
-    margin: 0 0 1rem 0;
-    font-size: 1rem;
-    color: var(--color-text-secondary);
-    font-weight: 600;
-    text-align: center;
-  }
-
-  .distribution-charts-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    align-items: start;
-  }
-
-  .distribution-chart {
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
-  }
-
-  .distribution-chart .chart-container-pie {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  @media (max-width: 768px) {
-    .distribution-charts-container {
-      grid-template-columns: 1fr;
-    }
   }
 
   .section-header-with-toggle {
