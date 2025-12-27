@@ -288,8 +288,11 @@ async function seedReferenceTablesAndCards() {
       const keywords = cardKeywords[card.name] || null;
 
       // Generate image filename from card name
-      const imageFilename =
-        card.name.replace(/\s+/g, "").toLowerCase() + ".jpeg";
+      // Special case: "Strength" card image is named "thestrength.jpeg" for consistency with other Major Arcana
+      let imageFilename = card.name.replace(/\s+/g, "").toLowerCase() + ".jpeg";
+      if (card.name === "Strength") {
+        imageFilename = "thestrength.jpeg";
+      }
 
       await dbRun(
         "INSERT OR IGNORE INTO cards (name, number, suit, element_id, keywords, image_filename) VALUES (?, ?, ?, ?, ?, ?)",
