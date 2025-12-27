@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
 const session = require("express-session");
@@ -28,6 +31,12 @@ if (process.env.NODE_ENV === "production") {
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve static tarot card images
+app.use(
+  "/tarot-images",
+  express.static(path.join(__dirname, "public/tarot-images")),
+);
 
 // Trust proxy for Fly.io
 app.set("trust proxy", 1);
@@ -416,9 +425,150 @@ app.post("/api/admin/nuke", requireAdmin, (req, res) => {
   });
 });
 
+// Get analytics data (admin only)
+app.get("/api/admin/analytics", requireAdmin, (req, res) => {
+  db.serialize(() => {
+    // Number distribution (Ace through 10, including courts and major arcana)
+    db.all(
+      `
+      SELECT 
+        c.number,
+        COUNT(*) as count
+      FROM reading_cards rc
+      JOIN cards c ON rc.card_id = c.id
+      GROUP BY c.number
+      ORDER BY c.number
+    `,
+      [],
+      (err, numberDist) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        // Suit distribution
+        db.all(
+          `
+          SELECT 
+            COALESCE(c.suit, 'Major Arcana') as suit,
+            COUNT(*) as count
+          FROM reading_cards rc
+          JOIN cards c ON rc.card_id = c.id
+          GROUP BY c.suit
+          ORDER BY count DESC
+        `,
+          [],
+          (err, suitDist) => {
+            if (err) {
+              return res.status(500).json({ error: err.message });
+            }
+
+            // Element distribution
+            db.all(
+              `
+              SELECT 
+                e.name as element,
+                e.polarity,
+                COUNT(*) as count
+              FROM reading_cards rc
+              JOIN cards c ON rc.card_id = c.id
+              JOIN elements e ON c.element_id = e.id
+              GROUP BY e.name, e.polarity
+              ORDER BY count DESC
+            `,
+              [],
+              (err, elementDist) => {
+                if (err) {
+                  return res.status(500).json({ error: err.message });
+                }
+
+                // Top 10 most drawn cards
+                db.all(
+                  `
+                  SELECT 
+                    c.name,
+                    c.suit,
+                    COUNT(*) as count
+                  FROM reading_cards rc
+                  JOIN cards c ON rc.card_id = c.id
+                  GROUP BY c.id
+                  ORDER BY count DESC
+                  LIMIT 10
+                `,
+                  [],
+                  (err, topCards) => {
+                    if (err) {
+                      return res.status(500).json({ error: err.message });
+                    }
+
+                    // Total readings and cards
+                    db.get(
+                      `
+                      SELECT 
+                        COUNT(DISTINCT r.id) as total_readings,
+                        COUNT(*) as total_cards_drawn
+                      FROM readings r
+                      LEFT JOIN reading_cards rc ON r.id = rc.reading_id
+                    `,
+                      [],
+                      (err, totals) => {
+                        if (err) {
+                          return res.status(500).json({ error: err.message });
+                        }
+
+                        res.json({
+                          numberDistribution: numberDist,
+                          suitDistribution: suitDist,
+                          elementDistribution: elementDist,
+                          topCards: topCards,
+                          totalReadings: totals.total_readings,
+                          totalCardsDrawn: totals.total_cards_drawn,
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  });
+});
+
 // Get all tarot cards (public)
 app.get("/api/cards", (req, res) => {
   res.json(TAROT_CARDS);
+});
+
+// Get all tarot cards from database with full details (admin only)
+app.get("/api/admin/cards", requireAdmin, (req, res) => {
+  db.all(
+    `SELECT 
+      c.id, 
+      c.name, 
+      c.number, 
+      c.suit,
+      e.name as element_name,
+      e.polarity as element_polarity,
+      z.name as zodiac_sign_name,
+      q.name as zodiac_quality,
+      p.name as planet_name,
+      c.keywords
+    FROM cards c
+    LEFT JOIN elements e ON c.element_id = e.id
+    LEFT JOIN zodiac_signs z ON c.zodiac_sign_id = z.id
+    LEFT JOIN qualities q ON z.quality_id = q.id
+    LEFT JOIN planets p ON c.planet_id = p.id
+    ORDER BY c.id`,
+    [],
+    (err, cards) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(cards);
+    },
+  );
 });
 
 // Get all spread templates (public)
@@ -537,93 +687,303 @@ app.delete("/api/decks/:id", requireAuth, (req, res) => {
 
 // Get card frequency statistics
 app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
-  db.all(
-    `
+  const { startDate, endDate } = req.query;
+
+  let query = `
     SELECT 
-      rc.card_name,
+      c.name as card_name,
+      c.image_filename,
       COUNT(*) as count
     FROM reading_cards rc
     INNER JOIN readings r ON rc.reading_id = r.id
-    WHERE r.user_id = ? AND rc.card_name IS NOT NULL AND rc.card_name != ''
-    GROUP BY rc.card_name
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ?
+  `;
+
+  const params = [req.user.id];
+
+  if (startDate) {
+    query += ` AND r.date >= ?`;
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    query += ` AND r.date <= ?`;
+    params.push(endDate);
+  }
+
+  query += `
+    GROUP BY c.id, c.name
     ORDER BY count DESC
-  `,
-    [req.user.id],
-    (err, cardFrequency) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(cardFrequency);
-    },
-  );
+  `;
+
+  db.all(query, params, (err, cardFrequency) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(cardFrequency);
+  });
 });
 
 // Get suit distribution statistics
 app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
-  db.all(
-    `
-    SELECT rc.card_name
+  const { startDate, endDate } = req.query;
+
+  let query = `
+    SELECT 
+      c.suit,
+      COUNT(*) as count
     FROM reading_cards rc
     INNER JOIN readings r ON rc.reading_id = r.id
-    WHERE r.user_id = ? AND rc.card_name IS NOT NULL AND rc.card_name != ''
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ?
+  `;
+
+  const params = [req.user.id];
+
+  if (startDate) {
+    query += ` AND r.date >= ?`;
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    query += ` AND r.date <= ?`;
+    params.push(endDate);
+  }
+
+  query += ` GROUP BY c.suit`;
+
+  db.all(query, params, (err, suitCounts) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Convert to expected format
+    const distribution = {
+      "Major Arcana": 0,
+      Wands: 0,
+      Cups: 0,
+      Swords: 0,
+      Pentacles: 0,
+    };
+
+    suitCounts.forEach(({ suit, count }) => {
+      if (distribution.hasOwnProperty(suit)) {
+        distribution[suit] = count;
+      }
+    });
+
+    res.json(distribution);
+  });
+});
+
+// Get suit frequency over time (for grouped bar chart)
+app.get("/api/stats/suit-frequency-over-time", requireAuth, (req, res) => {
+  const { startDate, endDate, groupBy } = req.query;
+
+  if (!groupBy || !["day", "month"].includes(groupBy)) {
+    return res
+      .status(400)
+      .json({ error: "groupBy parameter required (day or month)" });
+  }
+
+  // Determine date format based on grouping
+  const dateFormat = groupBy === "day" ? "%Y-%m-%d" : "%Y-%m";
+
+  let query = `
+    SELECT 
+      strftime('${dateFormat}', r.date) as period,
+      c.suit,
+      COUNT(*) as count
+    FROM reading_cards rc
+    INNER JOIN readings r ON rc.reading_id = r.id
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ?
+  `;
+
+  const params = [req.user.id];
+
+  if (startDate) {
+    query += ` AND r.date >= ?`;
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    query += ` AND r.date <= ?`;
+    params.push(endDate);
+  }
+
+  query += ` GROUP BY period, c.suit ORDER BY period`;
+
+  db.all(query, params, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Transform results into grouped format
+    const grouped = {};
+    results.forEach(({ period, suit, count }) => {
+      if (!grouped[period]) {
+        grouped[period] = {
+          period,
+          "Major Arcana": 0,
+          Wands: 0,
+          Cups: 0,
+          Swords: 0,
+          Pentacles: 0,
+        };
+      }
+      if (grouped[period].hasOwnProperty(suit)) {
+        grouped[period][suit] = count;
+      }
+    });
+
+    // Convert to array and sort by period
+    const data = Object.values(grouped).sort((a, b) =>
+      a.period.localeCompare(b.period),
+    );
+
+    res.json(data);
+  });
+});
+
+// Get number distribution statistics
+app.get("/api/stats/number-distribution", requireAuth, (req, res) => {
+  db.all(
+    `
+    SELECT 
+      c.number,
+      COUNT(*) as count
+    FROM reading_cards rc
+    INNER JOIN readings r ON rc.reading_id = r.id
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ? AND c.suit != 'Major Arcana'
+    GROUP BY c.number
+    ORDER BY c.number
   `,
     [req.user.id],
-    (err, cards) => {
+    (err, numberCounts) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-
-      // Categorize cards by suit
-      const suitCounts = {
-        "Major Arcana": 0,
-        Wands: 0,
-        Cups: 0,
-        Swords: 0,
-        Pentacles: 0,
-      };
-
-      const majorArcana = [
-        "The Fool",
-        "The Magician",
-        "The High Priestess",
-        "The Empress",
-        "The Emperor",
-        "The Hierophant",
-        "The Lovers",
-        "The Chariot",
-        "Strength",
-        "The Hermit",
-        "Wheel of Fortune",
-        "Justice",
-        "The Hanged Man",
-        "Death",
-        "Temperance",
-        "The Devil",
-        "The Tower",
-        "The Star",
-        "The Moon",
-        "The Sun",
-        "Judgement",
-        "The World",
-      ];
-
-      cards.forEach(({ card_name }) => {
-        if (majorArcana.includes(card_name)) {
-          suitCounts["Major Arcana"]++;
-        } else if (card_name.includes("Wands")) {
-          suitCounts["Wands"]++;
-        } else if (card_name.includes("Cups")) {
-          suitCounts["Cups"]++;
-        } else if (card_name.includes("Swords")) {
-          suitCounts["Swords"]++;
-        } else if (card_name.includes("Pentacles")) {
-          suitCounts["Pentacles"]++;
-        }
-      });
-
-      res.json(suitCounts);
+      res.json(numberCounts);
     },
   );
+});
+
+// Get consolidated analytics (user-scoped)
+app.get("/api/stats/analytics", requireAuth, (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  // Build WHERE clause for date filtering
+  let dateFilter = "";
+  const dateParams = [];
+
+  if (startDate) {
+    dateFilter += " AND r.date >= ?";
+    dateParams.push(startDate);
+  }
+
+  if (endDate) {
+    dateFilter += " AND r.date <= ?";
+    dateParams.push(endDate);
+  }
+
+  db.serialize(() => {
+    // Number distribution (Ace through King, all suits)
+    db.all(
+      `
+      SELECT 
+        c.number,
+        COUNT(*) as count
+      FROM reading_cards rc
+      JOIN readings r ON rc.reading_id = r.id
+      JOIN cards c ON rc.card_id = c.id
+      WHERE r.user_id = ?${dateFilter}
+      GROUP BY c.number
+      ORDER BY c.number
+    `,
+      [req.user.id, ...dateParams],
+      (err, numberDist) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        // Element distribution
+        db.all(
+          `
+          SELECT 
+            e.name as element,
+            e.polarity,
+            COUNT(*) as count
+          FROM reading_cards rc
+          JOIN readings r ON rc.reading_id = r.id
+          JOIN cards c ON rc.card_id = c.id
+          JOIN elements e ON c.element_id = e.id
+          WHERE r.user_id = ?${dateFilter}
+          GROUP BY e.name, e.polarity
+          ORDER BY count DESC
+        `,
+          [req.user.id, ...dateParams],
+          (err, elementDist) => {
+            if (err) {
+              return res.status(500).json({ error: err.message });
+            }
+
+            // Top 10 most drawn cards
+            db.all(
+              `
+              SELECT 
+                c.name,
+                c.suit,
+                c.image_filename,
+                COUNT(*) as count
+              FROM reading_cards rc
+              JOIN readings r ON rc.reading_id = r.id
+              JOIN cards c ON rc.card_id = c.id
+              WHERE r.user_id = ?${dateFilter}
+              GROUP BY c.id
+              ORDER BY count DESC
+              LIMIT 10
+            `,
+              [req.user.id, ...dateParams],
+              (err, topCards) => {
+                if (err) {
+                  return res.status(500).json({ error: err.message });
+                }
+
+                // Total readings and cards
+                db.get(
+                  `
+                  SELECT 
+                    COUNT(DISTINCT r.id) as total_readings,
+                    COUNT(*) as total_cards_drawn
+                  FROM readings r
+                  LEFT JOIN reading_cards rc ON r.id = rc.reading_id
+                  WHERE r.user_id = ?${dateFilter}
+                `,
+                  [req.user.id, ...dateParams],
+                  (err, totals) => {
+                    if (err) {
+                      return res.status(500).json({ error: err.message });
+                    }
+
+                    res.json({
+                      numberDistribution: numberDist,
+                      elementDistribution: elementDist,
+                      topCards: topCards,
+                      totalReadings: totals.total_readings,
+                      totalCardsDrawn: totals.total_cards_drawn,
+                    });
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  });
 });
 
 // Get all readings (for summary table, user's own readings only)
@@ -728,14 +1088,15 @@ app.post("/api/readings", requireAuth, (req, res) => {
 
       const readingId = this.lastID;
 
-      // Insert cards
+      // Insert cards with card_id lookup
       const stmt = db.prepare(
-        "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?)",
       );
 
       cards.forEach((card, index) => {
         stmt.run(
           readingId,
+          card.card_name,
           card.card_name,
           card.position,
           card.interpretation,
@@ -787,14 +1148,15 @@ app.put("/api/readings/:id", requireAuth, (req, res) => {
             return res.status(500).json({ error: err.message });
           }
 
-          // Insert updated cards
+          // Insert updated cards with card_id lookup
           const stmt = db.prepare(
-            "INSERT INTO reading_cards (reading_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?)",
           );
 
           cards.forEach((card, index) => {
             stmt.run(
               req.params.id,
+              card.card_name,
               card.card_name,
               card.position,
               card.interpretation,
