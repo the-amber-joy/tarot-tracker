@@ -788,11 +788,7 @@
     <div class="cards-section">
       <h3>Tarot Cards Database</h3>
 
-      {#if cardsLoading}
-        <div class="loading">
-          <div class="loading-spinner"></div>
-        </div>
-      {:else if cards.length === 0}
+      {#if cards.length === 0}
         <div class="empty-state">No cards found in database</div>
       {:else}
         <div class="cards-count">
