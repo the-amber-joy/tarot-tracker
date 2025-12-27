@@ -5,6 +5,7 @@
   import GroupedBarChart from "../components/GroupedBarChart.svelte";
   import PieChart from "../components/PieChart.svelte";
   import TopCardsChart from "../components/TopCardsChart.svelte";
+  import CardDetailsModal from "../modals/CardDetailsModal.svelte";
 
   type Reading = {
     id: number;
@@ -88,6 +89,20 @@
   let allCardFrequency: CardFrequency[] = [];
 
   let readings: Reading[] = [];
+
+  // Card details modal state
+  let showCardDetailsModal = false;
+  let selectedCardName = "";
+
+  function openCardDetails(cardName: string) {
+    selectedCardName = cardName;
+    showCardDetailsModal = true;
+  }
+
+  function closeCardDetails() {
+    showCardDetailsModal = false;
+    selectedCardName = "";
+  }
 
   // Get available years from readings
   $: availableYears = (() => {
@@ -362,7 +377,10 @@
           <h4>Top 3 Most Drawn Cards</h4>
           <div class="top-cards-grid">
             {#each analytics.topCards.slice(0, 3) as card, index}
-              <div class="top-card-item">
+              <button
+                class="top-card-item"
+                on:click={() => openCardDetails(card.name)}
+              >
                 <div class="card-rank">#{index + 1}</div>
                 <div class="card-image-container">
                   {#if card.image_filename}
@@ -384,7 +402,7 @@
                   {/if}
                   <div class="card-count-badge">{card.count} times</div>
                 </div>
-              </div>
+              </button>
             {/each}
           </div>
         </div>
@@ -548,6 +566,12 @@
   </section>
 </div>
 
+<CardDetailsModal
+  isOpen={showCardDetailsModal}
+  cardName={selectedCardName}
+  onClose={closeCardDetails}
+/>
+
 <style>
   .reports-container {
     padding: 1rem 0;
@@ -657,11 +681,22 @@
     background: var(--color-bg-section);
     border-radius: var(--radius-md);
     transition: var(--transition-fast);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    text-align: center;
   }
 
   .top-card-item:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+  }
+
+  .top-card-item:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 
   .card-rank {
