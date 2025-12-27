@@ -693,6 +693,8 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
     SELECT 
       c.name as card_name,
       c.image_filename,
+      c.suit,
+      c.number,
       COUNT(*) as count
     FROM reading_cards rc
     INNER JOIN readings r ON rc.reading_id = r.id

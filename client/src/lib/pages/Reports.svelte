@@ -7,6 +7,7 @@
     suitColors,
   } from "../chartColors";
   import BarChart from "../components/BarChart.svelte";
+  import CardHeatmap from "../components/CardHeatmap.svelte";
   import GroupedBarChart from "../components/GroupedBarChart.svelte";
   import PieChart from "../components/PieChart.svelte";
 
@@ -81,6 +82,15 @@
     totalCardsDrawn: number;
   };
   let analytics: Analytics | null = null;
+
+  // All card frequency data for heatmap
+  type CardFrequency = {
+    card_name: string;
+    suit: string | null;
+    number: number;
+    count: number;
+  };
+  let allCardFrequency: CardFrequency[] = [];
 
   let readings: Reading[] = [];
 
@@ -221,6 +231,7 @@
       loadSuitDistribution(),
       loadSuitFrequencyOverTime(),
       loadAnalytics(),
+      loadAllCardFrequency(),
     ]);
   }
 
@@ -283,6 +294,20 @@
       analytics = await response.json();
     } catch (error) {
       console.error("Error loading analytics:", error);
+    }
+  }
+
+  async function loadAllCardFrequency() {
+    try {
+      const { startDate, endDate } = getDateRange();
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const response = await fetch(`/api/stats/card-frequency?${params}`);
+      allCardFrequency = await response.json();
+    } catch (error) {
+      console.error("Error loading card frequency:", error);
     }
   }
 
@@ -384,6 +409,14 @@
               borderColor={cardFrequencyColors.borders}
             />
           </div>
+        </div>
+      {/if}
+
+      <!-- All Cards Heatmap -->
+      {#if allCardFrequency.length > 0}
+        <div class="chart-section">
+          <h4>All Cards Frequency</h4>
+          <CardHeatmap data={allCardFrequency} />
         </div>
       {/if}
 
