@@ -1,5 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import {
+    cardFrequencyColors,
+    elementColors,
+    getSuitColorsArray,
+    suitColors,
+  } from "../chartColors";
   import BarChart from "../components/BarChart.svelte";
   import GroupedBarChart from "../components/GroupedBarChart.svelte";
   import PieChart from "../components/PieChart.svelte";
@@ -374,40 +380,8 @@
               data={analytics.topCards.map((c) => c.count)}
               title="Card Frequency"
               horizontal={!isLandscape}
-              backgroundColor={[
-                "rgba(255, 99, 132, 0.7)",
-                "rgba(54, 162, 235, 0.7)",
-                "rgba(255, 206, 86, 0.7)",
-                "rgba(75, 192, 192, 0.7)",
-                "rgba(153, 102, 255, 0.7)",
-                "rgba(255, 159, 64, 0.7)",
-                "rgba(199, 199, 199, 0.7)",
-                "rgba(83, 102, 255, 0.7)",
-                "rgba(255, 99, 255, 0.7)",
-                "rgba(99, 255, 132, 0.7)",
-                "rgba(255, 206, 132, 0.7)",
-                "rgba(132, 162, 235, 0.7)",
-                "rgba(235, 132, 192, 0.7)",
-                "rgba(192, 235, 132, 0.7)",
-                "rgba(132, 192, 235, 0.7)",
-              ]}
-              borderColor={[
-                "rgba(255, 99, 132, 1)",
-                "rgba(54, 162, 235, 1)",
-                "rgba(255, 206, 86, 1)",
-                "rgba(75, 192, 192, 1)",
-                "rgba(153, 102, 255, 1)",
-                "rgba(255, 159, 64, 1)",
-                "rgba(199, 199, 199, 1)",
-                "rgba(83, 102, 255, 1)",
-                "rgba(255, 99, 255, 1)",
-                "rgba(99, 255, 132, 1)",
-                "rgba(255, 206, 132, 1)",
-                "rgba(132, 162, 235, 1)",
-                "rgba(235, 132, 192, 1)",
-                "rgba(192, 235, 132, 1)",
-                "rgba(132, 192, 235, 1)",
-              ]}
+              backgroundColor={cardFrequencyColors.backgrounds}
+              borderColor={cardFrequencyColors.borders}
             />
           </div>
         </div>
@@ -444,19 +418,8 @@
                   ]}
               title="Suit Distribution"
               backgroundColors={includeMajorArcana
-                ? [
-                    "rgba(153, 102, 255, 0.7)",
-                    "rgba(255, 99, 132, 0.7)",
-                    "rgba(54, 162, 235, 0.7)",
-                    "rgba(255, 206, 86, 0.7)",
-                    "rgba(75, 192, 192, 0.7)",
-                  ]
-                : [
-                    "rgba(255, 99, 132, 0.7)",
-                    "rgba(54, 162, 235, 0.7)",
-                    "rgba(255, 206, 86, 0.7)",
-                    "rgba(75, 192, 192, 0.7)",
-                  ]}
+                ? getSuitColorsArray(true).backgrounds
+                : getSuitColorsArray(false).backgrounds}
             />
           </div>
         </div>
@@ -504,58 +467,58 @@
                       data: suitFrequencyOverTime.map(
                         (item) => item["Major Arcana"],
                       ),
-                      backgroundColor: "rgba(153, 102, 255, 0.7)",
-                      borderColor: "rgba(153, 102, 255, 1)",
+                      backgroundColor: suitColors.majorArcana.background,
+                      borderColor: suitColors.majorArcana.border,
                     },
                     {
                       label: "Wands",
                       data: suitFrequencyOverTime.map((item) => item.Wands),
-                      backgroundColor: "rgba(255, 99, 132, 0.7)",
-                      borderColor: "rgba(255, 99, 132, 1)",
+                      backgroundColor: suitColors.wands.background,
+                      borderColor: suitColors.wands.border,
                     },
                     {
                       label: "Cups",
                       data: suitFrequencyOverTime.map((item) => item.Cups),
-                      backgroundColor: "rgba(54, 162, 235, 0.7)",
-                      borderColor: "rgba(54, 162, 235, 1)",
+                      backgroundColor: suitColors.cups.background,
+                      borderColor: suitColors.cups.border,
                     },
                     {
                       label: "Swords",
                       data: suitFrequencyOverTime.map((item) => item.Swords),
-                      backgroundColor: "rgba(255, 206, 86, 0.7)",
-                      borderColor: "rgba(255, 206, 86, 1)",
+                      backgroundColor: suitColors.swords.background,
+                      borderColor: suitColors.swords.border,
                     },
                     {
                       label: "Pentacles",
                       data: suitFrequencyOverTime.map((item) => item.Pentacles),
-                      backgroundColor: "rgba(75, 192, 192, 0.7)",
-                      borderColor: "rgba(75, 192, 192, 1)",
+                      backgroundColor: suitColors.pentacles.background,
+                      borderColor: suitColors.pentacles.border,
                     },
                   ]
                 : [
                     {
                       label: "Wands",
                       data: suitFrequencyOverTime.map((item) => item.Wands),
-                      backgroundColor: "rgba(255, 99, 132, 0.7)",
-                      borderColor: "rgba(255, 99, 132, 1)",
+                      backgroundColor: suitColors.wands.background,
+                      borderColor: suitColors.wands.border,
                     },
                     {
                       label: "Cups",
                       data: suitFrequencyOverTime.map((item) => item.Cups),
-                      backgroundColor: "rgba(54, 162, 235, 0.7)",
-                      borderColor: "rgba(54, 162, 235, 1)",
+                      backgroundColor: suitColors.cups.background,
+                      borderColor: suitColors.cups.border,
                     },
                     {
                       label: "Swords",
                       data: suitFrequencyOverTime.map((item) => item.Swords),
-                      backgroundColor: "rgba(255, 206, 86, 0.7)",
-                      borderColor: "rgba(255, 206, 86, 1)",
+                      backgroundColor: suitColors.swords.background,
+                      borderColor: suitColors.swords.border,
                     },
                     {
                       label: "Pentacles",
                       data: suitFrequencyOverTime.map((item) => item.Pentacles),
-                      backgroundColor: "rgba(75, 192, 192, 0.7)",
-                      borderColor: "rgba(75, 192, 192, 1)",
+                      backgroundColor: suitColors.pentacles.background,
+                      borderColor: suitColors.pentacles.border,
                     },
                   ]}
               horizontal={!isLandscape}
@@ -574,12 +537,7 @@
                 (e) => `${e.element} (${e.polarity})`,
               )}
               data={analytics.elementDistribution.map((e) => e.count)}
-              backgroundColors={[
-                "rgba(255, 99, 71, 0.7)", // Fire - red/orange
-                "rgba(139, 69, 19, 0.7)", // Earth - brown
-                "rgba(135, 206, 235, 0.7)", // Air - light blue
-                "rgba(65, 105, 225, 0.7)", // Water - blue
-              ]}
+              backgroundColors={elementColors.backgrounds}
             />
           </div>
         </div>
