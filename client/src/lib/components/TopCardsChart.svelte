@@ -93,12 +93,7 @@
   }
 
   .card-label:hover:not(:disabled) {
-    transform: translateX(2px);
-  }
-
-  .card-label:hover:not(:disabled) .card-name {
-    color: var(--color-primary);
-    text-decoration: underline;
+    transform: scale(1.05);
   }
 
   .card-label:disabled {
