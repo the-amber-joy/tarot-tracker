@@ -77,6 +77,10 @@ export default defineConfig({
         target: "http://localhost:3000",
         changeOrigin: true,
       },
+      "/tarot-images": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
     },
   },
   preview: {

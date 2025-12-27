@@ -428,8 +428,18 @@
             {#each analytics.topCards.slice(0, 3) as card, index}
               <div class="top-card-item">
                 <div class="card-rank">#{index + 1}</div>
-                <div class="card-placeholder">
-                  <div class="card-placeholder-text">Card Image</div>
+                <div class="card-image-container">
+                  {#if card.image_filename}
+                    <img
+                      src="/tarot-images/{card.image_filename}"
+                      alt={card.name}
+                      class="card-image"
+                    />
+                  {:else}
+                    <div class="card-placeholder">
+                      <div class="card-placeholder-text">No Image</div>
+                    </div>
+                  {/if}
                 </div>
                 <div class="card-info">
                   <div class="card-name-top">{card.name}</div>
@@ -938,6 +948,22 @@
     font-weight: 700;
     color: var(--color-primary);
     margin-bottom: 0.5rem;
+  }
+
+  .card-image-container {
+    width: 120px;
+    height: 200px;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .card-placeholder {

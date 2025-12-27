@@ -32,6 +32,12 @@ if (process.env.NODE_ENV === "production") {
 app.use(express.json());
 app.use(cookieParser());
 
+// Serve static tarot card images
+app.use(
+  "/tarot-images",
+  express.static(path.join(__dirname, "public/tarot-images")),
+);
+
 // Trust proxy for Fly.io
 app.set("trust proxy", 1);
 
@@ -686,6 +692,7 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
   let query = `
     SELECT 
       c.name as card_name,
+      c.image_filename,
       COUNT(*) as count
     FROM reading_cards rc
     INNER JOIN readings r ON rc.reading_id = r.id
@@ -929,6 +936,7 @@ app.get("/api/stats/analytics", requireAuth, (req, res) => {
               SELECT 
                 c.name,
                 c.suit,
+                c.image_filename,
                 COUNT(*) as count
               FROM reading_cards rc
               JOIN readings r ON rc.reading_id = r.id
