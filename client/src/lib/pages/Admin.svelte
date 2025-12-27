@@ -414,7 +414,6 @@
   <Toast bind:isVisible={showToast} message={toastMessage} type={toastType} />
 
   <div class="admin-header">
-    <button class="back-button" on:click={goBack}>← Back to Dashboard</button>
     <h2><span class="material-symbols-outlined"> build </span> Admin Panel</h2>
     <div class="admin-header-buttons">
       <button
@@ -1011,8 +1010,24 @@
 
 <!-- Deployment Info Modal -->
 {#if showDeploymentInfo}
-  <div class="modal-overlay" on:click={closeDeploymentInfo}>
-    <div class="modal-content deployment-modal" on:click|stopPropagation>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="modal-overlay"
+    on:click={closeDeploymentInfo}
+    on:keydown={(e) => e.key === "Escape" && closeDeploymentInfo()}
+    role="button"
+    tabindex="-1"
+  >
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="modal-content deployment-modal"
+      on:click|stopPropagation
+      on:keydown|stopPropagation
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="deployment-modal-title"
+      tabindex="-1"
+    >
       <div class="modal-header">
         <h3 id="deployment-modal-title">
           <span class="material-symbols-outlined">cloud</span> Deployment Information
@@ -1048,60 +1063,10 @@
     margin-bottom: 2rem;
   }
 
-  .back-button {
-    background: none;
-    border: none;
-    color: var(--color-primary);
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.5rem 0;
-    margin-bottom: 1rem;
-    display: inline-block;
-  }
-
-  .back-button:hover {
-    text-decoration: underline;
-  }
-
   .admin-header h2 {
     margin: 0;
     font-size: 2rem;
     color: var(--color-text-primary);
-  }
-
-  .tabs {
-    display: flex;
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--color-border);
-    margin-bottom: 2rem;
-  }
-
-  .tab {
-    padding: 0.75rem 1.5rem;
-    background: transparent;
-    color: var(--color-text-secondary);
-    border: none;
-    border-bottom: 3px solid transparent;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: var(--transition-fast);
-    margin-bottom: -2px;
-  }
-
-  .tab:hover {
-    color: var(--color-text-primary);
-    background: var(--color-bg-hover);
-  }
-
-  .tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-  }
-
-  .tab:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
   }
 
   .admin-user-section {
@@ -1623,10 +1588,6 @@
     font-weight: 600;
     color: var(--color-primary);
     white-space: nowrap;
-  }
-
-  .center-cell {
-    text-align: center;
   }
 
   .keywords-cell {

@@ -1109,16 +1109,6 @@
       font-size: 1.5rem;
     }
 
-    .tabs {
-      gap: 0;
-    }
-
-    .tab {
-      flex: 1;
-      padding: 0.75rem 0.5rem;
-      font-size: 0.9rem;
-    }
-
     .deck-info {
       flex-direction: column;
       align-items: stretch;

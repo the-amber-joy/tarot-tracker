@@ -286,7 +286,6 @@ tbody tr:hover {
   font-size: 1rem;
   font-weight: 500;
   transition: var(--transition-fast);
-  margin-bottom: -2px;
 }
 
 .tab:hover {
@@ -686,6 +685,16 @@ tbody tr:hover {
 
   .form-actions .btn {
     width: 100%;
+  }
+
+  .tabs {
+    gap: 0;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
   }
 }
 
