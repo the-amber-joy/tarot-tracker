@@ -795,16 +795,22 @@
         <!-- Filters Section -->
         <div class="filters-section">
           <div class="controls">
+            <select class="filter-select" bind:value={suitFilter}>
+              <option value="">All Suits</option>
+              {#each uniqueSuits as suit}
+                <option value={suit}>{suit}</option>
+              {/each}
+            </select>
             <select class="filter-select" bind:value={numberFilter}>
               <option value="">All Numbers</option>
               {#each uniqueNumbers as num}
                 <option value={num?.toString()}>{num}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={suitFilter}>
-              <option value="">All Suits</option>
-              {#each uniqueSuits as suit}
-                <option value={suit}>{suit}</option>
+            <select class="filter-select" bind:value={planetFilter}>
+              <option value="">All Planets</option>
+              {#each uniquePlanets as planet}
+                <option value={planet}>{planet}</option>
               {/each}
             </select>
             <select class="filter-select" bind:value={elementFilter}>
@@ -829,12 +835,6 @@
               <option value="">All Qualities</option>
               {#each uniqueQualities as quality}
                 <option value={quality}>{quality}</option>
-              {/each}
-            </select>
-            <select class="filter-select" bind:value={planetFilter}>
-              <option value="">All Planets</option>
-              {#each uniquePlanets as planet}
-                <option value={planet}>{planet}</option>
               {/each}
             </select>
             {#if numberFilter || suitFilter || elementFilter || polarityFilter || signFilter || qualityFilter || planetFilter}
