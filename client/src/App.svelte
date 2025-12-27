@@ -6,6 +6,7 @@
   import SessionExpiredModal from "./lib/modals/SessionExpiredModal.svelte";
   import Admin from "./lib/pages/Admin.svelte";
   import Login from "./lib/pages/Login.svelte";
+  import NotFound from "./lib/pages/NotFound.svelte";
   import Profile from "./lib/pages/Profile.svelte";
   import ReadingDetail from "./lib/pages/ReadingDetail.svelte";
   import ReadingForm from "./lib/pages/ReadingForm.svelte";
@@ -116,6 +117,9 @@
       </Route>
       <Route path="/reading/:id/edit" let:params>
         <ReadingForm {params} />
+      </Route>
+      <Route path="*">
+        <NotFound />
       </Route>
     </div>
 
