@@ -5,12 +5,12 @@
   import ManageDeckModal from "./lib/modals/ManageDeckModal.svelte";
   import SessionExpiredModal from "./lib/modals/SessionExpiredModal.svelte";
   import Admin from "./lib/pages/Admin.svelte";
+  import Dashboard from "./lib/pages/Dashboard.svelte";
   import Login from "./lib/pages/Login.svelte";
   import NotFound from "./lib/pages/NotFound.svelte";
   import Profile from "./lib/pages/Profile.svelte";
   import ReadingDetail from "./lib/pages/ReadingDetail.svelte";
   import ReadingForm from "./lib/pages/ReadingForm.svelte";
-  import ReadingsList from "./lib/pages/ReadingsList.svelte";
   import { authStore } from "./stores/authStore";
   import { sessionStore } from "./stores/sessionStore";
 
@@ -100,7 +100,7 @@
       />
 
       <Route path="/">
-        <ReadingsList />
+        <Dashboard />
       </Route>
       <Route path="/profile">
         <Profile />
