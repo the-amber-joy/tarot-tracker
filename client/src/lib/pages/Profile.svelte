@@ -668,7 +668,7 @@
 
         {#if readings.length === 0}
           <p class="empty-message">
-            No readings yet. Tap the + button to get started!
+            No readings yet. Tap the + button below to get started!
           </p>
         {:else}
           <ul class="readings-list">

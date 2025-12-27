@@ -378,7 +378,7 @@
 
     {#if readings.length === 0}
       <p class="empty-message">
-        No readings yet. Create your first reading to see statistics!
+        Create your first reading to start seeing reports. Tap the + button below to get started!
       </p>
     {:else}
       <!-- Top 3 Cards -->

@@ -226,7 +226,7 @@
         {#if readings.length === 0}
           <tr>
             <td colspan="4" class="empty-message">
-              No readings yet. Tap the + button to get started!
+              No readings yet. Tap the + button below to get started!
             </td>
           </tr>
         {:else}
