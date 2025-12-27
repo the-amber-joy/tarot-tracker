@@ -115,8 +115,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 80vh;
+    min-height: calc(100vh - 40px);
+    min-height: calc(100dvh - 40px); /* Dynamic viewport for mobile */
     padding: 20px;
+    box-sizing: border-box;
   }
 
   .auth-card {

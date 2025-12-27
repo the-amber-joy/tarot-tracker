@@ -116,8 +116,10 @@ body {
   );
   background-attachment: fixed;
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
   padding: 20px;
   scrollbar-gutter: stable;
+  overflow-x: hidden;
 }
 
 .container {
@@ -704,9 +706,27 @@ tbody tr:hover {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  body {
+    padding: 0;
+    background: white;
+  }
+
+  /* Keep gradient for login page */
+  body:has(.auth-container) {
+    padding: 20px;
+    background: linear-gradient(
+      135deg,
+      var(--color-gradient-start) 0%,
+      var(--color-gradient-end) 100%
+    );
+  }
+
   .container {
     margin: 0;
     border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .view-header {
