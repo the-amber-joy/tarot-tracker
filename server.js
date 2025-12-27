@@ -70,6 +70,11 @@ app.use(passport.session());
 
 // API Routes
 
+// Health check endpoint for Fly.io
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Authentication routes
 app.post("/api/auth/register", async (req, res) => {
   const { username, password } = req.body;
