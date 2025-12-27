@@ -9,6 +9,7 @@
   };
 
   export let data: CardData[] = [];
+  export let onCardClick: ((cardName: string) => void) | undefined = undefined;
 
   // Define the structure of the deck
   const majorArcanaOrder = [
@@ -152,15 +153,16 @@
     <div class="heatmap-cells major-cells">
       {#each majorArcanaOrder as cardName}
         {@const count = getCount(cardName)}
-        <div
+        <button
           class="heatmap-cell"
           style="background-color: {getSuitColor(
             'Major Arcana',
           )}; opacity: {getOpacity(count)}"
           title="{cardName}: {count}"
+          on:click={() => onCardClick?.(cardName)}
         >
           <span class="cell-label">{getMajorShortLabel(cardName)}</span>
-        </div>
+        </button>
       {/each}
     </div>
   </div>
@@ -173,15 +175,16 @@
         {#each minorNumbers as number}
           {@const cardName = getMinorCardName(number, suit)}
           {@const count = getCount(cardName)}
-          <div
+          <button
             class="heatmap-cell"
             style="background-color: {getSuitColor(suit)}; opacity: {getOpacity(
               count,
             )}"
             title="{cardName}: {count}"
+            on:click={() => onCardClick?.(cardName)}
           >
             <span class="cell-label">{getShortLabel(number)}</span>
-          </div>
+          </button>
         {/each}
       </div>
     </div>
@@ -242,6 +245,9 @@
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease;
+    border: none;
+    padding: 0;
+    font-family: inherit;
   }
 
   .heatmap-cell:hover {

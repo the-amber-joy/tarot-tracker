@@ -423,7 +423,7 @@
       {#if allCardFrequency.length > 0}
         <div class="chart-section">
           <h4>All Cards Frequency</h4>
-          <CardHeatmap data={allCardFrequency} />
+          <CardHeatmap data={allCardFrequency} onCardClick={openCardDetails} />
         </div>
       {/if}
 
