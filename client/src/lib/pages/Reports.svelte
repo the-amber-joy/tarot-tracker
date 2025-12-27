@@ -350,9 +350,9 @@
         <option value="3months">Last 3 Months</option>
         <option value="6months">Last 6 Months</option>
         <option value="12months">Last 12 Months</option>
-        <option value="yearToDate">This Year to Date</option>
+        <option value="yearToDate">Year to Date</option>
         {#if showSelectedYearOption}
-          <option value="selectedYear">Selected Year</option>
+          <option value="selectedYear">Select a Year</option>
         {/if}
         <option value="allTime">All Time</option>
       </select>
