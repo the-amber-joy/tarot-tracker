@@ -354,7 +354,7 @@
     <!-- Timespan Selector -->
     <div class="timespan-selector">
       <label for="timespan">Time Period:</label>
-      <select id="timespan" bind:value={selectedTimespan}>
+      <select id="timespan" class="styled-select" bind:value={selectedTimespan}>
         <option value="7days">Last 7 Days</option>
         <option value="30days">Last 30 Days</option>
         <option value="3months">Last 3 Months</option>
@@ -368,7 +368,7 @@
       </select>
 
       {#if selectedTimespan === "selectedYear"}
-        <select bind:value={selectedYear}>
+        <select class="styled-select" bind:value={selectedYear}>
           {#each availableYears as year}
             <option value={year}>{year}</option>
           {/each}
@@ -649,31 +649,6 @@
     font-weight: 600;
     color: var(--color-text-secondary);
     font-size: 0.95rem;
-  }
-
-  .timespan-selector select {
-    padding: 0.5rem 2rem 0.5rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    background: var(--color-bg-white);
-    color: var(--color-text-primary);
-    cursor: pointer;
-    transition: var(--transition-fast);
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
-  }
-
-  .timespan-selector select:hover {
-    border-color: var(--color-primary);
-  }
-
-  .timespan-selector select:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
   }
 
   .reports-section h4 {

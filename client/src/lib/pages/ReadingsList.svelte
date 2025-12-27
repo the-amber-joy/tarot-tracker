@@ -177,19 +177,19 @@
   {#if activeTab === "readings"}
     <div class="filters-section">
       <div class="controls">
-        <select class="deck-filter" bind:value={deckFilter}>
+        <select class="styled-select" bind:value={deckFilter}>
           <option value="">All Decks</option>
           {#each uniqueDecks as deck}
             <option value={deck}>{deck}</option>
           {/each}
         </select>
-        <select class="spread-filter" bind:value={spreadFilter}>
+        <select class="styled-select" bind:value={spreadFilter}>
           <option value="">All Spreads</option>
           {#each uniqueSpreads as spread}
             <option value={spread}>{spread}</option>
           {/each}
         </select>
-        <select class="status-filter" bind:value={statusFilter}>
+        <select class="styled-select" bind:value={statusFilter}>
           <option value="">All Readings</option>
           <option value="complete">Complete</option>
           <option value="incomplete">Incomplete</option>
@@ -318,35 +318,6 @@
     gap: 0.5rem;
     align-items: center;
     flex-wrap: wrap;
-  }
-
-  .deck-filter,
-  .status-filter,
-  .spread-filter {
-    padding: 0.5rem 1rem;
-    background: var(--color-bg-white);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: var(--transition-fast);
-    min-width: 150px;
-    max-width: 100%;
-  }
-
-  .deck-filter:hover,
-  .status-filter:hover,
-  .spread-filter:hover {
-    border-color: var(--color-primary);
-  }
-
-  .deck-filter:focus,
-  .status-filter:focus,
-  .spread-filter:focus {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-    border-color: var(--color-primary);
   }
 
   .clear-filters-btn {

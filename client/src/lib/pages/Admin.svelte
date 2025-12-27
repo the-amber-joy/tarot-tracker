@@ -795,43 +795,43 @@
         <!-- Filters Section -->
         <div class="filters-section">
           <div class="controls">
-            <select class="filter-select" bind:value={suitFilter}>
+            <select class="styled-select" bind:value={suitFilter}>
               <option value="">All Suits</option>
               {#each uniqueSuits as suit}
                 <option value={suit}>{suit}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={numberFilter}>
+            <select class="styled-select" bind:value={numberFilter}>
               <option value="">All Numbers</option>
               {#each uniqueNumbers as num}
                 <option value={num?.toString()}>{num}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={planetFilter}>
+            <select class="styled-select" bind:value={planetFilter}>
               <option value="">All Planets</option>
               {#each uniquePlanets as planet}
                 <option value={planet}>{planet}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={elementFilter}>
+            <select class="styled-select" bind:value={elementFilter}>
               <option value="">All Elements</option>
               {#each uniqueElements as element}
                 <option value={element}>{element}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={polarityFilter}>
+            <select class="styled-select" bind:value={polarityFilter}>
               <option value="">All Polarities</option>
               {#each uniquePolarities as polarity}
                 <option value={polarity}>{polarity}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={signFilter}>
+            <select class="styled-select" bind:value={signFilter}>
               <option value="">All Signs</option>
               {#each uniqueSigns as sign}
                 <option value={sign}>{sign}</option>
               {/each}
             </select>
-            <select class="filter-select" bind:value={qualityFilter}>
+            <select class="styled-select" bind:value={qualityFilter}>
               <option value="">All Qualities</option>
               {#each uniqueQualities as quality}
                 <option value={quality}>{quality}</option>
@@ -1522,6 +1522,34 @@
     margin-bottom: 1rem;
     font-weight: 600;
     color: var(--color-text-secondary);
+  }
+
+  .filters-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .clear-filters-btn {
+    padding: 0.5rem 1rem;
+    background: var(--color-bg-section);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+  }
+
+  .clear-filters-btn:hover {
+    background: var(--color-danger);
+    color: white;
+    border-color: var(--color-danger);
   }
 
   .cards-table-container {

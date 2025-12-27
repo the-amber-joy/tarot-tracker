@@ -315,6 +315,7 @@
         <label for="deckName">Deck Used</label>
         <select
           id="deckName"
+          class="styled-select"
           bind:this={deckSelectElement}
           value={deckName}
           on:change={handleDeckSelectChange}
@@ -331,6 +332,7 @@
         <label for="spreadTemplate">Spread Template</label>
         <select
           id="spreadTemplate"
+          class="styled-select"
           value={spreadTemplate}
           on:change={handleSpreadTemplateChange}
         >
