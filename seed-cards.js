@@ -287,9 +287,13 @@ async function seedReferenceTablesAndCards() {
 
       const keywords = cardKeywords[card.name] || null;
 
+      // Generate image filename from card name
+      const imageFilename =
+        card.name.replace(/\s+/g, "").toLowerCase() + ".jpeg";
+
       await dbRun(
-        "INSERT OR IGNORE INTO cards (name, number, suit, element_id, keywords) VALUES (?, ?, ?, ?, ?)",
-        [card.name, card.number, card.suit, elementId, keywords],
+        "INSERT OR IGNORE INTO cards (name, number, suit, element_id, keywords, image_filename) VALUES (?, ?, ?, ?, ?, ?)",
+        [card.name, card.number, card.suit, elementId, keywords, imageFilename],
       );
     }
     console.log("✓ Cards seeded\n");
