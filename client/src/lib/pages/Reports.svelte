@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import BarChart from "../components/BarChart.svelte";
+  import GroupedBarChart from "../components/GroupedBarChart.svelte";
   import PieChart from "../components/PieChart.svelte";
 
   type Reading = {
@@ -53,6 +54,18 @@
   };
   let suitDistribution: SuitDistribution | null = null;
   let includeMajorArcana: boolean = true;
+
+  // Suit frequency over time data (for grouped bar chart)
+  type SuitFrequencyOverTime = {
+    period: string;
+    "Major Arcana": number;
+    Wands: number;
+    Cups: number;
+    Swords: number;
+    Pentacles: number;
+  };
+  let suitFrequencyOverTime: SuitFrequencyOverTime[] = [];
+  let includeMajorArcanaOverTime: boolean = true;
 
   // Analytics data (number, element distributions)
   type Analytics = {
@@ -156,6 +169,11 @@
   // Reset to allTime if selectedYear is chosen but not available
   $: if (selectedTimespan === "selectedYear" && !showSelectedYearOption) {
     selectedTimespan = "allTime";
+  }
+
+  // Reset selectedYear to current year when switching to selectedYear timespan
+  $: if (selectedTimespan === "selectedYear") {
+    selectedYear = new Date().getFullYear();
   }
 
   // Calculate reading statistics
@@ -271,6 +289,7 @@
       loadReadings(),
       loadCardFrequency(),
       loadSuitDistribution(),
+      loadSuitFrequencyOverTime(),
       loadAnalytics(),
     ]);
   }
@@ -310,6 +329,30 @@
       suitDistribution = await response.json();
     } catch (error) {
       console.error("Error loading suit distribution:", error);
+    }
+  }
+
+  async function loadSuitFrequencyOverTime() {
+    try {
+      const { startDate, endDate } = getDateRange();
+
+      // Determine grouping: day for 7days/30days, month for others
+      const groupBy =
+        selectedTimespan === "7days" || selectedTimespan === "30days"
+          ? "day"
+          : "month";
+
+      const params = new URLSearchParams();
+      params.append("groupBy", groupBy);
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const response = await fetch(
+        `/api/stats/suit-frequency-over-time?${params}`,
+      );
+      suitFrequencyOverTime = await response.json();
+    } catch (error) {
+      console.error("Error loading suit frequency over time:", error);
     }
   }
 
@@ -494,6 +537,108 @@
                     "rgba(255, 206, 86, 0.7)",
                     "rgba(75, 192, 192, 0.7)",
                   ]}
+            />
+          </div>
+        </div>
+      {/if}
+
+      <!-- Suit Frequency Over Time (Grouped Bar Chart) -->
+      {#if suitFrequencyOverTime.length > 0}
+        <div class="chart-section">
+          <div class="section-header-with-toggle">
+            <h4>Suit Frequency Over Time</h4>
+            <label class="major-arcana-toggle">
+              <input
+                type="checkbox"
+                bind:checked={includeMajorArcanaOverTime}
+              />
+              <span>Include Major Arcana</span>
+            </label>
+          </div>
+          <div class="chart-container-bar">
+            <GroupedBarChart
+              labels={suitFrequencyOverTime.map((item) => {
+                // Format period label based on grouping
+                if (item.period.length === 10) {
+                  // Day format: YYYY-MM-DD -> Mon, Jan 1
+                  const date = new Date(item.period);
+                  return date.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  });
+                } else {
+                  // Month format: YYYY-MM -> Jan 2024
+                  const [year, month] = item.period.split("-");
+                  const date = new Date(parseInt(year), parseInt(month) - 1);
+                  return date.toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
+                  });
+                }
+              })}
+              datasets={includeMajorArcanaOverTime
+                ? [
+                    {
+                      label: "Major Arcana",
+                      data: suitFrequencyOverTime.map(
+                        (item) => item["Major Arcana"],
+                      ),
+                      backgroundColor: "rgba(153, 102, 255, 0.7)",
+                      borderColor: "rgba(153, 102, 255, 1)",
+                    },
+                    {
+                      label: "Wands",
+                      data: suitFrequencyOverTime.map((item) => item.Wands),
+                      backgroundColor: "rgba(255, 99, 132, 0.7)",
+                      borderColor: "rgba(255, 99, 132, 1)",
+                    },
+                    {
+                      label: "Cups",
+                      data: suitFrequencyOverTime.map((item) => item.Cups),
+                      backgroundColor: "rgba(54, 162, 235, 0.7)",
+                      borderColor: "rgba(54, 162, 235, 1)",
+                    },
+                    {
+                      label: "Swords",
+                      data: suitFrequencyOverTime.map((item) => item.Swords),
+                      backgroundColor: "rgba(255, 206, 86, 0.7)",
+                      borderColor: "rgba(255, 206, 86, 1)",
+                    },
+                    {
+                      label: "Pentacles",
+                      data: suitFrequencyOverTime.map((item) => item.Pentacles),
+                      backgroundColor: "rgba(75, 192, 192, 0.7)",
+                      borderColor: "rgba(75, 192, 192, 1)",
+                    },
+                  ]
+                : [
+                    {
+                      label: "Wands",
+                      data: suitFrequencyOverTime.map((item) => item.Wands),
+                      backgroundColor: "rgba(255, 99, 132, 0.7)",
+                      borderColor: "rgba(255, 99, 132, 1)",
+                    },
+                    {
+                      label: "Cups",
+                      data: suitFrequencyOverTime.map((item) => item.Cups),
+                      backgroundColor: "rgba(54, 162, 235, 0.7)",
+                      borderColor: "rgba(54, 162, 235, 1)",
+                    },
+                    {
+                      label: "Swords",
+                      data: suitFrequencyOverTime.map((item) => item.Swords),
+                      backgroundColor: "rgba(255, 206, 86, 0.7)",
+                      borderColor: "rgba(255, 206, 86, 1)",
+                    },
+                    {
+                      label: "Pentacles",
+                      data: suitFrequencyOverTime.map((item) => item.Pentacles),
+                      backgroundColor: "rgba(75, 192, 192, 0.7)",
+                      borderColor: "rgba(75, 192, 192, 1)",
+                    },
+                  ]}
+              horizontal={!isLandscape}
             />
           </div>
         </div>

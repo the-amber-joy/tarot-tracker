@@ -770,6 +770,76 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
   });
 });
 
+// Get suit frequency over time (for grouped bar chart)
+app.get("/api/stats/suit-frequency-over-time", requireAuth, (req, res) => {
+  const { startDate, endDate, groupBy } = req.query;
+
+  if (!groupBy || !["day", "month"].includes(groupBy)) {
+    return res
+      .status(400)
+      .json({ error: "groupBy parameter required (day or month)" });
+  }
+
+  // Determine date format based on grouping
+  const dateFormat = groupBy === "day" ? "%Y-%m-%d" : "%Y-%m";
+
+  let query = `
+    SELECT 
+      strftime('${dateFormat}', r.date) as period,
+      c.suit,
+      COUNT(*) as count
+    FROM reading_cards rc
+    INNER JOIN readings r ON rc.reading_id = r.id
+    INNER JOIN cards c ON rc.card_id = c.id
+    WHERE r.user_id = ?
+  `;
+
+  const params = [req.user.id];
+
+  if (startDate) {
+    query += ` AND r.date >= ?`;
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    query += ` AND r.date <= ?`;
+    params.push(endDate);
+  }
+
+  query += ` GROUP BY period, c.suit ORDER BY period`;
+
+  db.all(query, params, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    // Transform results into grouped format
+    const grouped = {};
+    results.forEach(({ period, suit, count }) => {
+      if (!grouped[period]) {
+        grouped[period] = {
+          period,
+          "Major Arcana": 0,
+          Wands: 0,
+          Cups: 0,
+          Swords: 0,
+          Pentacles: 0,
+        };
+      }
+      if (grouped[period].hasOwnProperty(suit)) {
+        grouped[period][suit] = count;
+      }
+    });
+
+    // Convert to array and sort by period
+    const data = Object.values(grouped).sort((a, b) =>
+      a.period.localeCompare(b.period),
+    );
+
+    res.json(data);
+  });
+});
+
 // Get number distribution statistics
 app.get("/api/stats/number-distribution", requireAuth, (req, res) => {
   db.all(
