@@ -174,7 +174,7 @@
   </div>
 
   <!-- Readings Tab Content -->
-  {#if activeTab === "readings"}
+  <div class="tab-content" class:hidden={activeTab !== "readings"}>
     <div class="filters-section">
       <div class="controls">
         <select class="styled-select" bind:value={deckFilter}>
@@ -292,17 +292,21 @@
         {/each}
       {/if}
     </div>
-  {/if}
+  </div>
 
   <!-- Reports Tab Content -->
-  {#if activeTab === "reports"}
+  <div class="tab-content" class:hidden={activeTab !== "reports"}>
     <Reports />
-  {/if}
+  </div>
 </div>
 
 <style>
   .summary-view {
     container-type: inline-size;
+  }
+
+  .tab-content.hidden {
+    display: none;
   }
 
   .filters-section {
