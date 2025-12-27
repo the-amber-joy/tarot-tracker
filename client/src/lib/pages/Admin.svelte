@@ -20,6 +20,7 @@
     name: string;
     number: number | null;
     suit: string | null;
+    image_filename: string | null;
     element_name: string | null;
     element_polarity: string | null;
     zodiac_sign_name: string | null;
@@ -848,6 +849,7 @@
           <table class="cards-table">
             <thead>
               <tr>
+                <th>Image</th>
                 <th>Name</th>
                 <th>Planet</th>
                 <th>Element</th>
@@ -860,6 +862,17 @@
             <tbody>
               {#each filteredCards as card}
                 <tr>
+                  <td class="card-image-cell">
+                    {#if card.image_filename}
+                      <img
+                        src="/tarot-images/{card.image_filename}"
+                        alt={card.name}
+                        class="card-thumbnail"
+                      />
+                    {:else}
+                      <div class="card-placeholder">?</div>
+                    {/if}
+                  </td>
                   <td class="card-name-cell">{formatCardName(card)}</td>
                   <td>{card.planet_name || "-"}</td>
                   <td>{card.element_name || "-"}</td>
@@ -877,7 +890,16 @@
         <div class="cards-mobile">
           {#each filteredCards as card}
             <div class="card-mobile-item">
-              <div class="card-mobile-header">{formatCardName(card)}</div>
+              <div class="card-mobile-header">
+                {#if card.image_filename}
+                  <img
+                    src="/tarot-images/{card.image_filename}"
+                    alt={card.name}
+                    class="card-thumbnail-mobile"
+                  />
+                {/if}
+                <span>{formatCardName(card)}</span>
+              </div>
               <div class="card-mobile-details">
                 {#if card.planet_name}
                   <div class="detail-item">
@@ -1533,7 +1555,36 @@
   .cards-table td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--color-border);
-    vertical-align: top;
+    vertical-align: middle;
+  }
+
+  .card-image-cell {
+    width: 50px;
+    padding: 0.5rem;
+  }
+
+  .card-thumbnail {
+    width: 40px;
+    height: 66px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-placeholder {
+    width: 40px;
+    height: 66px;
+    background: linear-gradient(
+      135deg,
+      var(--color-bg-section) 0%,
+      var(--color-border) 100%
+    );
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-light);
+    font-size: 0.75rem;
   }
 
   .cards-table tbody tr:hover {
@@ -1570,12 +1621,24 @@
   }
 
   .card-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     font-weight: 600;
     color: var(--color-primary);
     font-size: 1.1rem;
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .card-thumbnail-mobile {
+    width: 35px;
+    height: 58px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
   }
 
   .card-mobile-details {

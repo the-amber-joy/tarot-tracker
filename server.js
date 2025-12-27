@@ -554,6 +554,7 @@ app.get("/api/admin/cards", requireAdmin, (req, res) => {
       c.name, 
       c.number, 
       c.suit,
+      c.image_filename,
       e.name as element_name,
       e.polarity as element_polarity,
       z.name as zodiac_sign_name,
