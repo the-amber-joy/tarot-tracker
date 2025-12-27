@@ -9,6 +9,7 @@
   };
 
   export let cards: CardData[] = [];
+  export let onCardClick: ((cardName: string) => void) | undefined = undefined;
 
   // Find max count for scaling bars
   $: maxCount = Math.max(...cards.map((c) => c.count), 1);
@@ -32,7 +33,11 @@
 <div class="top-cards-chart">
   {#each cards as card, index}
     <div class="card-row">
-      <div class="card-label">
+      <button
+        class="card-label"
+        on:click={() => onCardClick?.(card.name)}
+        disabled={!onCardClick}
+      >
         <div class="card-thumbnail">
           {#if card.image_filename}
             <img
@@ -45,7 +50,7 @@
           {/if}
         </div>
         <span class="card-name">{card.name}</span>
-      </div>
+      </button>
       <div class="bar-container">
         <div
           class="bar"
@@ -78,6 +83,26 @@
     gap: 0.5rem;
     min-width: 200px;
     flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: var(--transition-fast);
+  }
+
+  .card-label:hover:not(:disabled) {
+    transform: translateX(2px);
+  }
+
+  .card-label:hover:not(:disabled) .card-name {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .card-label:disabled {
+    cursor: default;
   }
 
   .card-thumbnail {

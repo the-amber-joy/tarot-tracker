@@ -412,7 +412,10 @@
       {#if analytics?.topCards && analytics.topCards.length > 0}
         <div class="chart-section">
           <h4>Top 15 Most Drawn Cards</h4>
-          <TopCardsChart cards={analytics.topCards} />
+          <TopCardsChart
+            cards={analytics.topCards}
+            onCardClick={openCardDetails}
+          />
         </div>
       {/if}
 
