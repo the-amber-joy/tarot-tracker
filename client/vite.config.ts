@@ -11,7 +11,7 @@ export default defineConfig({
       includeAssets: ["icon-192.svg", "icon-512.svg"],
       manifest: {
         name: "Tarot Tracker",
-        short_name: "Tarot",
+        short_name: "Tarot Tracker",
         description: "Track and analyze your tarot readings",
         theme_color: "#667eea",
         background_color: "#667eea",
