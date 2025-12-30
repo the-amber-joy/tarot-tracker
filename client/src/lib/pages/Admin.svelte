@@ -24,6 +24,15 @@
   let mounted = false;
   let isProduction = true; // Default to true to hide nuke button until we know
 
+  // Seed readings modal state
+  let showSeedModal = false;
+  let seedUsername = "";
+  let seedNumReadings = 25;
+  let seedNumDecks = 4;
+  let seedNewestYearsAgo = 0;
+  let seedOldestYearsAgo = 3;
+  let seedLoading = false;
+
   onMount(async () => {
     if (!$authStore?.is_admin) {
       navigate("/");
@@ -101,6 +110,55 @@
     showDeploymentInfo = false;
   }
 
+  function openSeedModal() {
+    showSeedModal = true;
+    seedUsername = "";
+    seedNumReadings = 25;
+    seedNumDecks = 4;
+    seedNewestYearsAgo = 0;
+    seedOldestYearsAgo = 3;
+  }
+
+  function closeSeedModal() {
+    showSeedModal = false;
+  }
+
+  async function handleSeedReadings() {
+    if (!seedUsername.trim()) {
+      displayToast("Username is required", "error");
+      return;
+    }
+
+    seedLoading = true;
+    try {
+      const response = await fetch("/api/admin/seed-readings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: seedUsername.trim(),
+          numReadings: seedNumReadings,
+          numDecks: seedNumDecks,
+          newestYearsAgo: seedNewestYearsAgo,
+          oldestYearsAgo: seedOldestYearsAgo,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to seed readings");
+      }
+
+      displayToast(data.message, "success");
+      closeSeedModal();
+      await loadUsers(); // Refresh user stats
+    } catch (e: any) {
+      displayToast("Error: " + e.message, "error");
+    } finally {
+      seedLoading = false;
+    }
+  }
+
   function openNukeConfirm() {
     showNukeConfirm = true;
     nukeConfirmText = "";
@@ -149,6 +207,13 @@
         title="View deployment information"
       >
         🚀 Deployment Info
+      </button>
+      <button
+        class="btn btn-small btn-primary"
+        on:click={openSeedModal}
+        title="Generate test readings for a user"
+      >
+        🎴 Seed Readings
       </button>
       {#if !isProduction}
         <button
@@ -255,6 +320,118 @@
             class="btn btn-small btn-secondary"
             on:click={closeNukeConfirm}
           >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Seed Readings Modal -->
+  {#if showSeedModal}
+    <div
+      class="modal-overlay"
+      on:click={closeSeedModal}
+      on:keydown={(e) => e.key === "Escape" && closeSeedModal()}
+      role="button"
+      tabindex="-1"
+    >
+      <div
+        class="seed-modal"
+        on:click|stopPropagation
+        on:keydown|stopPropagation
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="seed-modal-title"
+        tabindex="-1"
+      >
+        <div class="seed-header">
+          <h3 id="seed-modal-title">🎴 Seed Test Readings</h3>
+          <button class="modal-close" on:click={closeSeedModal}>
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="seed-body">
+          <p class="seed-description">
+            Generate random tarot readings for a user account. This is useful
+            for testing reports and statistics.
+          </p>
+
+          <div class="seed-form">
+            <div class="form-group">
+              <label for="seed-username">Username *</label>
+              <input
+                id="seed-username"
+                type="text"
+                bind:value={seedUsername}
+                placeholder="Enter username"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="seed-readings">Number of Readings</label>
+                <input
+                  id="seed-readings"
+                  type="number"
+                  bind:value={seedNumReadings}
+                  min="1"
+                  max="100"
+                  class="form-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="seed-decks">Number of Decks</label>
+                <input
+                  id="seed-decks"
+                  type="number"
+                  bind:value={seedNumDecks}
+                  min="1"
+                  max="20"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="seed-newest">Newest (years ago)</label>
+                <input
+                  id="seed-newest"
+                  type="number"
+                  bind:value={seedNewestYearsAgo}
+                  min="0"
+                  max="10"
+                  class="form-input"
+                />
+                <span class="form-hint">0 = this year</span>
+              </div>
+
+              <div class="form-group">
+                <label for="seed-oldest">Oldest (years ago)</label>
+                <input
+                  id="seed-oldest"
+                  type="number"
+                  bind:value={seedOldestYearsAgo}
+                  min="1"
+                  max="10"
+                  class="form-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="seed-actions">
+          <button
+            class="btn btn-small btn-primary"
+            on:click={handleSeedReadings}
+            disabled={!seedUsername.trim() || seedLoading}
+          >
+            {seedLoading ? "Generating..." : "🎴 Generate Readings"}
+          </button>
+          <button class="btn btn-small btn-secondary" on:click={closeSeedModal}>
             Cancel
           </button>
         </div>
@@ -424,6 +601,89 @@
 
   .nuke-button {
     align-self: flex-start;
+  }
+
+  /* Seed readings modal */
+  .seed-modal {
+    background: var(--color-bg-white);
+    border-radius: var(--radius-lg);
+    max-width: 500px;
+    width: 90%;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .seed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .seed-header h3 {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 1.5rem;
+  }
+
+  .seed-body {
+    padding: 1.5rem;
+  }
+
+  .seed-description {
+    margin: 0 0 1.5rem 0;
+    color: var(--color-text-secondary);
+  }
+
+  .seed-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+  }
+
+  .seed-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 1px solid var(--color-border);
   }
 
   /* Deployment modal styles */

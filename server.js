@@ -1018,6 +1018,222 @@ app.post("/api/admin/nuke", requireAdmin, (req, res) => {
   });
 });
 
+// Seed test readings for a user (admin only)
+app.post("/api/admin/seed-readings", requireAdmin, async (req, res) => {
+  const {
+    username,
+    numReadings = 25,
+    numDecks = 4,
+    newestYearsAgo = 0,
+    oldestYearsAgo = 5,
+  } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
+  // Sample deck names
+  const deckNames = [
+    "Rider-Waite",
+    "Wild Unknown",
+    "Modern Witch",
+    "Mystic Mondays",
+    "Light Seer's",
+    "Arcana Iris",
+    "Fountain Tarot",
+    "Ethereal Visions",
+    "Golden Thread",
+    "Dreaming Way",
+    "Shadowscapes",
+    "Legacy of the Divine",
+    "Tarot of the New Vision",
+    "Steampunk Tarot",
+    "Crystal Visions",
+    "Druidcraft Tarot",
+    "Gilded Tarot",
+    "Cosmic Tarot",
+    "Alchemy 1977",
+    "Bohemian Gothic",
+  ];
+
+  // Sample topics and interpretations
+  const topics = [
+    "Career guidance",
+    "Relationship advice",
+    "Personal growth",
+    "Financial outlook",
+    "Health and wellness",
+    "Creative endeavors",
+    "Life purpose",
+    "Decision making",
+    "Spiritual development",
+    "Daily guidance",
+    "Love life",
+    "New opportunities",
+    "Overcoming obstacles",
+    "Inner wisdom",
+    "Future planning",
+  ];
+
+  const interpretations = [
+    "This card suggests new beginnings and fresh energy.",
+    "A time of reflection and inner wisdom is needed.",
+    "Challenges ahead, but with courage you will prevail.",
+    "Success and abundance are on the horizon.",
+    "Balance and harmony are key to moving forward.",
+    "Trust your intuition in this situation.",
+    "Change is coming, embrace it with open arms.",
+    "Past influences are still affecting the present.",
+    "Take action now, the time is right.",
+    "Patience and perseverance will pay off.",
+  ];
+
+  // Helper functions
+  const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const shuffleArray = (arr) => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const randomDate = () => {
+    const now = new Date();
+    const newestDate = new Date(now.getFullYear() - newestYearsAgo, 0, 1);
+    const oldestDate = new Date(now.getFullYear() - oldestYearsAgo, 0, 1);
+    const endDate =
+      newestYearsAgo === 0
+        ? now
+        : new Date(now.getFullYear() - newestYearsAgo, 11, 31);
+    const date = new Date(
+      oldestDate.getTime() +
+        Math.random() * (endDate.getTime() - oldestDate.getTime()),
+    );
+    return date.toISOString().split("T")[0];
+  };
+
+  const randomTime = () => {
+    const hour = Math.floor(Math.random() * 24);
+    const minute = Math.floor(Math.random() * 60);
+    return `${hour.toString().padStart(2, "0")}:${minute
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  // Get spread templates (exclude custom)
+  const spreadTemplates = Object.values(SPREAD_TEMPLATES).filter(
+    (s) => s.id !== "custom",
+  );
+
+  try {
+    // Get user ID
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id FROM users WHERE username = ?",
+        [username],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: `User '${username}' not found` });
+    }
+
+    const userId = user.id;
+
+    // Create decks
+    const selectedDecks = shuffleArray(deckNames).slice(0, numDecks);
+    for (const deckName of selectedDecks) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          "INSERT OR IGNORE INTO decks (name, user_id) VALUES (?, ?)",
+          [deckName, userId],
+          (err) => (err ? reject(err) : resolve()),
+        );
+      });
+    }
+
+    // Get all card IDs from database
+    const cards = await new Promise((resolve, reject) => {
+      db.all("SELECT id, name FROM cards", [], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+
+    const cardMap = new Map(cards.map((c) => [c.name, c.id]));
+
+    // Create readings
+    let createdReadings = 0;
+    for (let i = 0; i < numReadings; i++) {
+      const spread = randomElement(spreadTemplates);
+      const deckName = randomElement(selectedDecks);
+      const date = randomDate();
+      const time = randomTime();
+      const notes = `Reading about: ${randomElement(topics)}`;
+      const title = spread.topics ? randomElement(spread.topics) : "Daily Pull";
+
+      // Insert reading
+      const readingId = await new Promise((resolve, reject) => {
+        db.run(
+          "INSERT INTO readings (user_id, date, time, title, spread_template_id, deck_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [userId, date, time, title, spread.id, deckName, notes],
+          function (err) {
+            if (err) reject(err);
+            else resolve(this.lastID);
+          },
+        );
+      });
+
+      // Create cards for this reading
+      const shuffledCards = shuffleArray(cards);
+      for (let j = 0; j < spread.cardCount; j++) {
+        const card = shuffledCards[j];
+        const position = spread.positions[j];
+        const interpretation = randomElement(interpretations);
+
+        await new Promise((resolve, reject) => {
+          db.run(
+            "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+              readingId,
+              card.id,
+              card.name,
+              position.label,
+              interpretation,
+              position.order,
+              position.defaultX,
+              position.defaultY,
+              position.rotation || 0,
+            ],
+            (err) => (err ? reject(err) : resolve()),
+          );
+        });
+      }
+
+      createdReadings++;
+    }
+
+    res.json({
+      message: `Successfully created ${createdReadings} readings with ${numDecks} decks for ${username}`,
+      details: {
+        username,
+        readingsCreated: createdReadings,
+        decksCreated: selectedDecks.length,
+        deckNames: selectedDecks,
+      },
+    });
+  } catch (err) {
+    console.error("Error seeding readings:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get analytics data (admin only)
 app.get("/api/admin/analytics", requireAdmin, (req, res) => {
   db.serialize(() => {

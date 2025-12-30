@@ -245,9 +245,13 @@
     selectedTimespan = "allTime";
   }
 
-  // Reset selectedYear to current year when switching to selectedYear timespan
-  $: if (selectedTimespan === "selectedYear") {
-    selectedYear = new Date().getFullYear();
+  // Reset selectedYear when switching to selectedYear timespan
+  // Default to current year if it has readings, otherwise use latest available year
+  $: if (selectedTimespan === "selectedYear" && availableYears.length > 0) {
+    const currentYear = new Date().getFullYear();
+    selectedYear = availableYears.includes(currentYear)
+      ? currentYear
+      : availableYears[0]; // availableYears is sorted descending, so [0] is the latest
   }
 
   // Calculate reading statistics
