@@ -6,11 +6,14 @@
   import SessionExpiredModal from "./lib/modals/SessionExpiredModal.svelte";
   import Admin from "./lib/pages/Admin.svelte";
   import Dashboard from "./lib/pages/Dashboard.svelte";
+  import ForgotPassword from "./lib/pages/ForgotPassword.svelte";
   import Login from "./lib/pages/Login.svelte";
   import NotFound from "./lib/pages/NotFound.svelte";
   import Profile from "./lib/pages/Profile.svelte";
   import ReadingDetail from "./lib/pages/ReadingDetail.svelte";
   import ReadingForm from "./lib/pages/ReadingForm.svelte";
+  import ResetPassword from "./lib/pages/ResetPassword.svelte";
+  import VerifyEmail from "./lib/pages/VerifyEmail.svelte";
   import { authStore } from "./stores/authStore";
   import { sessionStore } from "./stores/sessionStore";
 
@@ -88,7 +91,20 @@
     <span>Loading...</span>
   </div>
 {:else if !$authStore}
-  <Login />
+  <Router>
+    <Route path="/forgot-password">
+      <ForgotPassword />
+    </Route>
+    <Route path="/reset-password">
+      <ResetPassword />
+    </Route>
+    <Route path="/verify-email">
+      <VerifyEmail />
+    </Route>
+    <Route path="*">
+      <Login />
+    </Route>
+  </Router>
 {:else}
   <Router>
     <div class="container">

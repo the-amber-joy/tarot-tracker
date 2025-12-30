@@ -1,16 +1,7 @@
 <script lang="ts">
+  import { unverifiedCountStore } from "../../stores/adminStore";
   import { authStore } from "../../stores/authStore";
-
-  type UserStats = {
-    id: number;
-    username: string;
-    display_name: string;
-    created_at: string;
-    last_login: string | null;
-    deck_count: number;
-    reading_count: number;
-    storage_bytes: number;
-  };
+  import type { UserStats } from "../../types/admin";
 
   type SortField =
     | "username"
@@ -34,12 +25,72 @@
   let resetUserId: number | null = null;
   let newPassword = "";
   let resetError = "";
+  let editEmailUserId: number | null = null;
+  let newEmail = "";
+  let emailError = "";
   let deleteUserId: number | null = null;
+  let verifyingUserId: number | null = null;
+  let resendingUserId: number | null = null;
   let sortField: SortField = "username";
   let sortDirection: SortDirection = "asc";
   let showPassword = false;
 
+  async function handleResendVerification(userId: number, email: string) {
+    resendingUserId = userId;
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to resend verification email");
+      }
+
+      const user = users.find((u) => u.id === userId);
+      onToast(`Verification email sent to ${user?.username}`, "success");
+    } catch (e: any) {
+      onToast(`Error: ${e.message}`, "error");
+    } finally {
+      resendingUserId = null;
+    }
+  }
+
+  async function handleVerifyUser(userId: number) {
+    verifyingUserId = userId;
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/verify`, {
+        method: "PUT",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to verify user");
+      }
+
+      // Update the user in the list
+      users = users.map((u) =>
+        u.id === userId ? { ...u, email_verified: true } : u,
+      );
+      const user = users.find((u) => u.id === userId);
+      onToast(`${user?.username} has been verified`, "success");
+
+      // Update the header notification badge
+      unverifiedCountStore.fetchUnverifiedCount();
+    } catch (e: any) {
+      onToast(`Error: ${e.message}`, "error");
+    } finally {
+      verifyingUserId = null;
+    }
+  }
+
   $: adminUser = users.find((u) => u.id === $authStore?.id);
+  $: unverifiedUsers = users.filter(
+    (u) => !u.email_verified && u.id !== $authStore?.id,
+  );
   $: otherUsers = users
     .filter((u) => u.id !== $authStore?.id)
     .sort((a, b) => {
@@ -68,6 +119,62 @@
     resetUserId = null;
     newPassword = "";
     resetError = "";
+  }
+
+  function startEditEmail(userId: number, currentEmail: string) {
+    editEmailUserId = userId;
+    newEmail = currentEmail || "";
+    emailError = "";
+  }
+
+  function cancelEditEmail() {
+    editEmailUserId = null;
+    newEmail = "";
+    emailError = "";
+  }
+
+  async function handleUpdateEmail(userId: number) {
+    emailError = "";
+
+    if (!newEmail.trim()) {
+      emailError = "Email is required";
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      emailError = "Invalid email format";
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/email`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update email");
+      }
+
+      // Update the user in the list
+      users = users.map((u) =>
+        u.id === userId
+          ? { ...u, email: data.email, email_verified: data.email_verified }
+          : u,
+      );
+      const user = users.find((u) => u.id === userId);
+      onToast(`Email updated for ${user?.username}`, "success");
+      cancelEditEmail();
+
+      // Update unverified count since email change marks user as unverified
+      unverifiedCountStore.fetchUnverifiedCount();
+    } catch (e: any) {
+      emailError = e.message;
+    }
   }
 
   async function handleResetPassword(userId: number) {
@@ -195,6 +302,134 @@
     </div>
   {/if}
 
+  {#if unverifiedUsers.length > 0}
+    <div class="unverified-users-section">
+      <h3>⚠️ Unverified Users ({unverifiedUsers.length})</h3>
+      <div class="users-table-container">
+        <table class="users-table unverified-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each unverifiedUsers as user}
+              <tr>
+                <td>{user.username}</td>
+                <td>{user.email || "-"}</td>
+                <td>{formatDate(user.created_at)}</td>
+                <td>
+                  <div class="action-buttons">
+                    {#if user.email}
+                      <button
+                        class="btn btn-small btn-secondary"
+                        on:click={() =>
+                          handleResendVerification(user.id, user.email!)}
+                        disabled={resendingUserId === user.id}
+                      >
+                        {resendingUserId === user.id
+                          ? "Sending..."
+                          : "📧 Resend"}
+                      </button>
+                    {/if}
+                    <button
+                      class="btn btn-small btn-success"
+                      on:click={() => handleVerifyUser(user.id)}
+                      disabled={verifyingUserId === user.id}
+                    >
+                      {verifyingUserId === user.id
+                        ? "Verifying..."
+                        : "✓ Verify"}
+                    </button>
+                    <button
+                      class="btn btn-small btn-danger"
+                      on:click={() => confirmDelete(user.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+        <!-- Mobile cards view for unverified users -->
+        <div class="users-cards">
+          {#each unverifiedUsers as user}
+            <div class="user-card unverified-card">
+              <div class="user-card-header">
+                <div>
+                  <div class="user-name">{user.username}</div>
+                  <div class="user-email">{user.email || "No email"}</div>
+                </div>
+              </div>
+              <div class="user-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Created:</span>
+                  <span class="stat-value">{formatDate(user.created_at)}</span>
+                </div>
+              </div>
+              <div class="user-actions">
+                {#if deleteUserId === user.id}
+                  <div class="delete-confirm">
+                    <p class="warning-text">
+                      ⚠️ Delete {user.username}?
+                    </p>
+                    <button
+                      class="btn btn-small btn-danger"
+                      on:click={() => handleDeleteUser(user.id)}
+                    >
+                      Yes, Delete
+                    </button>
+                    <button
+                      class="btn btn-small btn-secondary"
+                      on:click={cancelDelete}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                {:else}
+                  <div class="action-buttons">
+                    {#if user.email}
+                      <button
+                        class="btn btn-small btn-secondary"
+                        on:click={() =>
+                          handleResendVerification(user.id, user.email!)}
+                        disabled={resendingUserId === user.id}
+                      >
+                        {resendingUserId === user.id
+                          ? "Sending..."
+                          : "📧 Resend"}
+                      </button>
+                    {/if}
+                    <button
+                      class="btn btn-small btn-success"
+                      on:click={() => handleVerifyUser(user.id)}
+                      disabled={verifyingUserId === user.id}
+                    >
+                      {verifyingUserId === user.id
+                        ? "Verifying..."
+                        : "✓ Verify"}
+                    </button>
+                    <button
+                      class="btn btn-small btn-danger"
+                      on:click={() => confirmDelete(user.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+
   {#if otherUsers.length > 0}
     <div class="other-users-section">
       <h3>Other Users</h3>
@@ -205,9 +440,7 @@
               <th class="sortable" on:click={() => handleSort("username")}>
                 Username {sortIcon("username")}
               </th>
-              <th class="sortable" on:click={() => handleSort("display_name")}>
-                Display Name {sortIcon("display_name")}
-              </th>
+              <th>Email</th>
               <th class="sortable" on:click={() => handleSort("created_at")}>
                 Created {sortIcon("created_at")}
               </th>
@@ -229,8 +462,55 @@
           <tbody>
             {#each otherUsers as user}
               <tr>
-                <td>{user.username}</td>
-                <td>{user.display_name || "-"}</td>
+                <td>
+                  {user.username}
+                  {#if !user.email_verified}
+                    <span class="unverified-badge" title="Email not verified"
+                      >⚠️</span
+                    >
+                  {/if}
+                </td>
+                <td class="email-cell">
+                  {#if editEmailUserId === user.id}
+                    <form
+                      class="email-form"
+                      on:submit|preventDefault={() =>
+                        handleUpdateEmail(user.id)}
+                    >
+                      <input
+                        type="email"
+                        bind:value={newEmail}
+                        placeholder="user@example.com"
+                        class="email-input"
+                      />
+                      <button type="submit" class="btn btn-small btn-primary">
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-small btn-secondary"
+                        on:click={cancelEditEmail}
+                      >
+                        Cancel
+                      </button>
+                      {#if emailError}
+                        <div class="inline-error">{emailError}</div>
+                      {/if}
+                    </form>
+                  {:else}
+                    <span class="email-display">
+                      {user.email || "-"}
+                      <button
+                        class="btn-icon"
+                        on:click={() =>
+                          startEditEmail(user.id, user.email || "")}
+                        title="Edit email"
+                      >
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </span>
+                  {/if}
+                </td>
                 <td>{formatDate(user.created_at)}</td>
                 <td
                   >{user.last_login ? formatDate(user.last_login) : "Never"}</td
@@ -304,6 +584,17 @@
                     </form>
                   {:else}
                     <div class="action-buttons">
+                      {#if !user.email_verified}
+                        <button
+                          class="btn btn-small btn-success"
+                          on:click={() => handleVerifyUser(user.id)}
+                          disabled={verifyingUserId === user.id}
+                        >
+                          {verifyingUserId === user.id
+                            ? "Verifying..."
+                            : "Verify"}
+                        </button>
+                      {/if}
                       <button
                         class="btn btn-small btn-warning"
                         on:click={() => startReset(user.id)}
@@ -329,13 +620,61 @@
             <div class="user-card">
               <div class="user-card-header">
                 <div>
-                  <div class="user-name">{user.username}</div>
-                  <div class="user-display-name">
-                    {user.display_name || "-"}
+                  <div class="user-name">
+                    {user.username}
+                    {#if !user.email_verified}
+                      <span class="unverified-badge" title="Email not verified"
+                        >⚠️</span
+                      >
+                    {/if}
                   </div>
                 </div>
               </div>
               <div class="user-stats">
+                <div class="stat-item stat-item-full">
+                  <span class="stat-label">Email:</span>
+                  {#if editEmailUserId === user.id}
+                    <form
+                      class="email-form"
+                      on:submit|preventDefault={() =>
+                        handleUpdateEmail(user.id)}
+                    >
+                      <input
+                        type="email"
+                        bind:value={newEmail}
+                        placeholder="user@example.com"
+                        class="email-input"
+                      />
+                      <div class="email-form-buttons">
+                        <button type="submit" class="btn btn-small btn-primary">
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-small btn-secondary"
+                          on:click={cancelEditEmail}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      {#if emailError}
+                        <div class="inline-error">{emailError}</div>
+                      {/if}
+                    </form>
+                  {:else}
+                    <span class="stat-value email-display">
+                      {user.email || "-"}
+                      <button
+                        class="btn-icon"
+                        on:click={() =>
+                          startEditEmail(user.id, user.email || "")}
+                        title="Edit email"
+                      >
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                    </span>
+                  {/if}
+                </div>
                 <div class="stat-item">
                   <span class="stat-label">Created:</span>
                   <span class="stat-value">{formatDate(user.created_at)}</span>
@@ -429,6 +768,17 @@
                   </form>
                 {:else}
                   <div class="action-buttons">
+                    {#if !user.email_verified}
+                      <button
+                        class="btn btn-small btn-success"
+                        on:click={() => handleVerifyUser(user.id)}
+                        disabled={verifyingUserId === user.id}
+                      >
+                        {verifyingUserId === user.id
+                          ? "Verifying..."
+                          : "Verify"}
+                      </button>
+                    {/if}
                     <button
                       class="btn btn-small btn-warning"
                       on:click={() => startReset(user.id)}
@@ -486,6 +836,34 @@
     margin: 0 0 1rem 0;
     font-size: 1.25rem;
     color: var(--color-text-primary);
+  }
+
+  .unverified-users-section {
+    margin-bottom: 2rem;
+  }
+
+  .unverified-users-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: var(--color-warning-hover);
+  }
+
+  .unverified-table {
+    border: 2px solid var(--color-warning);
+  }
+
+  .unverified-table thead {
+    background: rgba(255, 193, 7, 0.15);
+  }
+
+  .unverified-card {
+    border: 2px solid var(--color-warning) !important;
+    background: rgba(255, 193, 7, 0.05) !important;
+  }
+
+  .user-email {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
   }
 
   .users-table-container {
@@ -586,6 +964,60 @@
     flex: 1;
   }
 
+  .email-cell {
+    min-width: 200px;
+  }
+
+  .email-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .email-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .email-input {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    min-width: 180px;
+  }
+
+  .email-form-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-icon {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+
+  .btn-icon:hover {
+    color: var(--color-primary);
+    background-color: var(--color-bg-hover);
+  }
+
+  .btn-icon .material-symbols-outlined {
+    font-size: 1.1rem;
+  }
+
   .delete-confirm {
     display: flex;
     flex-direction: column;
@@ -647,11 +1079,6 @@
       margin-bottom: 0.25rem;
     }
 
-    .user-display-name {
-      color: var(--color-text-secondary);
-      font-size: 0.9rem;
-    }
-
     .user-stats {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -700,6 +1127,31 @@
 
     .user-actions .delete-confirm .btn {
       width: 100%;
+    }
+
+    .stat-item-full {
+      grid-column: 1 / -1;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .stat-item-full .email-form {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .stat-item-full .email-input {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .stat-item-full .email-form-buttons {
+      width: 100%;
+    }
+
+    .stat-item-full .email-form-buttons .btn {
+      flex: 1;
     }
   }
 

@@ -213,6 +213,24 @@ header h1 {
   box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
 }
 
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.btn-success:disabled {
+  background: #94d3a2;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-small {
   padding: 5px 12px;
   font-size: 0.85rem;

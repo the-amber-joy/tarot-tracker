@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
+  import { unverifiedCountStore } from "../../stores/adminStore";
   import { authStore } from "../../stores/authStore";
 
   export let onHome: () => void;
@@ -8,6 +10,20 @@
 
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
+  }
+
+  // Fetch on mount if admin
+  onMount(() => {
+    if ($authStore?.is_admin) {
+      unverifiedCountStore.fetchUnverifiedCount();
+    }
+  });
+
+  // Re-fetch when auth changes (e.g., after login)
+  $: if ($authStore?.is_admin) {
+    unverifiedCountStore.fetchUnverifiedCount();
+  } else {
+    unverifiedCountStore.reset();
   }
 
   async function handleLogout() {
@@ -48,8 +64,16 @@
 
   <div class="header-actions" class:menu-open={isMenuOpen}>
     {#if $authStore?.is_admin}
-      <button class="btn btn-warning" on:click={handleAdminClick}>
+      <button class="btn btn-warning admin-btn" on:click={handleAdminClick}>
         <span class="material-symbols-outlined"> build </span> Admin
+        {#if $unverifiedCountStore > 0}
+          <span
+            class="notification-badge"
+            title="{$unverifiedCountStore} unverified user(s)"
+          >
+            {$unverifiedCountStore}
+          </span>
+        {/if}
       </button>
     {/if}
     {#if $authStore}
@@ -124,6 +148,39 @@
   }
 
   /* Using global .btn from app.css */
+
+  .admin-btn {
+    position: relative;
+  }
+
+  .notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
 
   .user-info {
     background: none;

@@ -217,7 +217,7 @@
           >
             Date {sortAscending ? "↑" : "↓"}
           </th>
-          <th>Name</th>
+          <th>Title / Question</th>
           <th>Spread</th>
           <th>Deck</th>
         </tr>

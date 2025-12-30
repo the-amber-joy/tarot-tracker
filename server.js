@@ -10,7 +10,25 @@ const cookieParser = require("cookie-parser");
 const db = require("./database");
 const { TAROT_CARDS } = require("./cards");
 const { SPREAD_TEMPLATES } = require("./spreads");
-const { passport, createUser, requireAuth, requireAdmin } = require("./auth");
+const {
+  passport,
+  createUser,
+  requireAuth,
+  requireAdmin,
+  generateToken,
+  getVerificationTokenExpiry,
+  getResetTokenExpiry,
+  canResendVerification,
+  getResendWaitMinutes,
+  canResendReset,
+  getResetWaitMinutes,
+  isTokenExpired,
+} = require("./auth");
+const {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendAdminVerifiedEmail,
+} = require("./email");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -77,12 +95,18 @@ app.get("/health", (req, res) => {
 
 // Authentication routes
 app.post("/api/auth/register", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, email } = req.body;
 
-  if (!username || !password) {
+  if (!username || !password || !email) {
     return res
       .status(400)
-      .json({ error: "Username and password are required" });
+      .json({ error: "Username, email, and password are required" });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
   }
 
   if (password.length < 6) {
@@ -92,18 +116,54 @@ app.post("/api/auth/register", async (req, res) => {
   }
 
   try {
-    const user = await createUser(username, password);
-    // Auto login after registration
-    req.login(user, (err) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({
-        id: user.id,
-        username: user.username,
-        display_name: user.display_name,
-        is_admin: user.is_admin || false,
-      });
+    // Check if email already exists
+    const existingEmail = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id FROM users WHERE email = ?",
+        [email.toLowerCase()],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (existingEmail) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
+
+    const user = await createUser(username, password, email.toLowerCase());
+
+    // Generate verification token
+    const token = generateToken();
+    const expires = getVerificationTokenExpiry();
+    const now = new Date().toISOString();
+
+    // Save token to database
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE users SET verification_token = ?, verification_token_expires = ?, verification_sent_at = ? WHERE id = ?",
+        [token, expires, now, user.id],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(email.toLowerCase(), token, username);
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
+      // Don't fail registration if email fails - user can resend
+    }
+
+    // Don't auto-login - user must verify email first
+    res.status(201).json({
+      message:
+        "Account created! Please check your email to verify your account.",
+      requiresVerification: true,
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -118,6 +178,16 @@ app.post("/api/auth/login", (req, res, next) => {
     if (!user) {
       return res.status(401).json({ error: info.message || "Login failed" });
     }
+
+    // Check if email is verified (hard block)
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error: "Please verify your email before logging in",
+        requiresVerification: true,
+        email: user.email,
+      });
+    }
+
     req.login(user, (err) => {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -157,6 +227,283 @@ app.post("/api/auth/logout", (req, res) => {
       res.json({ message: "Logged out successfully" });
     });
   });
+});
+
+// Verify email with token
+app.get("/api/auth/verify/:token", async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id, username, verification_token_expires FROM users WHERE verification_token = ?",
+        [token],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid verification link" });
+    }
+
+    if (isTokenExpired(user.verification_token_expires)) {
+      return res.status(400).json({
+        error: "Verification link has expired. Please request a new one.",
+      });
+    }
+
+    // Mark user as verified and clear token
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL WHERE id = ?",
+        [user.id],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    res.json({ message: "Email verified successfully! You can now log in." });
+  } catch (error) {
+    console.error("Verification error:", error);
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+
+// Resend verification email
+app.post("/api/auth/resend-verification", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id, username, email, email_verified, verification_sent_at FROM users WHERE email = ?",
+        [email.toLowerCase()],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (!user) {
+      // Don't reveal if email exists or not
+      return res.json({
+        message:
+          "If that email is registered, a verification link has been sent.",
+      });
+    }
+
+    if (user.email_verified) {
+      return res.status(400).json({ error: "Email is already verified" });
+    }
+
+    // Check rate limit
+    if (!canResendVerification(user.verification_sent_at)) {
+      const waitMinutes = getResendWaitMinutes(user.verification_sent_at);
+      return res.status(429).json({
+        error: `Please wait ${waitMinutes} minutes before requesting another verification email`,
+        waitMinutes,
+      });
+    }
+
+    // Generate new token
+    const token = generateToken();
+    const expires = getVerificationTokenExpiry();
+    const now = new Date().toISOString();
+
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE users SET verification_token = ?, verification_token_expires = ?, verification_sent_at = ? WHERE id = ?",
+        [token, expires, now, user.id],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    await sendVerificationEmail(user.email, token, user.username);
+
+    res.json({ message: "Verification email sent! Please check your inbox." });
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({ error: "Failed to send verification email" });
+  }
+});
+
+// Request password reset
+app.post("/api/auth/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id, username, email, email_verified, reset_token_expires FROM users WHERE email = ?",
+        [email.toLowerCase()],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    // Always return success message to prevent email enumeration
+    const successMessage =
+      "If that email is registered, a password reset link has been sent.";
+
+    if (!user) {
+      return res.json({ message: successMessage });
+    }
+
+    // Only allow password reset for verified emails
+    if (!user.email_verified) {
+      return res.json({ message: successMessage });
+    }
+
+    // Check rate limit - prevent abuse
+    if (!canResendReset(user.reset_token_expires)) {
+      const waitMinutes = getResetWaitMinutes(user.reset_token_expires);
+      return res.status(429).json({
+        error: `Please wait ${waitMinutes} minute${
+          waitMinutes !== 1 ? "s" : ""
+        } before requesting another reset email.`,
+      });
+    }
+
+    // Generate reset token
+    const token = generateToken();
+    const expires = getResetTokenExpiry();
+
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?",
+        [token, expires, user.id],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    await sendPasswordResetEmail(user.email, token, user.username);
+
+    res.json({ message: successMessage });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ error: "Failed to process request" });
+  }
+});
+
+// Reset password with token
+app.post("/api/auth/reset-password", async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Token and new password are required" });
+  }
+
+  if (newPassword.length < 6) {
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 6 characters" });
+  }
+
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id, username, reset_token_expires FROM users WHERE reset_token = ?",
+        [token],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired reset link" });
+    }
+
+    if (isTokenExpired(user.reset_token_expires)) {
+      return res
+        .status(400)
+        .json({ error: "Reset link has expired. Please request a new one." });
+    }
+
+    // Hash new password
+    const bcrypt = require("bcrypt");
+    const newHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset token
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?",
+        [newHash, user.id],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    res.json({
+      message:
+        "Password reset successfully! You can now log in with your new password.",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
+// Validate reset token (for frontend to check before showing form)
+app.get("/api/auth/validate-reset-token/:token", async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id, reset_token_expires FROM users WHERE reset_token = ?",
+        [token],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ valid: false, error: "Invalid reset link" });
+    }
+
+    if (isTokenExpired(user.reset_token_expires)) {
+      return res
+        .status(400)
+        .json({ valid: false, error: "Reset link has expired" });
+    }
+
+    res.json({ valid: true });
+  } catch (error) {
+    console.error("Validate reset token error:", error);
+    res.status(500).json({ valid: false, error: "Failed to validate token" });
+  }
 });
 
 app.get("/api/auth/me", (req, res) => {
@@ -273,6 +620,8 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
       u.id,
       u.username,
       u.display_name,
+      u.email,
+      u.email_verified,
       u.created_at,
       u.last_login,
       (SELECT COUNT(*) FROM decks WHERE user_id = u.id) as deck_count,
@@ -295,6 +644,21 @@ app.get("/api/admin/users", requireAdmin, (req, res) => {
         return res.status(500).json({ error: err.message });
       }
       res.json(users);
+    },
+  );
+});
+
+// Get count of unverified users (admin only)
+app.get("/api/admin/unverified-count", requireAdmin, (req, res) => {
+  db.get(
+    "SELECT COUNT(*) as count FROM users WHERE email_verified = 0",
+    [],
+    (err, row) => {
+      if (err) {
+        console.error("Error fetching unverified count:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ count: row.count });
     },
   );
 });
@@ -342,6 +706,117 @@ app.put(
     }
   },
 );
+
+// Manually verify user email (admin only)
+app.put("/api/admin/users/:id/verify", requireAdmin, async (req, res) => {
+  const userId = req.params.id;
+
+  // First get the user's email and username for the notification
+  db.get(
+    "SELECT username, email FROM users WHERE id = ?",
+    [userId],
+    (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Update verification status
+      db.run(
+        "UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires = NULL WHERE id = ?",
+        [userId],
+        async function (err) {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+
+          // Send notification email if user has an email address
+          if (user.email) {
+            try {
+              await sendAdminVerifiedEmail(user.email, user.username);
+            } catch (emailErr) {
+              console.error(
+                "Failed to send verification notification:",
+                emailErr.message,
+              );
+              // Don't fail the request if email fails - user is still verified
+            }
+          }
+
+          res.json({ message: "User verified successfully" });
+        },
+      );
+    },
+  );
+});
+
+// Update user email (admin only)
+app.put("/api/admin/users/:id/email", requireAdmin, async (req, res) => {
+  const userId = req.params.id;
+  const { email } = req.body;
+
+  // Prevent admin from changing their own email this way
+  if (parseInt(userId) === req.user.id) {
+    return res
+      .status(400)
+      .json({ error: "Use the profile page to change your own email" });
+  }
+
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  try {
+    // Check if email is already used by another user
+    const existingUser = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id FROM users WHERE email = ? AND id != ?",
+        [normalizedEmail, userId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ error: "Email is already used by another user" });
+    }
+
+    // Update email and mark as unverified (admin changed it)
+    db.run(
+      "UPDATE users SET email = ?, email_verified = 0, verification_token = NULL, verification_token_expires = NULL WHERE id = ?",
+      [normalizedEmail, userId],
+      function (err) {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        if (this.changes === 0) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        res.json({
+          message: "Email updated successfully",
+          email: normalizedEmail,
+          email_verified: false,
+        });
+      },
+    );
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Delete user and all their data (admin only)
 app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {

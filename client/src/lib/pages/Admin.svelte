@@ -2,21 +2,11 @@
   import { onMount } from "svelte";
   import { navigate } from "svelte-routing";
   import { authStore } from "../../stores/authStore";
+  import type { UserStats } from "../../types/admin";
   import Toast from "../components/Toast.svelte";
-  import AdminUsers from "./AdminUsers.svelte";
   import AdminCards from "./AdminCards.svelte";
   import AdminStyleGuide from "./AdminStyleGuide.svelte";
-
-  type UserStats = {
-    id: number;
-    username: string;
-    display_name: string;
-    created_at: string;
-    last_login: string | null;
-    deck_count: number;
-    reading_count: number;
-    storage_bytes: number;
-  };
+  import AdminUsers from "./AdminUsers.svelte";
 
   let activeTab: "users" | "cards" | "styles" = "users";
   let users: UserStats[] = [];
