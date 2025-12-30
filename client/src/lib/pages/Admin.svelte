@@ -22,11 +22,24 @@
   let deploymentContent = "";
   let deploymentLoading = false;
   let mounted = false;
+  let isProduction = true; // Default to true to hide nuke button until we know
 
   onMount(async () => {
     if (!$authStore?.is_admin) {
       navigate("/");
       return;
+    }
+
+    // Check if we're in production
+    try {
+      const prodResponse = await fetch("/api/admin/is-production");
+      if (prodResponse.ok) {
+        const data = await prodResponse.json();
+        isProduction = data.isProduction;
+      }
+    } catch (e) {
+      // If check fails, assume production for safety
+      isProduction = true;
     }
 
     // Restore the active tab from localStorage
@@ -137,12 +150,14 @@
       >
         🚀 Deployment Info
       </button>
-      <button
-        class="btn btn-small btn-danger nuke-button"
-        on:click={openNukeConfirm}
-      >
-        ☢️ Nuclear Option
-      </button>
+      {#if !isProduction}
+        <button
+          class="btn btn-small btn-danger nuke-button"
+          on:click={openNukeConfirm}
+        >
+          ☢️ Nuclear Option
+        </button>
+      {/if}
     </div>
   </div>
 

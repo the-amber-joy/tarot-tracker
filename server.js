@@ -948,8 +948,15 @@ app.delete("/api/admin/users/:id", requireAdmin, (req, res) => {
   });
 });
 
-// Nuclear option: Delete all data except current admin
+// Nuclear option: Delete all data except current admin (DISABLED IN PRODUCTION)
 app.post("/api/admin/nuke", requireAdmin, (req, res) => {
+  // Block this endpoint in production
+  if (process.env.NODE_ENV === "production") {
+    return res
+      .status(403)
+      .json({ error: "This action is disabled in production" });
+  }
+
   const adminId = req.user.id;
 
   db.serialize(() => {
@@ -1213,6 +1220,11 @@ app.get("/api/deploy-info", requireAdmin, (req, res) => {
   } else {
     res.json({ content: "Deployment info not available (dev mode)" });
   }
+});
+
+// Check if running in production (admin only)
+app.get("/api/admin/is-production", requireAdmin, (req, res) => {
+  res.json({ isProduction: process.env.NODE_ENV === "production" });
 });
 
 // Deck management endpoints
