@@ -58,13 +58,14 @@
 
   <button
     class="hamburger"
+    class:open={isMenuOpen}
     on:click={toggleMenu}
     aria-label="Menu"
     aria-expanded={isMenuOpen}
   >
-    <span></span>
-    <span></span>
-    <span></span>
+    <span class="material-symbols-outlined"
+      >{isMenuOpen ? "close" : "menu"}</span
+    >
   </button>
 
   <div class="header-actions" class:menu-open={isMenuOpen}>
@@ -151,19 +152,20 @@
 
   .hamburger {
     display: none;
-    flex-direction: column;
-    gap: 4px;
     background: none;
     border: none;
     cursor: pointer;
     padding: 8px;
+    color: white;
   }
 
-  .hamburger span {
-    width: 24px;
-    height: 3px;
-    background: white;
-    transition: var(--transition-normal);
+  .hamburger .material-symbols-outlined {
+    font-size: 28px;
+    transition: transform 0.3s ease;
+  }
+
+  .hamburger.open .material-symbols-outlined {
+    transform: rotate(90deg);
   }
 
   .header-actions {
