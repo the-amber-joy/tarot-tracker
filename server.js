@@ -1073,6 +1073,7 @@ app.post("/api/admin/seed-readings", requireAdmin, async (req, res) => {
     "Overcoming obstacles",
     "Inner wisdom",
     "Future planning",
+    "Daily Pull",
   ];
 
   const interpretations = [
@@ -1086,6 +1087,21 @@ app.post("/api/admin/seed-readings", requireAdmin, async (req, res) => {
     "Past influences are still affecting the present.",
     "Take action now, the time is right.",
     "Patience and perseverance will pay off.",
+    "Hidden factors are at play—look deeper.",
+    "Your strengths will guide you through this.",
+    "Release what no longer serves you.",
+    "A breakthrough is near, stay focused.",
+    "Stay grounded and practical in your approach.",
+    "Embrace the unknown with an open heart.",
+    "Creative energy is flowing—channel it wisely.",
+    "Conflicts may arise, but resolution is possible.",
+    "A period of rest and recuperation is needed.",
+    "Joy and celebration are on the way.",
+    "Be mindful of your boundaries.",
+    "An unexpected opportunity may present itself.",
+    "Look to the past for lessons that apply now.",
+    "Emotional clarity is emerging.",
+    "This is a time for bold action.",
   ];
 
   // Helper functions
@@ -1176,7 +1192,7 @@ app.post("/api/admin/seed-readings", requireAdmin, async (req, res) => {
       const date = randomDate();
       const time = randomTime();
       const notes = `Reading about: ${randomElement(topics)}`;
-      const title = spread.topics ? randomElement(spread.topics) : "Daily Pull";
+      const title = randomElement(topics);
 
       // Insert reading
       const readingId = await new Promise((resolve, reject) => {
