@@ -179,14 +179,7 @@ app.post("/api/auth/login", (req, res, next) => {
       return res.status(401).json({ error: info.message || "Login failed" });
     }
 
-    // Check if email is verified (hard block)
-    if (!user.email_verified) {
-      return res.status(403).json({
-        error: "Please verify your email before logging in",
-        requiresVerification: true,
-        email: user.email,
-      });
-    }
+    // Allow login even if email is not verified - they'll see a warning in the app
 
     req.login(user, (err) => {
       if (err) {
@@ -511,6 +504,8 @@ app.get("/api/auth/me", (req, res) => {
     res.json({
       id: req.user.id,
       username: req.user.username,
+      email: req.user.email,
+      email_verified: !!req.user.email_verified,
       display_name: req.user.display_name,
       is_admin: req.user.is_admin || false,
     });
@@ -521,12 +516,30 @@ app.get("/api/auth/me", (req, res) => {
 
 // Update user profile
 app.put("/api/auth/profile", requireAuth, async (req, res) => {
-  const { display_name } = req.body;
+  const { display_name, username } = req.body;
 
   try {
+    // If username is being changed, check if it's already taken
+    if (username && username !== req.user.username) {
+      const existingUser = await new Promise((resolve, reject) => {
+        db.get(
+          "SELECT id FROM users WHERE username = ? AND id != ?",
+          [username, req.user.id],
+          (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+          },
+        );
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+    }
+
     db.run(
-      "UPDATE users SET display_name = ? WHERE id = ?",
-      [display_name, req.user.id],
+      "UPDATE users SET display_name = ?, username = COALESCE(?, username) WHERE id = ?",
+      [display_name, username || null, req.user.id],
       function (err) {
         if (err) {
           return res.status(500).json({ error: err.message });
@@ -534,7 +547,7 @@ app.put("/api/auth/profile", requireAuth, async (req, res) => {
 
         // Return updated user data
         db.get(
-          "SELECT id, username, display_name, is_admin FROM users WHERE id = ?",
+          "SELECT id, username, email, display_name, is_admin FROM users WHERE id = ?",
           [req.user.id],
           (err, user) => {
             if (err) {
@@ -605,6 +618,84 @@ app.put("/api/auth/password", requireAuth, async (req, res) => {
         );
       },
     );
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update user email (requires re-verification)
+app.put("/api/auth/email", requireAuth, async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalizedEmail)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  // Check if email is same as current
+  if (normalizedEmail === req.user.email) {
+    return res
+      .status(400)
+      .json({ error: "This is already your email address" });
+  }
+
+  try {
+    // Check if email is already taken
+    const existingUser = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT id FROM users WHERE email = ? AND id != ?",
+        [normalizedEmail, req.user.id],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        },
+      );
+    });
+
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ error: "Email is already used by another account" });
+    }
+
+    // Generate verification token
+    const token = generateToken();
+    const expires = getVerificationTokenExpiry();
+    const now = new Date().toISOString();
+
+    // Update email, mark unverified, and set verification token
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE users SET email = ?, email_verified = 0, verification_token = ?, verification_token_expires = ?, verification_sent_at = ? WHERE id = ?",
+        [normalizedEmail, token, expires, now, req.user.id],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(normalizedEmail, token, req.user.username);
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
+      // Don't fail - user can resend
+    }
+
+    res.json({
+      message:
+        "Email updated. Please check your inbox to verify your new email address.",
+      email: normalizedEmail,
+      email_verified: false,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

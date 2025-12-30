@@ -2,19 +2,28 @@
   import { authStore } from "../../stores/authStore";
 
   let display_name = $authStore?.display_name || $authStore?.username || "";
+  let username = $authStore?.username || "";
+  let newEmail = $authStore?.email || "";
   let currentPassword = "";
   let newPassword = "";
   let confirmPassword = "";
 
   let profileError = "";
   let profileSuccess = "";
+  let emailError = "";
+  let emailSuccess = "";
   let passwordError = "";
   let passwordSuccess = "";
   let profileLoading = false;
+  let emailLoading = false;
   let passwordLoading = false;
   let showCurrentPassword = false;
   let showNewPassword = false;
   let showConfirmPassword = false;
+
+  // Reactive check if email has changed
+  $: emailChanged =
+    newEmail.toLowerCase().trim() !== ($authStore?.email || "").toLowerCase();
 
   async function handleProfileUpdate(e: Event) {
     e.preventDefault();
@@ -23,13 +32,52 @@
     profileLoading = true;
 
     try {
-      await authStore.updateProfile(display_name);
+      await authStore.updateProfile(display_name, username);
       profileSuccess = "Profile updated successfully!";
       setTimeout(() => (profileSuccess = ""), 3000);
     } catch (e: any) {
       profileError = e.message;
     } finally {
       profileLoading = false;
+    }
+  }
+
+  async function handleEmailUpdate(e: Event) {
+    e.preventDefault();
+    emailError = "";
+    emailSuccess = "";
+
+    if (!newEmail.trim()) {
+      emailError = "Email is required";
+      return;
+    }
+
+    emailLoading = true;
+
+    try {
+      const result = await authStore.updateEmail(newEmail.trim());
+      emailSuccess = result.message;
+    } catch (e: any) {
+      emailError = e.message;
+    } finally {
+      emailLoading = false;
+    }
+  }
+
+  async function handleResendVerification() {
+    emailError = "";
+    emailSuccess = "";
+    emailLoading = true;
+
+    try {
+      const message = await authStore.resendVerification(
+        $authStore?.email || "",
+      );
+      emailSuccess = message;
+    } catch (e: any) {
+      emailError = e.message;
+    } finally {
+      emailLoading = false;
     }
   }
 
@@ -66,18 +114,95 @@
 </script>
 
 <section class="profile-section">
-  <h3>Your Name</h3>
+  <h3>Email Address</h3>
+  <div class="email-header">
+    <p class="current-email">{$authStore?.email}</p>
+    <div class="email-status">
+      {#if $authStore?.email_verified}
+        <span class="status-badge verified">
+          <span class="material-symbols-outlined">verified</span>
+          Verified
+        </span>
+      {:else}
+        <span class="status-badge unverified">
+          <span class="material-symbols-outlined">warning</span>
+          Not Verified
+        </span>
+      {/if}
+    </div>
+  </div>
+
+  {#if !$authStore?.email_verified}
+    <div class="warning-box">
+      <strong>⚠️ Email not verified:</strong> You won't be able to reset a forgotten
+      password until you verify your email address.
+    </div>
+  {/if}
+
+  <form on:submit={handleEmailUpdate}>
+    <div class="form-group">
+      <label for="email">Update Email</label>
+      <input
+        id="email"
+        type="email"
+        bind:value={newEmail}
+        required
+        placeholder="Enter new email address"
+        disabled={emailLoading}
+      />
+      {#if emailChanged}
+        <small class="email-warning">
+          Changing your email will require re-verification. Until verified, you
+          won't be able to reset a forgotten password.
+        </small>
+      {:else}
+        <small>Used for password resets and account recovery</small>
+      {/if}
+    </div>
+
+    {#if emailError}
+      <div class="message-box error">{emailError}</div>
+    {/if}
+
+    {#if emailSuccess}
+      <div class="message-box success">{emailSuccess}</div>
+    {/if}
+
+    <div class="email-actions">
+      {#if emailChanged}
+        <button type="submit" class="btn btn-primary" disabled={emailLoading}>
+          {emailLoading ? "Updating..." : "Update Email"}
+        </button>
+      {/if}
+
+      {#if !$authStore?.email_verified && !emailChanged}
+        <button
+          type="button"
+          class="btn btn-secondary"
+          on:click={handleResendVerification}
+          disabled={emailLoading}
+        >
+          {emailLoading ? "Sending..." : "Resend Verification Email"}
+        </button>
+      {/if}
+    </div>
+  </form>
+</section>
+
+<section class="profile-section">
+  <h3>Your Profile</h3>
   <form on:submit={handleProfileUpdate}>
     <div class="form-group">
       <label for="username">Username (Login)</label>
       <input
         id="username"
         type="text"
-        value={$authStore?.username}
-        disabled
-        class="disabled-input"
+        bind:value={username}
+        required
+        placeholder="Enter username"
+        disabled={profileLoading}
       />
-      <small>Your username cannot be changed</small>
+      <small>This is what you use to sign in</small>
     </div>
 
     <div class="form-group">
@@ -247,8 +372,7 @@
     border-color: var(--color-primary);
   }
 
-  input:disabled,
-  .disabled-input {
+  input:disabled {
     background-color: var(--color-bg-disabled);
     cursor: not-allowed;
     color: var(--color-secondary);
@@ -267,6 +391,104 @@
     margin-top: 0.25rem;
     color: var(--color-secondary);
     font-size: 0.875rem;
+  }
+
+  .email-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .current-email {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .email-status {
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 500px) {
+    .email-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .status-badge .material-symbols-outlined {
+    font-size: 1.1rem;
+  }
+
+  .status-badge.verified {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .status-badge.unverified {
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
+  }
+
+  .warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .email-warning {
+    color: var(--color-warning-hover);
+    font-weight: 500;
+  }
+
+  .email-actions {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .email-actions .btn {
+    flex: 1;
+  }
+
+  .btn-secondary {
+    background: var(--color-bg-section);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    padding: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: var(--transition-fast);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+    border-color: var(--color-text-secondary);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .btn-primary {

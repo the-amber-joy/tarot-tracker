@@ -86,6 +86,11 @@
           user_attributes
         </span>
         <span class="profile-text">My Profile</span>
+        {#if !$authStore.email_verified}
+          <span class="verification-badge" title="Email not verified">
+            <span class="material-symbols-outlined">mail</span>
+          </span>
+        {/if}
       </button>
     {/if}
     {#if $authStore}
@@ -183,6 +188,7 @@
   }
 
   .user-info {
+    position: relative;
     background: none;
     color: white;
   }
@@ -193,6 +199,26 @@
 
   .profile-text {
     display: none;
+  }
+
+  .verification-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ffc107;
+    color: #856404;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    animation: pulse 2s infinite;
+  }
+
+  .verification-badge .material-symbols-outlined {
+    font-size: 14px;
   }
 
   /* Container query: show hamburger when header is narrow */

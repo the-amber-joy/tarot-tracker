@@ -49,7 +49,7 @@ passport.serializeUser((user, done) => {
 // Deserialize user from session
 passport.deserializeUser((id, done) => {
   db.get(
-    "SELECT id, username, display_name, is_admin FROM users WHERE id = ?",
+    "SELECT id, username, email, email_verified, display_name, is_admin FROM users WHERE id = ?",
     [id],
     (err, user) => {
       if (err) {

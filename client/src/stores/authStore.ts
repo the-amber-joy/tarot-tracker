@@ -3,6 +3,8 @@ import { writable } from "svelte/store";
 type User = {
   id: number;
   username: string;
+  email?: string;
+  email_verified?: boolean;
   display_name?: string;
   is_admin?: boolean;
 } | null;
@@ -22,24 +24,34 @@ function createAuthStore() {
   const { subscribe, set } = writable<User>(null);
   let initialized = false;
 
+  async function fetchUser() {
+    try {
+      const response = await fetch("/api/auth/me");
+      if (response.ok) {
+        const user = await response.json();
+        set(user);
+        return user;
+      } else {
+        set(null);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+      set(null);
+      return null;
+    }
+  }
+
   return {
     subscribe,
     async init() {
       if (initialized) return;
-
-      try {
-        const response = await fetch("/api/auth/me");
-        if (response.ok) {
-          const user = await response.json();
-          set(user);
-        } else {
-          set(null);
-        }
-      } catch (error) {
-        console.error("Error checking auth status:", error);
-        set(null);
-      }
+      await fetchUser();
       initialized = true;
+    },
+    async refresh() {
+      // Force refresh user data (bypasses initialized check)
+      return await fetchUser();
     },
     async login(username: string, password: string) {
       try {
@@ -156,11 +168,11 @@ function createAuthStore() {
 
       return data.message;
     },
-    async updateProfile(display_name: string) {
+    async updateProfile(display_name: string, username?: string) {
       const response = await fetch("/api/auth/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name }),
+        body: JSON.stringify({ display_name, username }),
       });
 
       if (!response.ok) {
@@ -185,6 +197,23 @@ function createAuthStore() {
       }
 
       return await response.json();
+    },
+    async updateEmail(email: string) {
+      const response = await fetch("/api/auth/email", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Email update failed");
+      }
+
+      const data = await response.json();
+      // Re-fetch full user data to update store
+      await fetchUser();
+      return data;
     },
     async logout() {
       const response = await fetch("/api/auth/logout", {
