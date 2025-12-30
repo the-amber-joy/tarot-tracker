@@ -30,6 +30,34 @@
 
   let selectedTimespan: TimespanOption = "allTime";
   let selectedYear: number = new Date().getFullYear();
+  let filterInitialized = false;
+
+  // Load saved filter from localStorage
+  function loadSavedFilter() {
+    try {
+      const saved = localStorage.getItem("reports-timespan");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.timespan) {
+          selectedTimespan = parsed.timespan;
+        }
+        if (parsed.year) {
+          selectedYear = parsed.year;
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    filterInitialized = true;
+  }
+
+  // Save filter to localStorage whenever it changes (only after initial load)
+  $: if (filterInitialized && typeof localStorage !== "undefined") {
+    localStorage.setItem(
+      "reports-timespan",
+      JSON.stringify({ timespan: selectedTimespan, year: selectedYear }),
+    );
+  }
 
   // Track screen orientation for chart layout
   let isLandscape: boolean = false;
@@ -371,6 +399,7 @@
   }
 
   onMount(async () => {
+    loadSavedFilter();
     await loadData();
     updateOrientation();
     window.addEventListener("resize", updateOrientation);
