@@ -11,6 +11,53 @@
   export let data: CardData[] = [];
   export let onCardClick: ((cardName: string) => void) | undefined = undefined;
 
+  // Tooltip state
+  let activeCard: string | null = null;
+  let tooltipX = 0;
+  let tooltipY = 0;
+  let tooltipTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function handleCellClick(event: MouseEvent, cardName: string, count: number) {
+    // If this card is already active, trigger the onCardClick
+    if (activeCard === cardName) {
+      onCardClick?.(cardName);
+      closeTooltip();
+      return;
+    }
+
+    // Otherwise, show the tooltip
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    tooltipX = rect.left + rect.width / 2;
+    tooltipY = rect.top;
+    activeCard = cardName;
+
+    // Clear any existing timeout
+    if (tooltipTimeout) clearTimeout(tooltipTimeout);
+
+    // Auto-dismiss after 3 seconds
+    tooltipTimeout = setTimeout(() => {
+      closeTooltip();
+    }, 3000);
+  }
+
+  function closeTooltip() {
+    activeCard = null;
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      tooltipTimeout = null;
+    }
+  }
+
+  function handleOutsideClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (
+      !target.closest(".heatmap-cell") &&
+      !target.closest(".mobile-tooltip")
+    ) {
+      closeTooltip();
+    }
+  }
+
   // Define the structure of the deck
   const majorArcanaOrder = [
     "The Fool",
@@ -62,15 +109,16 @@
   // Find max count for color scaling
   $: maxCount = Math.max(...data.map((c) => c.count), 1);
 
-  function getCount(cardName: string): number {
+  // Reactive function that includes dependencies explicitly
+  $: getCount = (cardName: string): number => {
     return cardCountMap.get(cardName) || 0;
-  }
+  };
 
-  function getOpacity(count: number): number {
+  $: getOpacity = (count: number): number => {
     if (count === 0) return 0.03;
     // Scale from 0.08 to 1.0 based on count for maximum contrast
     return 0.08 + (count / maxCount) * 0.92;
-  }
+  };
 
   function getSuitColor(suit: string): string {
     switch (suit) {
@@ -144,22 +192,48 @@
   }
 </script>
 
+<svelte:window on:click={handleOutsideClick} />
+
 <div class="heatmap-container">
+  <!-- Mobile Tooltip -->
+  {#if activeCard}
+    {@const currentCard = activeCard}
+    {@const count = getCount(currentCard)}
+    <div class="mobile-tooltip" style="left: {tooltipX}px; top: {tooltipY}px;">
+      <div class="tooltip-content">
+        <span class="tooltip-card-name">{currentCard}</span>
+        <span class="tooltip-count">Count: {count}</span>
+        {#if onCardClick}
+          <button
+            class="tooltip-action"
+            on:click={() => {
+              onCardClick?.(currentCard);
+              closeTooltip();
+            }}
+          >
+            Tap for card details
+          </button>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
   <!-- Major Arcana Row -->
   <div class="heatmap-row">
     <div class="row-label" style="color: {getSuitColor('Major Arcana')}">
       Major Arcana
     </div>
     <div class="heatmap-cells major-cells">
-      {#each majorArcanaOrder as cardName}
+      {#each majorArcanaOrder as cardName (cardName)}
         {@const count = getCount(cardName)}
         <button
           class="heatmap-cell"
+          class:active={activeCard === cardName}
           style="background-color: {getSuitColor(
             'Major Arcana',
           )}; opacity: {getOpacity(count)}"
           title="{cardName}: {count}"
-          on:click={() => onCardClick?.(cardName)}
+          on:click={(e) => handleCellClick(e, cardName, count)}
         >
           <span class="cell-label">{getMajorShortLabel(cardName)}</span>
         </button>
@@ -168,20 +242,21 @@
   </div>
 
   <!-- Minor Arcana Rows -->
-  {#each suits as suit}
+  {#each suits as suit (suit)}
     <div class="heatmap-row">
       <div class="row-label" style="color: {getSuitColor(suit)}">{suit}</div>
       <div class="heatmap-cells minor-cells">
-        {#each minorNumbers as number}
+        {#each minorNumbers as number (number)}
           {@const cardName = getMinorCardName(number, suit)}
           {@const count = getCount(cardName)}
           <button
             class="heatmap-cell"
+            class:active={activeCard === cardName}
             style="background-color: {getSuitColor(suit)}; opacity: {getOpacity(
               count,
             )}"
             title="{cardName}: {count}"
-            on:click={() => onCardClick?.(cardName)}
+            on:click={(e) => handleCellClick(e, cardName, count)}
           >
             <span class="cell-label">{getShortLabel(number)}</span>
           </button>
@@ -250,11 +325,16 @@
     font-family: inherit;
   }
 
-  .heatmap-cell:hover {
+  .heatmap-cell:hover,
+  .heatmap-cell.active {
     transform: scale(1.2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     z-index: 10;
     opacity: 1 !important;
+  }
+
+  .heatmap-cell.active {
+    outline: 2px solid white;
   }
 
   .cell-label {
@@ -286,6 +366,56 @@
       rgba(128, 128, 128, 0.2),
       rgba(128, 128, 128, 1)
     );
+  }
+
+  /* Mobile Tooltip Styles */
+  .mobile-tooltip {
+    position: fixed;
+    transform: translate(-50%, -100%) translateY(-12px);
+    z-index: 100;
+    pointer-events: auto;
+  }
+
+  .tooltip-content {
+    background: #1a1a2e;
+    border: 1px solid #3a3a5c;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 140px;
+  }
+
+  .tooltip-card-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .tooltip-count {
+    font-size: 0.85rem;
+    color: #e0e0e0;
+    font-weight: 500;
+  }
+
+  .tooltip-action {
+    margin-top: 0.25rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    background: var(--color-primary, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .tooltip-action:hover {
+    background: var(--color-primary-hover, #5558e3);
   }
 
   @media (max-width: 768px) {

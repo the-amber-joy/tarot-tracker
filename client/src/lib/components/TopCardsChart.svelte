@@ -29,10 +29,10 @@
             <img
               src="/tarot-images/{card.image_filename}"
               alt={card.name}
-              class="card-image"
+              class="img-cover"
             />
           {:else}
-            <div class="card-placeholder">?</div>
+            <div class="card-placeholder placeholder-gradient">?</div>
           {/if}
         </div>
         <span class="card-name">{card.name}</span>
@@ -95,23 +95,9 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .card-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   .card-placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-      135deg,
-      var(--color-bg-section) 0%,
-      var(--color-border) 100%
-    );
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--color-text-light);
     font-size: 0.75rem;
   }

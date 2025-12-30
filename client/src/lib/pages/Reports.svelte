@@ -95,6 +95,100 @@
   let showCardDetailsModal = false;
   let selectedCardName = "";
 
+  // Section anchor tracking
+  let currentSectionId: string | null = null;
+  const sectionIds = [
+    "top-cards",
+    "top-15-chart",
+    "card-heatmap",
+    "suit-distribution",
+    "suit-frequency",
+  ];
+  let observer: IntersectionObserver | null = null;
+  let isScrollingToSection = false; // Flag to prevent observer updates during programmatic scrolling
+
+  function getCurrentVisibleSection(): string | null {
+    let bestMatch: { id: string; score: number } | null = null;
+
+    for (const id of sectionIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        // Calculate how much of the element is visible in the viewport
+        const visibleTop = Math.max(0, rect.top);
+        const visibleBottom = Math.min(viewportHeight, rect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+        // Score based on: element is visible AND its top is near the top of viewport
+        // Higher score = better match
+        if (visibleHeight > 0) {
+          // Prefer sections whose top is closest to (but below) the viewport top
+          // Penalize sections that are mostly scrolled past
+          const topProximity =
+            rect.top >= 0
+              ? viewportHeight - rect.top
+              : viewportHeight + rect.top;
+          const score =
+            visibleHeight +
+            (rect.top >= 0 && rect.top < viewportHeight / 2 ? 1000 : 0);
+
+          if (!bestMatch || score > bestMatch.score) {
+            bestMatch = { id, score };
+          }
+        }
+      }
+    }
+    return bestMatch?.id || null;
+  }
+
+  function scrollToSection(id: string) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "instant", block: "start" });
+    }
+  }
+
+  function setupScrollObserver() {
+    // Clean up existing observer
+    if (observer) {
+      observer.disconnect();
+    }
+
+    observer = new IntersectionObserver(
+      (entries) => {
+        // Skip if we're programmatically scrolling to a section
+        if (isScrollingToSection) return;
+
+        // Find the most visible section
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+        if (visibleEntries.length > 0) {
+          // Sort by how much of the element is visible, pick the most visible
+          const mostVisible = visibleEntries.reduce((prev, curr) =>
+            curr.intersectionRatio > prev.intersectionRatio ? curr : prev,
+          );
+          const newHash = `#${mostVisible.target.id}`;
+          if (window.location.hash !== newHash) {
+            history.replaceState(null, "", newHash);
+          }
+        }
+      },
+      {
+        threshold: [0.2, 0.5, 0.8],
+        rootMargin: "-10% 0px -40% 0px",
+      },
+    );
+
+    // Observe all sections
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        observer!.observe(el);
+      }
+    });
+  }
+
   function openCardDetails(cardName: string) {
     selectedCardName = cardName;
     showCardDetailsModal = true;
@@ -233,7 +327,32 @@
 
   // Reload data when timespan changes
   $: if (selectedTimespan || selectedYear) {
-    loadData();
+    // Capture current section before data reload
+    if (typeof document !== "undefined") {
+      currentSectionId = getCurrentVisibleSection();
+      isScrollingToSection = true; // Disable observer during transition
+    }
+    loadData().then(() => {
+      // Scroll back to the section after data loads
+      if (currentSectionId) {
+        // Use a small delay to ensure DOM has updated
+        setTimeout(() => {
+          scrollToSection(currentSectionId!);
+          // Update the hash to match where we scrolled
+          history.replaceState(null, "", `#${currentSectionId}`);
+          // Re-enable observer after scroll completes
+          setTimeout(() => {
+            isScrollingToSection = false;
+            setupScrollObserver();
+          }, 100);
+        }, 50);
+      } else {
+        setTimeout(() => {
+          isScrollingToSection = false;
+          setupScrollObserver();
+        }, 50);
+      }
+    });
   }
 
   // Reload suit frequency when allTimeGroupBy changes (only relevant for allTime)
@@ -255,10 +374,23 @@
     await loadData();
     updateOrientation();
     window.addEventListener("resize", updateOrientation);
+
+    // Setup scroll observer after initial data load
+    setTimeout(() => {
+      setupScrollObserver();
+      // If there's a hash in the URL, scroll to that section
+      if (window.location.hash) {
+        const id = window.location.hash.slice(1);
+        scrollToSection(id);
+      }
+    }, 100);
   });
 
   onDestroy(() => {
     window.removeEventListener("resize", updateOrientation);
+    if (observer) {
+      observer.disconnect();
+    }
   });
 
   async function loadSuitDistribution() {
@@ -384,7 +516,7 @@
     {:else}
       <!-- Top 3 Cards -->
       {#if analytics?.topCards && analytics.topCards.length > 0}
-        <div class="top-cards-section">
+        <div id="top-cards" class="chart-section">
           <h4>Top 3 Most Drawn Cards</h4>
           <div class="top-cards-grid">
             {#each analytics.topCards.slice(0, 3) as card, index}
@@ -398,10 +530,10 @@
                     <img
                       src="/tarot-images/{card.image_filename}"
                       alt={card.name}
-                      class="card-image"
+                      class="img-cover"
                     />
                   {:else}
-                    <div class="card-placeholder">
+                    <div class="card-placeholder placeholder-gradient">
                       <div class="card-placeholder-text">No Image</div>
                     </div>
                   {/if}
@@ -421,7 +553,7 @@
 
       <!-- Top 15 Cards Chart -->
       {#if analytics?.topCards && analytics.topCards.length > 0}
-        <div class="chart-section">
+        <div id="top-15-chart" class="chart-section">
           <h4>Top 15 Most Drawn Cards</h4>
           <TopCardsChart
             cards={analytics.topCards}
@@ -432,7 +564,7 @@
 
       <!-- All Cards Heatmap -->
       {#if allCardFrequency.length > 0}
-        <div class="chart-section">
+        <div id="card-heatmap" class="chart-section">
           <h4>All Cards Frequency</h4>
           <CardHeatmap data={allCardFrequency} onCardClick={openCardDetails} />
         </div>
@@ -440,7 +572,7 @@
 
       <!-- Suit Distribution Chart -->
       {#if suitDistribution}
-        <div class="chart-section">
+        <div id="suit-distribution" class="chart-section">
           <div class="section-header-with-toggle">
             <h4>Suit Distribution</h4>
             <label class="major-arcana-toggle">
@@ -448,7 +580,7 @@
               <span>Include Major Arcana</span>
             </label>
           </div>
-          <div class="chart-container-pie">
+          <div class="chart-container chart-container--pie">
             <PieChart
               labels={includeMajorArcana
                 ? ["Major Arcana", "Wands", "Cups", "Swords", "Pentacles"]
@@ -477,7 +609,7 @@
 
       <!-- Suit Frequency Over Time (Grouped Bar Chart) -->
       {#if suitFrequencyOverTime.length > 0}
-        <div class="chart-section">
+        <div id="suit-frequency" class="chart-section">
           <div class="section-header-with-toggle">
             <h4>Suit Frequency Over Time</h4>
             <div class="toggle-group">
@@ -509,7 +641,7 @@
               </label>
             </div>
           </div>
-          <div class="chart-container-bar">
+          <div class="chart-container chart-container--bar">
             <GroupedBarChart
               labels={suitFrequencyOverTime.map((item) => {
                 // Format period label based on grouping
@@ -665,16 +797,16 @@
     padding: 2rem;
   }
 
-  /* Top Cards Section */
-  .top-cards-section {
+  .chart-section {
     margin-top: 2rem;
     background: var(--color-bg-white);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: 1.5rem;
+    scroll-margin-top: 80px; /* Account for sticky filter */
   }
 
-  .top-cards-section h4 {
+  .chart-section h4 {
     margin: 0 0 1.5rem 0;
     font-size: 1.2rem;
     color: var(--color-text-primary);
@@ -719,36 +851,21 @@
     margin-bottom: 0.5rem;
   }
 
-  .card-image-container {
+  .card-image-container,
+  .card-placeholder {
     width: 120px;
     height: 200px;
     margin-bottom: 1rem;
     border-radius: var(--radius-md);
+  }
+
+  .card-image-container {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
   }
 
-  .card-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
   .card-placeholder {
-    width: 120px;
-    height: 200px;
-    background: linear-gradient(
-      135deg,
-      var(--color-bg-section) 0%,
-      var(--color-border) 100%
-    );
     border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
   }
 
   .card-placeholder-text {
@@ -783,21 +900,6 @@
     border-radius: var(--radius-pill);
     font-size: 0.85rem;
     font-weight: 600;
-  }
-
-  /* Chart Sections */
-  .chart-section {
-    margin-top: 2rem;
-    background: var(--color-bg-white);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 1.5rem;
-  }
-
-  .chart-section h4 {
-    margin: 0 0 1.5rem 0;
-    font-size: 1.2rem;
-    color: var(--color-text-primary);
   }
 
   .section-header-with-toggle {
@@ -861,14 +963,16 @@
     color: white;
   }
 
-  .chart-container-bar {
-    height: 600px;
+  .chart-container {
     width: 100%;
   }
 
-  .chart-container-pie {
+  .chart-container--bar {
+    height: 600px;
+  }
+
+  .chart-container--pie {
     height: 400px;
-    width: 100%;
     max-width: 500px;
     margin: 0 auto;
   }
@@ -878,11 +982,11 @@
       grid-template-columns: 1fr;
     }
 
-    .chart-container-bar {
+    .chart-container--bar {
       height: 500px;
     }
 
-    .chart-container-pie {
+    .chart-container--pie {
       height: 350px;
     }
 

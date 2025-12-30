@@ -106,14 +106,5 @@
 </div>
 
 <style>
-  .chart-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-
-  canvas {
-    max-width: 100%;
-    max-height: 100%;
-  }
+  /* Styles now use global .chart-wrapper from app.css */
 </style>
