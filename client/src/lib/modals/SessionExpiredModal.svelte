@@ -2,10 +2,25 @@
   export let onClose: () => void;
 </script>
 
-<div class="modal-overlay" onclick={onClose} role="button" tabindex="-1">
-  <div class="modal-content" onclick={(e) => e.stopPropagation()} role="dialog">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<div
+  class="modal-overlay"
+  onclick={onClose}
+  onkeydown={(e) => e.key === "Escape" && onClose()}
+  role="presentation"
+>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="modal-content"
+    onclick={(e) => e.stopPropagation()}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="session-expired-title"
+    tabindex="-1"
+  >
     <div class="modal-header">
-      <h3>Session Expired</h3>
+      <h3 id="session-expired-title">Session Expired</h3>
     </div>
     <div class="modal-body">
       <p>Your session has expired. Please log in again to continue.</p>
