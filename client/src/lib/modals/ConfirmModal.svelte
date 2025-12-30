@@ -52,8 +52,10 @@
       </div>
       <div class="modal-footer" class:single-button={isAlert}>
         {#if !isAlert}
-          <button type="button" class="btn btn-secondary" on:click={handleCancel}
-            >{cancelText}</button
+          <button
+            type="button"
+            class="btn btn-secondary"
+            on:click={handleCancel}>{cancelText}</button
           >
         {/if}
         <button
@@ -69,8 +71,7 @@
 {/if}
 
 <style>
-  /* Using global .modal-overlay from app.css */
-
+  /* Uses global modal styles from app.css */
   .modal-dialog {
     background: var(--color-bg-white);
     border-radius: var(--radius-lg);
@@ -78,35 +79,4 @@
     max-width: 500px;
     box-shadow: var(--shadow-lg);
   }
-
-  .modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--color-text);
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .modal-body p {
-    margin: 0;
-    color: var(--color-text-heading);
-    line-height: 1.5;
-  }
-
-  .modal-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--color-border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
-
-  /* Using global .btn, .btn-primary, .btn-secondary, .btn-danger from app.css */
 </style>

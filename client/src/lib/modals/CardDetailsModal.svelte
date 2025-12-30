@@ -235,6 +235,7 @@
 {/if}
 
 <style>
+  /* Custom overlay with darker backdrop and blur effect */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -245,11 +246,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--z-modal);
     padding: 1rem;
     backdrop-filter: blur(4px);
   }
 
+  /* Custom modal-content with animation */
   .modal-content {
     background: var(--color-bg-white);
     border-radius: var(--radius-lg);

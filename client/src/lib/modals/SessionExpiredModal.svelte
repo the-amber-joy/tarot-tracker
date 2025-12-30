@@ -34,40 +34,8 @@
 </div>
 
 <style>
-  .modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
+  /* Uses global modal styles from app.css */
   .modal-header h3 {
-    margin: 0;
     color: var(--color-warning);
-    font-size: 1.5rem;
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .modal-body p {
-    margin: 0;
-    color: var(--color-text-primary);
-    line-height: 1.6;
-  }
-
-  .modal-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid var(--color-border);
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
-
-  .modal-content {
-    background: var(--color-bg-white);
-    border-radius: var(--radius-lg);
-    max-width: 400px;
-    width: 90%;
-    box-shadow: var(--shadow-xl);
   }
 </style>

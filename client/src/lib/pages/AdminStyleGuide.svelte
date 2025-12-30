@@ -1,8 +1,21 @@
 <script lang="ts">
+  import AddDeckModal from "../modals/AddDeckModal.svelte";
+  import CardDetailsModal from "../modals/CardDetailsModal.svelte";
+  import ConfirmModal from "../modals/ConfirmModal.svelte";
+  import SessionExpiredModal from "../modals/SessionExpiredModal.svelte";
+
   export let onToast: (
     message: string,
     type: "success" | "error" | "info",
   ) => void;
+
+  let showSessionExpiredModal = false;
+  let showConfirmModal = false;
+  let showDangerConfirmModal = false;
+  let showAlertModal = false;
+  let showAddDeckModal = false;
+  let showCardDetailsModal = false;
+  let activeTab = 1;
 </script>
 
 <div class="style-guide-section">
@@ -53,9 +66,30 @@
     <h4>Tabs</h4>
     <div class="demo-box">
       <div class="tabs demo-tabs">
-        <button class="tab active">Active Tab</button>
-        <button class="tab">Inactive Tab</button>
-        <button class="tab">Another Tab</button>
+        <button
+          class="tab"
+          class:active={activeTab === 1}
+          on:click={() => (activeTab = 1)}>Tab One</button
+        >
+        <button
+          class="tab"
+          class:active={activeTab === 2}
+          on:click={() => (activeTab = 2)}>Tab Two</button
+        >
+        <button
+          class="tab"
+          class:active={activeTab === 3}
+          on:click={() => (activeTab = 3)}>Tab Three</button
+        >
+      </div>
+      <div class="tab-content">
+        {#if activeTab === 1}
+          <p>Content for Tab One</p>
+        {:else if activeTab === 2}
+          <p>Content for Tab Two</p>
+        {:else}
+          <p>Content for Tab Three</p>
+        {/if}
       </div>
     </div>
   </div>
@@ -91,7 +125,102 @@
       </button>
     </div>
   </div>
+
+  <div class="style-demo">
+    <h4>Modals</h4>
+    <div class="demo-box button-row">
+      <button
+        class="btn btn-warning"
+        on:click={() => (showSessionExpiredModal = true)}
+      >
+        Session Expired
+      </button>
+      <button
+        class="btn btn-primary"
+        on:click={() => (showConfirmModal = true)}
+      >
+        Confirm
+      </button>
+      <button
+        class="btn btn-danger"
+        on:click={() => (showDangerConfirmModal = true)}
+      >
+        Danger Confirm
+      </button>
+      <button
+        class="btn btn-secondary"
+        on:click={() => (showAlertModal = true)}
+      >
+        Alert
+      </button>
+      <button
+        class="btn btn-primary"
+        on:click={() => (showAddDeckModal = true)}
+      >
+        Add Deck
+      </button>
+      <button
+        class="btn btn-secondary"
+        on:click={() => (showCardDetailsModal = true)}
+      >
+        Card Details
+      </button>
+    </div>
+  </div>
 </div>
+
+{#if showSessionExpiredModal}
+  <SessionExpiredModal onClose={() => (showSessionExpiredModal = false)} />
+{/if}
+
+<ConfirmModal
+  bind:isOpen={showConfirmModal}
+  title="Confirm Action"
+  message="Are you sure you want to proceed with this action?"
+  confirmText="Confirm"
+  onConfirm={() => {
+    showConfirmModal = false;
+    onToast("Action confirmed!", "success");
+  }}
+  onCancel={() => (showConfirmModal = false)}
+/>
+
+<ConfirmModal
+  bind:isOpen={showDangerConfirmModal}
+  title="Delete Item"
+  message="This action cannot be undone. Are you sure you want to delete this item?"
+  confirmText="Delete"
+  isDanger={true}
+  onConfirm={() => {
+    showDangerConfirmModal = false;
+    onToast("Item deleted!", "error");
+  }}
+  onCancel={() => (showDangerConfirmModal = false)}
+/>
+
+<ConfirmModal
+  bind:isOpen={showAlertModal}
+  title="Information"
+  message="This is an alert modal with a single button."
+  confirmText="OK"
+  isAlert={true}
+  onConfirm={() => (showAlertModal = false)}
+/>
+
+<AddDeckModal
+  bind:isOpen={showAddDeckModal}
+  onClose={() => (showAddDeckModal = false)}
+  onDeckAdded={(name) => {
+    showAddDeckModal = false;
+    onToast(`Deck "${name}" would be added!`, "info");
+  }}
+/>
+
+<CardDetailsModal
+  bind:isOpen={showCardDetailsModal}
+  cardName="The Fool"
+  onClose={() => (showCardDetailsModal = false)}
+/>
 
 <style>
   .style-guide-section {
@@ -135,6 +264,19 @@
 
   .demo-tabs {
     margin-bottom: 0;
+  }
+
+  .tab-content {
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: var(--color-bg-section);
+  }
+
+  .tab-content p {
+    margin: 0;
+    color: var(--color-text-secondary);
   }
 
   .empty-state {
