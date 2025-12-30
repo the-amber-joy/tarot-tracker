@@ -262,6 +262,30 @@
   // Track previous timespan for change detection
   $: previousTimespan = selectedTimespan;
 
+  // Human-readable timeframe label for headings
+  $: timeframeLabel = (() => {
+    switch (selectedTimespan) {
+      case "7days":
+        return "Last 7 Days";
+      case "30days":
+        return "Last 30 Days";
+      case "3months":
+        return "Last 3 Months";
+      case "6months":
+        return "Last 6 Months";
+      case "12months":
+        return "Last 12 Months";
+      case "yearToDate":
+        return "Year to Date";
+      case "selectedYear":
+        return String(selectedYear);
+      case "allTime":
+        return "All Time";
+      default:
+        return "";
+    }
+  })();
+
   // Calculate reading statistics
   $: readingStats = (() => {
     const now = new Date();
@@ -558,7 +582,11 @@
       <!-- Top 3 Cards -->
       {#if analytics?.topCards && analytics.topCards.length > 0}
         <div id="top-cards" class="chart-section">
-          <h4>Top 3 Most Drawn Cards</h4>
+          <h4>
+            Top 3 Most Drawn Cards <span class="timeframe-label"
+              >{timeframeLabel}</span
+            >
+          </h4>
           <div class="top-cards-grid">
             {#each analytics.topCards.slice(0, 3) as card, index}
               <button
@@ -595,7 +623,11 @@
       <!-- Top 15 Cards Chart -->
       {#if analytics?.topCards && analytics.topCards.length > 0}
         <div id="top-15-chart" class="chart-section">
-          <h4>Top 15 Most Drawn Cards</h4>
+          <h4>
+            Top 15 Most Drawn Cards <span class="timeframe-label"
+              >{timeframeLabel}</span
+            >
+          </h4>
           <TopCardsChart
             cards={analytics.topCards}
             onCardClick={openCardDetails}
@@ -606,7 +638,11 @@
       <!-- All Cards Heatmap -->
       {#if allCardFrequency.length > 0}
         <div id="card-heatmap" class="chart-section">
-          <h4>All Cards Frequency</h4>
+          <h4>
+            All Cards Frequency <span class="timeframe-label"
+              >{timeframeLabel}</span
+            >
+          </h4>
           <CardHeatmap data={allCardFrequency} onCardClick={openCardDetails} />
         </div>
       {/if}
@@ -615,7 +651,11 @@
       {#if suitDistribution}
         <div id="suit-distribution" class="chart-section">
           <div class="section-header-with-toggle">
-            <h4>Suit Distribution</h4>
+            <h4>
+              Suit Distribution <span class="timeframe-label"
+                >{timeframeLabel}</span
+              >
+            </h4>
             <label class="major-arcana-toggle">
               <input type="checkbox" bind:checked={includeMajorArcana} />
               <span>Include Major Arcana</span>
@@ -652,7 +692,11 @@
       {#if suitFrequencyOverTime.length > 0}
         <div id="suit-frequency" class="chart-section">
           <div class="section-header-with-toggle">
-            <h4>Suit Frequency Over Time</h4>
+            <h4>
+              Suit Frequency Over Time <span class="timeframe-label"
+                >{timeframeLabel}</span
+              >
+            </h4>
             <div class="toggle-group">
               {#if selectedTimespan === "allTime"}
                 <div class="group-by-toggle">
@@ -829,6 +873,12 @@
     margin: 1.5rem 0 1rem 0;
     font-size: 1.1rem;
     color: var(--color-text-secondary);
+  }
+
+  .timeframe-label {
+    font-weight: 400;
+    color: var(--color-text-light);
+    font-size: 0.9em;
   }
 
   .empty-message {
