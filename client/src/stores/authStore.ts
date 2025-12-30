@@ -125,6 +125,10 @@ function createAuthStore() {
       const data = await response.json();
 
       if (!response.ok) {
+        // If already verified, refresh user data to update the UI
+        if (data.error === "Email is already verified") {
+          await fetchUser();
+        }
         throw {
           message: data.error || "Failed to resend verification",
           waitMinutes: data.waitMinutes,
@@ -211,8 +215,15 @@ function createAuthStore() {
       }
 
       const data = await response.json();
-      // Re-fetch full user data to update store
-      await fetchUser();
+      // Server returns full user object, set it directly
+      set({
+        id: data.id,
+        username: data.username,
+        email: data.email,
+        email_verified: data.email_verified,
+        display_name: data.display_name,
+        is_admin: data.is_admin,
+      });
       return data;
     },
     async logout() {

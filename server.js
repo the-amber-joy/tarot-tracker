@@ -549,13 +549,16 @@ app.put("/api/auth/profile", requireAuth, async (req, res) => {
 
         // Return updated user data
         db.get(
-          "SELECT id, username, email, display_name, is_admin FROM users WHERE id = ?",
+          "SELECT id, username, email, email_verified, display_name, is_admin FROM users WHERE id = ?",
           [req.user.id],
           (err, user) => {
             if (err) {
               return res.status(500).json({ error: err.message });
             }
-            res.json(user);
+            res.json({
+              ...user,
+              email_verified: !!user.email_verified,
+            });
           },
         );
       },
@@ -692,12 +695,21 @@ app.put("/api/auth/email", requireAuth, async (req, res) => {
       // Don't fail - user can resend
     }
 
-    res.json({
-      message:
-        "Email updated. Please check your inbox to verify your new email address.",
-      email: normalizedEmail,
-      email_verified: false,
-    });
+    db.get(
+      "SELECT id, username, email, email_verified, display_name, is_admin FROM users WHERE id = ?",
+      [req.user.id],
+      (err, user) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({
+          ...user,
+          email_verified: !!user.email_verified,
+          message:
+            "Email updated. Please check your inbox to verify your new email address.",
+        });
+      },
+    );
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -835,6 +847,7 @@ app.put("/api/admin/users/:id/verify", requireAdmin, async (req, res) => {
                 emailErr.message,
               );
               // Don't fail the request if email fails - user is still verified
+              // TODO: consider changing this behavior
             }
           }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { authStore } from "../../stores/authStore";
 
   let display_name = $authStore?.display_name || $authStore?.username || "";
@@ -20,6 +21,11 @@
   let showCurrentPassword = false;
   let showNewPassword = false;
   let showConfirmPassword = false;
+
+  // Refresh user data on mount to catch any changes (e.g., admin verified email)
+  onMount(() => {
+    authStore.refresh();
+  });
 
   // Reactive check if email has changed
   $: emailChanged =
