@@ -322,35 +322,55 @@
                 <td>{user.email || "-"}</td>
                 <td>{formatDate(user.created_at)}</td>
                 <td>
-                  <div class="action-buttons">
-                    {#if user.email}
+                  {#if deleteUserId === user.id}
+                    <div class="delete-confirm">
+                      <p class="warning-text">
+                        ⚠️ Delete {user.username}?
+                      </p>
+                      <button
+                        class="btn btn-small btn-danger"
+                        on:click={() => handleDeleteUser(user.id)}
+                      >
+                        Yes, Delete
+                      </button>
                       <button
                         class="btn btn-small btn-secondary"
-                        on:click={() =>
-                          handleResendVerification(user.id, user.email!)}
-                        disabled={resendingUserId === user.id}
+                        on:click={cancelDelete}
                       >
-                        {resendingUserId === user.id
-                          ? "Sending..."
-                          : "📧 Resend"}
+                        Cancel
                       </button>
-                    {/if}
-                    <button
-                      class="btn btn-small btn-success"
-                      on:click={() => handleVerifyUser(user.id)}
-                      disabled={verifyingUserId === user.id}
-                    >
-                      {verifyingUserId === user.id
-                        ? "Verifying..."
-                        : "✓ Verify"}
-                    </button>
-                    <button
-                      class="btn btn-small btn-danger"
-                      on:click={() => confirmDelete(user.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                    </div>
+                  {:else}
+                    <div class="action-buttons">
+                      {#if user.email}
+                        <button
+                          class="btn btn-small btn-secondary"
+                          on:click={() =>
+                            handleResendVerification(user.id, user.email!)}
+                          disabled={resendingUserId === user.id}
+                        >
+                          {resendingUserId === user.id
+                            ? "Sending..."
+                            : "📧 Resend"}
+                        </button>
+                      {/if}
+                      <button
+                        class="btn btn-small btn-success"
+                        on:click={() => handleVerifyUser(user.id)}
+                        disabled={verifyingUserId === user.id}
+                      >
+                        {verifyingUserId === user.id
+                          ? "Verifying..."
+                          : "✓ Verify"}
+                      </button>
+                      <button
+                        class="btn btn-small btn-danger"
+                        on:click={() => confirmDelete(user.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  {/if}
                 </td>
               </tr>
             {/each}

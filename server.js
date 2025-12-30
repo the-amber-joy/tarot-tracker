@@ -200,6 +200,8 @@ app.post("/api/auth/login", (req, res, next) => {
       res.json({
         id: user.id,
         username: user.username,
+        email: user.email,
+        email_verified: !!user.email_verified,
         display_name: user.display_name,
         is_admin: user.is_admin || false,
       });

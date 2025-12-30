@@ -40,6 +40,11 @@
     navigate("/profile");
   }
 
+  function handleVerificationClick() {
+    isMenuOpen = false;
+    navigate("/profile?tab=account");
+  }
+
   function handleAdminClick() {
     isMenuOpen = false;
     navigate("/admin");
@@ -85,11 +90,26 @@
         <span class="material-symbols-outlined profile-icon">
           user_attributes
         </span>
-        <span class="profile-text">My Profile</span>
+        <span class="profile-text-wrapper">
+          <span class="profile-text">My Profile</span>
+          {#if !$authStore.email_verified}
+            <button
+              class="verification-badge"
+              title="Email not verified - click to verify"
+              on:click|stopPropagation={handleVerificationClick}
+            >
+              <span class="material-symbols-outlined">mail</span>
+            </button>
+          {/if}
+        </span>
         {#if !$authStore.email_verified}
-          <span class="verification-badge" title="Email not verified">
+          <button
+            class="verification-badge desktop-only"
+            title="Email not verified - click to verify"
+            on:click|stopPropagation={handleVerificationClick}
+          >
             <span class="material-symbols-outlined">mail</span>
-          </span>
+          </button>
         {/if}
       </button>
     {/if}
@@ -201,6 +221,21 @@
     display: none;
   }
 
+  .profile-text-wrapper {
+    display: none;
+    position: relative;
+  }
+
+  .profile-text-wrapper .verification-badge {
+    position: absolute;
+    top: -10px;
+    right: -20px;
+  }
+
+  .verification-badge.desktop-only {
+    display: flex;
+  }
+
   .verification-badge {
     position: absolute;
     top: -6px;
@@ -209,12 +244,20 @@
     color: #856404;
     width: 20px;
     height: 20px;
+    border: none;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     animation: pulse 2s infinite;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .verification-badge:hover {
+    background: #e0a800;
+    transform: scale(1.1);
   }
 
   .verification-badge .material-symbols-outlined {
@@ -265,6 +308,27 @@
 
     .header-actions button {
       width: 100%;
+    }
+
+    .profile-text-wrapper {
+      display: inline-block;
+    }
+
+    .profile-text {
+      display: inline;
+    }
+
+    .verification-badge.desktop-only {
+      display: none;
+    }
+
+    .header-actions .verification-badge {
+      width: 20px;
+      height: 20px;
+    }
+
+    .header-actions .user-info {
+      position: relative;
     }
   }
 </style>

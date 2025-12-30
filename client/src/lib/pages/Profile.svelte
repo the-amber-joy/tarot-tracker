@@ -19,14 +19,26 @@
   let mounted = false;
 
   onMount(async () => {
-    // Restore the active tab from localStorage
-    const savedTab = localStorage.getItem("profileActiveTab");
-    if (
-      savedTab === "profile" ||
-      savedTab === "decks" ||
-      savedTab === "readings"
-    ) {
-      activeTab = savedTab;
+    // Check for tab in URL query params first
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get("tab");
+
+    if (tabParam === "account" || tabParam === "profile") {
+      activeTab = "profile";
+    } else if (tabParam === "decks") {
+      activeTab = "decks";
+    } else if (tabParam === "readings") {
+      activeTab = "readings";
+    } else {
+      // Fall back to localStorage
+      const savedTab = localStorage.getItem("profileActiveTab");
+      if (
+        savedTab === "profile" ||
+        savedTab === "decks" ||
+        savedTab === "readings"
+      ) {
+        activeTab = savedTab;
+      }
     }
     mounted = true;
   });
@@ -76,6 +88,11 @@
       on:click={() => (activeTab = "profile")}
     >
       Account
+      {#if !$authStore?.email_verified}
+        <span class="tab-badge" title="Email not verified">
+          <span class="material-symbols-outlined">mail</span>
+        </span>
+      {/if}
     </button>
   </div>
 
@@ -135,6 +152,7 @@
   }
 
   .tab {
+    position: relative;
     padding: 0.75rem 1.5rem;
     background: none;
     border: none;
@@ -144,6 +162,36 @@
     font-size: 1rem;
     color: var(--color-secondary);
     transition: all 0.2s ease;
+  }
+
+  .tab-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #ffc107;
+    color: #856404;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s infinite;
+  }
+
+  .tab-badge .material-symbols-outlined {
+    font-size: 12px;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
   }
 
   .tab:hover {
