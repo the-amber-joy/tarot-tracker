@@ -29,6 +29,7 @@
     | "allTime";
 
   let selectedTimespan: TimespanOption = "allTime";
+  let previousTimespan: TimespanOption = "allTime";
   let selectedYear: number = new Date().getFullYear();
   let filterInitialized = false;
 
@@ -245,14 +246,21 @@
     selectedTimespan = "allTime";
   }
 
-  // Reset selectedYear when switching to selectedYear timespan
+  // Set default selectedYear only when SWITCHING to selectedYear timespan
   // Default to current year if it has readings, otherwise use latest available year
-  $: if (selectedTimespan === "selectedYear" && availableYears.length > 0) {
+  $: if (
+    selectedTimespan === "selectedYear" &&
+    previousTimespan !== "selectedYear" &&
+    availableYears.length > 0
+  ) {
     const currentYear = new Date().getFullYear();
     selectedYear = availableYears.includes(currentYear)
       ? currentYear
       : availableYears[0]; // availableYears is sorted descending, so [0] is the latest
   }
+
+  // Track previous timespan for change detection
+  $: previousTimespan = selectedTimespan;
 
   // Calculate reading statistics
   $: readingStats = (() => {
