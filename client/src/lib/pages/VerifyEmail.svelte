@@ -38,7 +38,7 @@
 </script>
 
 <div class="auth-container">
-  <div class="auth-card">
+  <div class="auth-card auth-card--centered">
     <h1 class="auth-title">🔮 Tarot Tracker</h1>
     <h2>Email Verification</h2>
 
@@ -72,36 +72,6 @@
 </div>
 
 <style>
-  .auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 40px);
-    min-height: calc(100dvh - 40px);
-    padding: 20px;
-    box-sizing: border-box;
-  }
-
-  .auth-card {
-    background: var(--color-bg-white);
-    padding: 40px;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-  }
-
-  .auth-title {
-    margin: 0 0 10px 0;
-    font-size: 2em;
-  }
-
-  h2 {
-    margin: 0 0 25px 0;
-    color: var(--color-text);
-  }
-
   .status-content {
     display: flex;
     flex-direction: column;
@@ -147,29 +117,7 @@
     }
   }
 
-  .btn-primary {
-    width: 100%;
-    padding: 12px;
+  .auth-card .btn-primary {
     margin-top: 10px;
-  }
-
-  .message-box {
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .message-box.error {
-    background: #fee;
-    color: #c00;
-    border: 1px solid #fcc;
-  }
-
-  .message-box.success {
-    background: #efe;
-    color: #060;
-    border: 1px solid #cfc;
   }
 </style>

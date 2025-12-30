@@ -103,6 +103,30 @@
   </div>
 
   <div class="style-demo">
+    <h4>Auth Cards</h4>
+    <div class="demo-box auth-cards-demo">
+      <div class="auth-card auth-card-demo">
+        <h1 class="auth-title">🔮 Title</h1>
+        <h2>Subtitle Here</h2>
+        <div class="form-group">
+          <label for="demo-email">Email</label>
+          <input type="email" id="demo-email" placeholder="you@example.com" />
+        </div>
+        <button class="btn btn-primary">Submit</button>
+        <div class="demo-link-row">
+          <button type="button" class="link-button">Link Button</button>
+        </div>
+      </div>
+      <div class="auth-card auth-card--centered auth-card-demo">
+        <h1 class="auth-title">🔮 Centered</h1>
+        <h2>Status Page</h2>
+        <div class="message-box success">Operation completed!</div>
+        <button class="btn btn-primary">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="style-demo">
     <h4>Toasts</h4>
     <div class="demo-box button-row">
       <button
@@ -283,5 +307,28 @@
     text-align: center;
     padding: 3rem;
     color: var(--color-text-light);
+  }
+
+  .auth-cards-demo {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    background: linear-gradient(
+      135deg,
+      var(--color-gradient-start) 0%,
+      var(--color-gradient-end) 100%
+    );
+    padding: 2rem;
+  }
+
+  .auth-card-demo {
+    flex: 1;
+    min-width: 280px;
+    max-width: 350px;
+  }
+
+  .demo-link-row {
+    text-align: center;
+    margin-top: 1rem;
   }
 </style>

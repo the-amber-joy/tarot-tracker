@@ -395,12 +395,6 @@
     margin-top: 1.5rem;
   }
 
-  .deck-list h4 {
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
-    color: var(--color-text-secondary);
-  }
-
   .deck-list ul {
     list-style: none;
     padding: 0;

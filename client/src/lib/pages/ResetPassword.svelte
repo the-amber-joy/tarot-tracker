@@ -171,83 +171,10 @@
 </div>
 
 <style>
-  .auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 40px);
-    min-height: calc(100dvh - 40px);
-    padding: 20px;
-    box-sizing: border-box;
-  }
-
-  .auth-card {
-    background: var(--color-bg-white);
-    padding: 40px;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .auth-title {
-    text-align: center;
-    margin: 0 0 10px 0;
-    font-size: 2em;
-  }
-
-  h2 {
-    text-align: center;
-    margin: 0 0 25px 0;
-    color: var(--color-text);
-  }
-
   .loading-state {
     text-align: center;
     color: var(--color-text-muted);
     padding: 20px 0;
-  }
-
-  .form-group {
-    margin-bottom: 20px;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-  }
-
-  input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    box-sizing: border-box;
-  }
-
-  input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-  }
-
-  input:disabled {
-    background-color: var(--color-gray-100);
-    cursor: not-allowed;
-  }
-
-  .btn-primary {
-    width: 100%;
-    padding: 12px;
-  }
-
-  .btn-primary:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
   }
 
   .action-buttons {
@@ -262,38 +189,5 @@
     color: var(--color-text-muted);
     margin-bottom: 15px;
     font-size: 14px;
-  }
-
-  .link-button {
-    background: none;
-    border: none;
-    color: var(--color-primary);
-    cursor: pointer;
-    text-decoration: underline;
-    font-size: inherit;
-    padding: 0 5px;
-  }
-
-  .link-button:hover {
-    color: var(--color-primary-hover);
-  }
-
-  .message-box {
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    margin-bottom: 15px;
-    font-size: 14px;
-  }
-
-  .message-box.error {
-    background: #fee;
-    color: #c00;
-    border: 1px solid #fcc;
-  }
-
-  .message-box.success {
-    background: #efe;
-    color: #060;
-    border: 1px solid #cfc;
   }
 </style>
