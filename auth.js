@@ -75,8 +75,9 @@ async function createUser(username, password, email = null) {
         return reject(err);
       }
 
-      // New users with email start unverified; users without email (legacy) are verified
-      const emailVerified = email ? 0 : 1;
+      // Users start unverified (email_verified = 0)
+      // Only after email verification will email_verified be set to 1
+      const emailVerified = 0;
 
       db.run(
         "INSERT INTO users (username, password_hash, display_name, email, email_verified, is_admin) VALUES (?, ?, ?, ?, ?, 0)",

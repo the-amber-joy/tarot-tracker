@@ -140,8 +140,13 @@
 
   {#if !$authStore?.email_verified}
     <div class="warning-box">
-      <strong>⚠️ Email not verified:</strong> You won't be able to reset a forgotten
-      password until you verify your email address.
+      {#if !$authStore?.email}
+        <strong>⚠️ No email provided:</strong> You won't be able to reset a forgotten
+        password until you add and verify an email address.
+      {:else}
+        <strong>⚠️ Email not verified:</strong> You won't be able to reset a forgotten
+        password until you verify your email address.
+      {/if}
     </div>
   {/if}
 
@@ -188,7 +193,11 @@
           on:click={handleResendVerification}
           disabled={emailLoading}
         >
-          {emailLoading ? "Sending..." : "Resend Verification Email"}
+          {emailLoading
+            ? "Sending..."
+            : $authStore?.email
+              ? "Resend Verification Email"
+              : "Send Verification Email"}
         </button>
       {/if}
     </div>

@@ -97,15 +97,15 @@ app.get("/health", (req, res) => {
 app.post("/api/auth/register", async (req, res) => {
   const { username, password, email } = req.body;
 
-  if (!username || !password || !email) {
+  if (!username || !password) {
     return res
       .status(400)
-      .json({ error: "Username, email, and password are required" });
+      .json({ error: "Username and password are required" });
   }
 
-  // Validate email format
+  // Validate email format if provided
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (email && !emailRegex.test(email)) {
     return res.status(400).json({ error: "Invalid email format" });
   }
 
@@ -116,55 +116,78 @@ app.post("/api/auth/register", async (req, res) => {
   }
 
   try {
-    // Check if email already exists
-    const existingEmail = await new Promise((resolve, reject) => {
-      db.get(
-        "SELECT id FROM users WHERE email = ?",
-        [email.toLowerCase()],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        },
-      );
-    });
+    // Check if email already exists (only if email provided)
+    if (email) {
+      const existingEmail = await new Promise((resolve, reject) => {
+        db.get(
+          "SELECT id FROM users WHERE email = ?",
+          [email.toLowerCase()],
+          (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+          },
+        );
+      });
 
-    if (existingEmail) {
-      return res.status(400).json({ error: "Email already registered" });
+      if (existingEmail) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
     }
 
-    const user = await createUser(username, password, email.toLowerCase());
+    const user = await createUser(
+      username,
+      password,
+      email ? email.toLowerCase() : null,
+    );
 
-    // Generate verification token
-    const token = generateToken();
-    const expires = getVerificationTokenExpiry();
-    const now = new Date().toISOString();
+    // Only do email verification if email was provided
+    if (email) {
+      // Generate verification token
+      const token = generateToken();
+      const expires = getVerificationTokenExpiry();
+      const now = new Date().toISOString();
 
-    // Save token to database
-    await new Promise((resolve, reject) => {
-      db.run(
-        "UPDATE users SET verification_token = ?, verification_token_expires = ?, verification_sent_at = ? WHERE id = ?",
-        [token, expires, now, user.id],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        },
-      );
-    });
+      // Save token to database
+      await new Promise((resolve, reject) => {
+        db.run(
+          "UPDATE users SET verification_token = ?, verification_token_expires = ?, verification_sent_at = ? WHERE id = ?",
+          [token, expires, now, user.id],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          },
+        );
+      });
 
-    // Send verification email
-    try {
-      await sendVerificationEmail(email.toLowerCase(), token, username);
-    } catch (emailErr) {
-      console.error("Failed to send verification email:", emailErr);
-      // Don't fail registration if email fails - user can resend
+      // Send verification email
+      try {
+        await sendVerificationEmail(email.toLowerCase(), token, username);
+      } catch (emailErr) {
+        console.error("Failed to send verification email:", emailErr);
+        // Don't fail registration if email fails - user can resend
+      }
+
+      // Don't auto-login - user must verify email first
+      res.status(201).json({
+        message:
+          "Account created! Please check your email to verify your account.",
+        requiresVerification: true,
+      });
+    } else {
+      // No email - auto-login the user
+      req.login(user, (err) => {
+        if (err) {
+          return res
+            .status(500)
+            .json({ error: "Login failed after registration" });
+        }
+        res.status(201).json({
+          message: "Account created successfully!",
+          requiresVerification: false,
+          user: { id: user.id, username: user.username },
+        });
+      });
     }
-
-    // Don't auto-login - user must verify email first
-    res.status(201).json({
-      message:
-        "Account created! Please check your email to verify your account.",
-      requiresVerification: true,
-    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

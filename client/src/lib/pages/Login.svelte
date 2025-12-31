@@ -37,6 +37,9 @@
           username = "";
           password = "";
           email = "";
+        } else {
+          // No verification required (no email) - user is auto-logged in
+          // Navigation will happen automatically via authStore subscriber
         }
       } else {
         await authStore.login(username, password);
@@ -102,19 +105,28 @@
 
       {#if isRegisterMode}
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email"
+            >Email <span class="optional-label">(optional)</span></label
+          >
           <input
             id="email"
             type="email"
             bind:value={email}
-            required
             placeholder="Enter email"
             disabled={loading}
             autocapitalize="none"
           />
-          <small class="form-hint"
-            >Used for account verification and password reset</small
-          >
+          {#if !email.trim()}
+            <small class="form-warning">
+              <span class="material-symbols-outlined warning-icon">warning</span
+              >
+              Without an email, you will not be able to recover a forgotten password
+            </small>
+          {:else}
+            <small class="form-hint"
+              >Used for account verification and password reset</small
+            >
+          {/if}
         </div>
       {/if}
 
@@ -201,11 +213,31 @@
 </div>
 
 <style>
+  .optional-label {
+    font-weight: normal;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
   .form-hint {
     display: block;
     margin-top: 4px;
     font-size: 12px;
     color: var(--color-text-muted);
+  }
+
+  .form-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .form-warning .warning-icon {
+    font-size: 16px;
+    flex-shrink: 0;
   }
 
   .btn-secondary {

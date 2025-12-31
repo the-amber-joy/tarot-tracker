@@ -12,6 +12,7 @@ type User = {
 type RegisterResult = {
   requiresVerification: boolean;
   message: string;
+  user?: User;
 };
 
 type LoginError = {
@@ -92,7 +93,11 @@ function createAuthStore() {
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password, email }),
+          body: JSON.stringify({
+            username,
+            password,
+            email: email || undefined,
+          }),
         });
 
         const data = await response.json();
@@ -101,10 +106,15 @@ function createAuthStore() {
           throw { message: data.error || "Registration failed" };
         }
 
-        // New registration flow - don't set user, return result
+        // If no verification required (no email), set the user
+        if (!data.requiresVerification && data.user) {
+          set(data.user);
+        }
+
         return {
           requiresVerification: data.requiresVerification || false,
           message: data.message || "Registration successful",
+          user: data.user,
         };
       } catch (error: any) {
         if (error.message === "Failed to fetch" || !navigator.onLine) {
