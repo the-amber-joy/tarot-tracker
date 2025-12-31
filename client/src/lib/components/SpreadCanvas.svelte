@@ -39,6 +39,7 @@
 
   // Drag state for panning
   let isDragging = false;
+  let hasPanned = false; // Track if actual movement occurred during drag
   let dragStartX = 0;
   let dragStartY = 0;
   let dragStartPanX = 0;
@@ -192,6 +193,7 @@
     } else if (e instanceof MouseEvent) {
       // Mouse - start drag
       isDragging = true;
+      hasPanned = false;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
       dragStartPanX = userPanX;
@@ -228,6 +230,11 @@
     const dx = clientX - dragStartX;
     const dy = clientY - dragStartY;
 
+    // Only set hasPanned if there's significant movement
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      hasPanned = true;
+    }
+
     userPanX = dragStartPanX + dx;
     userPanY = dragStartPanY + dy;
   }
@@ -236,6 +243,14 @@
     if (isDragging) {
       isDragging = false;
       canvasElement.style.cursor = "";
+      // Prevent canvas click from adding a card only if actual panning occurred
+      if (hasPanned) {
+        preventCanvasClick = true;
+        setTimeout(() => {
+          preventCanvasClick = false;
+        }, 200);
+      }
+      hasPanned = false;
     }
     if (isPinching) {
       isPinching = false;
