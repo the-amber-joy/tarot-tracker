@@ -157,6 +157,7 @@
     cursor: pointer;
     padding: 8px;
     color: white;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .hamburger .material-symbols-outlined {
