@@ -165,7 +165,18 @@
   {/if}
 
   {#if cardName}
-    <div class="card-position-name">{cardName}</div>
+    <div
+      class="card-position-name"
+      on:click|stopPropagation={() => dispatch("addClick")}
+      on:keydown={(e) => handleKeydown(e, () => dispatch("addClick"))}
+      role="button"
+      tabindex="0"
+      title="Edit card"
+      aria-label="Edit card"
+    >
+      {cardName}
+      <span class="card-edit-icon material-symbols-outlined">edit_note</span>
+    </div>
   {:else}
     <div
       class="empty-card-btn"

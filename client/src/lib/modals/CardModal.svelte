@@ -236,10 +236,10 @@
     }, 0);
   }
 
-  // Focus on card name input when modal opens and trap focus
+  // Focus on interpretation textarea when modal opens and trap focus
   $: if (isOpen && modalElement) {
     setTimeout(() => {
-      const input = modalElement.querySelector("#cardName") as HTMLInputElement;
+      const input = modalElement.querySelector("#cardInterpretation") as HTMLInputElement;
       input?.focus();
     }, 50);
   }
