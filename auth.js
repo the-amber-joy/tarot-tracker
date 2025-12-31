@@ -13,6 +13,10 @@ const RESET_TOKEN_EXPIRY_HOURS = 1;
 const RESEND_RATE_LIMIT_MINUTES = 5;
 const RESET_RATE_LIMIT_MINUTES = 5;
 
+// Account lockout settings
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MINUTES = 15;
+
 // Configure Passport Local Strategy
 passport.use(
   new LocalStrategy((username, password, done) => {
@@ -24,7 +28,36 @@ passport.use(
           return done(err);
         }
         if (!user) {
-          return done(null, false, { message: "Incorrect username." });
+          return done(null, false, {
+            message: "Incorrect username or password.",
+          });
+        }
+
+        // Check if account is locked
+        if (user.account_locked_until) {
+          const lockoutExpires = new Date(user.account_locked_until);
+          if (lockoutExpires > new Date()) {
+            const minutesLeft = Math.ceil(
+              (lockoutExpires - new Date()) / 1000 / 60,
+            );
+            return done(null, false, {
+              message: `Account temporarily locked. Try again in ${minutesLeft} minute${
+                minutesLeft !== 1 ? "s" : ""
+              }.`,
+            });
+          } else {
+            // Lockout expired, reset failed attempts
+            db.run(
+              "UPDATE users SET failed_login_attempts = 0, account_locked_until = NULL WHERE id = ?",
+              [user.id],
+              (err) => {
+                if (err) console.error("Error resetting lockout:", err);
+              },
+            );
+            // Reset the in-memory user object to match database
+            user.failed_login_attempts = 0;
+            user.account_locked_until = null;
+          }
         }
 
         bcrypt.compare(password, user.password_hash, (err, result) => {
@@ -32,8 +65,53 @@ passport.use(
             return done(err);
           }
           if (!result) {
-            return done(null, false, { message: "Incorrect password." });
+            // Increment failed attempts
+            const newAttempts = (user.failed_login_attempts || 0) + 1;
+            const now = new Date().toISOString();
+
+            if (newAttempts >= MAX_FAILED_ATTEMPTS) {
+              // Lock the account
+              const lockoutUntil = new Date(
+                Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000,
+              ).toISOString();
+              db.run(
+                "UPDATE users SET failed_login_attempts = ?, last_failed_login = ?, account_locked_until = ? WHERE id = ?",
+                [newAttempts, now, lockoutUntil, user.id],
+                (err) => {
+                  if (err) console.error("Error locking account:", err);
+                },
+              );
+              return done(null, false, {
+                message: `Too many failed attempts. Account locked for ${LOCKOUT_DURATION_MINUTES} minutes.`,
+              });
+            } else {
+              // Just increment attempts
+              db.run(
+                "UPDATE users SET failed_login_attempts = ?, last_failed_login = ? WHERE id = ?",
+                [newAttempts, now, user.id],
+                (err) => {
+                  if (err)
+                    console.error("Error updating failed attempts:", err);
+                },
+              );
+              const attemptsLeft = MAX_FAILED_ATTEMPTS - newAttempts;
+              return done(null, false, {
+                message: `Incorrect username or password. ${attemptsLeft} attempt${
+                  attemptsLeft !== 1 ? "s" : ""
+                } remaining.`,
+              });
+            }
           }
+
+          // Successful login - reset failed attempts
+          db.run(
+            "UPDATE users SET failed_login_attempts = 0, last_failed_login = NULL, account_locked_until = NULL WHERE id = ?",
+            [user.id],
+            (err) => {
+              if (err) console.error("Error resetting failed attempts:", err);
+            },
+          );
+
           return done(null, user);
         });
       },

@@ -7,6 +7,7 @@ const session = require("express-session");
 const SqliteStore = require("better-sqlite3-session-store")(session);
 const Database = require("better-sqlite3");
 const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
 const db = require("./database");
 const { TAROT_CARDS } = require("./cards");
 const { SPREAD_TEMPLATES } = require("./spreads");
@@ -32,6 +33,31 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Rate limiters for different endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: { error: "Too many attempts, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const emailLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // 3 requests per hour
+  message: { error: "Too many email requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: "Too many requests, please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Validate required environment variables in production
 if (process.env.NODE_ENV === "production") {
@@ -86,6 +112,9 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Apply general rate limiting to all API routes
+app.use("/api", generalLimiter);
+
 // API Routes
 
 // Health check endpoint for Fly.io
@@ -94,7 +123,7 @@ app.get("/health", (req, res) => {
 });
 
 // Authentication routes
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", authLimiter, async (req, res) => {
   const { username, password, email } = req.body;
 
   if (!username || !password) {
@@ -130,7 +159,11 @@ app.post("/api/auth/register", async (req, res) => {
       });
 
       if (existingEmail) {
-        return res.status(400).json({ error: "Email already registered" });
+        // Generic message to prevent email enumeration
+        return res.status(400).json({
+          error:
+            "Unable to complete registration. Please try a different email or username.",
+        });
       }
     }
 
@@ -193,7 +226,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", (req, res, next) => {
+app.post("/api/auth/login", authLimiter, (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -293,7 +326,7 @@ app.get("/api/auth/verify/:token", async (req, res) => {
 });
 
 // Resend verification email
-app.post("/api/auth/resend-verification", async (req, res) => {
+app.post("/api/auth/resend-verification", emailLimiter, async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
@@ -359,7 +392,7 @@ app.post("/api/auth/resend-verification", async (req, res) => {
 });
 
 // Request password reset
-app.post("/api/auth/forgot-password", async (req, res) => {
+app.post("/api/auth/forgot-password", emailLimiter, async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
