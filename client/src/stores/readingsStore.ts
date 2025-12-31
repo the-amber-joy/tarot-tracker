@@ -7,6 +7,7 @@ type Reading = {
   title: string;
   spread_template_id?: string;
   deck_name: string;
+  querent?: string;
   is_incomplete?: boolean;
 };
 

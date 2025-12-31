@@ -12,6 +12,7 @@
     title: string;
     spread_template_id?: string;
     deck_name: string;
+    querent?: string;
     is_incomplete?: boolean;
   }
 
@@ -142,7 +143,7 @@
                 {#if reading.is_incomplete}
                   <span class="incomplete-icon" title="Incomplete">⚠️</span>
                 {/if}
-                {reading.title}
+                {reading.title}{#if reading.querent && reading.querent !== "Myself"} <span class="querent-for">{' '}for</span> <span class="querent-name">{reading.querent}</span>{/if}
               </span>
               <p class="reading-details">
                 {formatDateTime(reading.date, reading.time)}
@@ -248,6 +249,17 @@
     font-weight: 500;
     display: block;
     margin-bottom: 0.25rem;
+  }
+
+  .querent-for {
+    font-weight: 400;
+    color: var(--color-text-secondary);
+  }
+
+  .querent-name {
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    text-transform: capitalize;
   }
 
   .incomplete-icon {

@@ -11,6 +11,7 @@
     title: string;
     spread_template_id?: string;
     deck_name: string;
+    querent?: string;
     is_incomplete?: boolean;
   };
 
@@ -34,6 +35,7 @@
   let deckFilter: string = "";
   let statusFilter: string = ""; // '', 'complete', or 'incomplete'
   let spreadFilter: string = "";
+  let querentFilter: string = "";
   let activeTab: "readings" | "reports" = "readings";
   let mounted = false;
 
@@ -51,6 +53,11 @@
         .map((r) => getSpreadLayout(r.spread_template_id))
         .filter((s) => s !== "-"),
     ),
+  ].sort();
+
+  // Get unique querents
+  $: uniqueQuerents = [
+    ...new Set(readings.map((r) => r.querent || "Myself")),
   ].sort();
 
   // Filter and sort readings
@@ -71,6 +78,10 @@
       spreadFilter &&
       getSpreadLayout(r.spread_template_id) !== spreadFilter
     ) {
+      return false;
+    }
+    // Filter by querent
+    if (querentFilter && (r.querent || "Myself") !== querentFilter) {
       return false;
     }
     return true;
@@ -147,6 +158,7 @@
     deckFilter = "";
     statusFilter = "";
     spreadFilter = "";
+    querentFilter = "";
   }
 </script>
 
@@ -194,7 +206,13 @@
           <option value="complete">Complete</option>
           <option value="incomplete">Incomplete</option>
         </select>
-        {#if deckFilter || statusFilter || spreadFilter}
+        <select class="styled-select querent-filter" bind:value={querentFilter}>
+          <option value="">All Querents</option>
+          {#each uniqueQuerents as querent}
+            <option value={querent}>{querent}</option>
+          {/each}
+        </select>
+        {#if deckFilter || statusFilter || spreadFilter || querentFilter}
           <button class="clear-filters-btn" on:click={clearFilters}>
             Clear Filters
           </button>
@@ -218,6 +236,7 @@
             Date {sortAscending ? "↑" : "↓"}
           </th>
           <th>Title / Question</th>
+          <th>Querent</th>
           <th>Spread</th>
           <th>Deck</th>
         </tr>
@@ -225,7 +244,7 @@
       <tbody aria-live="polite">
         {#if readings.length === 0}
           <tr>
-            <td colspan="4" class="empty-message">
+            <td colspan="5" class="empty-message">
               No readings yet. Tap the + button below to get started!
             </td>
           </tr>
@@ -244,6 +263,7 @@
                 {/if}
                 {reading.title}
               </td>
+              <td class="querent-cell">{reading.querent || "Myself"}</td>
               <td
                 ><span class="spread-badge"
                   >{getSpreadLayout(reading.spread_template_id)}</span
@@ -281,12 +301,17 @@
               >
             </div>
             <div class="reading-card-footer">
-              <div class="reading-date">
-                {formatDateTime(reading.date, reading.time)}
+              <div class="reading-date-info">
+                <span class="reading-date"
+                  >{formatDateTime(reading.date, reading.time)}</span
+                >
+                <span class="reading-querent"
+                  >{reading.querent || "Myself"}</span
+                >
               </div>
-              <div class="reading-deck">
-                {reading.deck_name || "No Deck Specified"}
-              </div>
+              <span class="reading-deck"
+                >{reading.deck_name || "No Deck Specified"}</span
+              >
             </div>
           </button>
         {/each}
@@ -460,8 +485,14 @@
     .reading-card-footer {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 1rem;
+    }
+
+    .reading-date-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
 
     .reading-date {
@@ -469,10 +500,24 @@
       font-size: 0.9rem;
     }
 
+    .reading-querent {
+      color: var(--color-text-light);
+      font-size: 0.85rem;
+      text-transform: capitalize;
+    }
+
     .reading-deck {
       color: var(--color-text-light);
       font-size: 0.85rem;
       text-align: right;
     }
+  }
+
+  .querent-filter {
+    text-transform: capitalize;
+  }
+
+  .querent-cell {
+    text-transform: capitalize;
   }
 </style>
