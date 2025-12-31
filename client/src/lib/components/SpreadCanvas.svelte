@@ -2,6 +2,7 @@
   import interact from "interactjs";
   import { onMount } from "svelte";
   import CardModal from "../modals/CardModal.svelte";
+  import CardPosition from "./CardPosition.svelte";
 
   export let spreadTemplate: string = "";
   export let spreadCards: Record<number, any> = {};
@@ -61,13 +62,6 @@
     .filter(([indexStr]) => parseInt(indexStr) !== modalCardIndex)
     .map(([_, card]) => card.card_name)
     .filter((name) => name && name.trim());
-
-  // Helper to get card image URL from card name
-  function getCardImageUrl(cardName: string): string {
-    if (!cardName || !cardName.trim()) return "";
-    const filename = cardName.replace(/\s+/g, "").toLowerCase();
-    return `/tarot-images/${filename}.jpeg`;
-  }
 
   onMount(() => {
     loadSpreadTemplates();
@@ -411,11 +405,6 @@
     isModalOpen = true;
   }
 
-  function handleAddButtonClick(event: Event, index: number) {
-    event.stopPropagation();
-    openCardModal(index);
-  }
-
   function handleModalSave(cardData: any) {
     if (modalCardIndex === null) return;
 
@@ -476,14 +465,6 @@
         });
 
       onCardsUpdate(newCards);
-    }
-  }
-
-  function handleDeleteKeydown(event: KeyboardEvent, index: number) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      event.stopPropagation();
-      deleteCard(index);
     }
   }
 
@@ -576,13 +557,29 @@
     return interactable;
   }
 
-  // Handle rotation by 30 degrees on click
-  function rotateCard(event: Event, index: number) {
-    event.preventDefault();
-    event.stopPropagation();
-
+  // Handle rotation by 30 degrees clockwise (max 90°)
+  function rotateCardRight(index: number) {
     const currentRotation = spreadCards[index]?.rotation || 0;
+    // Don't rotate past 90 degrees
+    if (currentRotation === 90) return;
+
     const newRotation = (currentRotation + 30) % 360;
+
+    const newCards = { ...spreadCards };
+    newCards[index] = {
+      ...newCards[index],
+      rotation: newRotation,
+    };
+    onCardsUpdate(newCards);
+  }
+
+  // Handle rotation by 30 degrees counter-clockwise (max -90°)
+  function rotateCardLeft(index: number) {
+    const currentRotation = spreadCards[index]?.rotation || 0;
+    // Don't rotate past -90 degrees
+    if (currentRotation === -90) return;
+
+    const newRotation = currentRotation - 30;
 
     const newCards = { ...spreadCards };
     newCards[index] = {
@@ -660,169 +657,47 @@
       <!-- No template selected - empty canvas waiting for clicks -->
       {#each Object.entries(spreadCards) as [indexStr, cardData]}
         {@const index = parseInt(indexStr)}
-        <button
-          type="button"
-          class="card-position custom-card {cardData.card_name
-            ? 'filled'
-            : ''} {mobileActiveCard === index ? 'mobile-active' : ''}"
-          style="left: {scalePosition(
-            cardData.position_x,
-          )}px; top: {scalePosition(cardData.position_y)}px; {cardData.rotation
-            ? `transform: rotate(${cardData.rotation}deg)`
-            : ''}; {readonly
-            ? 'cursor: default;'
-            : 'cursor: grab;'}; {cardData.card_name
-            ? `background-image: url('${getCardImageUrl(cardData.card_name)}'); background-size: cover; background-position: center;`
-            : ''}"
-          on:click|stopPropagation={() => !readonly && handleCardClick(index)}
-          use:interactCard={index}
-          data-position-index={index}
-          aria-label="{cardData.position_label ||
-            `Position ${index + 1}`} - {cardData.card_name || 'Add card'}"
-        >
-          {#if !readonly}
-            <div
-              class="delete-card-btn {cardData.card_name ? '' : 'delete-icon'}"
-              title={cardData.card_name ? "Clear card" : "Delete position"}
-              on:click|stopPropagation={() => deleteCard(index)}
-              on:keydown={(e) => handleDeleteKeydown(e, index)}
-              role="button"
-              tabindex="0"
-              aria-label={cardData.card_name ? "Clear card" : "Delete position"}
-            >
-              <span class="material-symbols-outlined">
-                {cardData.card_name ? "close_small" : "delete_forever"}
-              </span>
-            </div>
-            <div class="drag-handle-icon" aria-hidden="true">
-              <span class="material-symbols-outlined">drag_handle</span>
-            </div>
-          {/if}
-          {#if !cardData.card_name}
-            <div class="position-number">{index + 1}</div>
-            <div class="position-label">
-              {cardData.position_label || `Card ${index + 1}`}
-            </div>
-          {/if}
-          {#if cardData.card_name}
-            <div class="card-position-name">{cardData.card_name}</div>
-          {:else}
-            <div
-              class="empty-card-btn"
-              on:click={(e) => handleAddButtonClick(e, index)}
-              on:keydown={(e) =>
-                e.key === "Enter" || e.key === " "
-                  ? handleAddButtonClick(e, index)
-                  : null}
-              role="button"
-              tabindex="0"
-              title="Add card"
-              aria-label="Add card to this position"
-            >
-              <span class="material-symbols-outlined">add_2</span>
-            </div>
-          {/if}
-          {#if !readonly}
-            <div
-              class="rotation-handle"
-              title="Rotate 30°"
-              on:click={(e) => rotateCard(e, index)}
-              on:keydown={(e) =>
-                e.key === "Enter" || e.key === " "
-                  ? rotateCard(e, index)
-                  : null}
-              role="button"
-              tabindex="0"
-              aria-label="Rotate card"
-            >
-              <span class="material-symbols-outlined"> rotate_right </span>
-            </div>
-          {/if}
-        </button>
+        <CardPosition
+          {index}
+          cardName={cardData.card_name || ""}
+          positionLabel={cardData.position_label || `Card ${index + 1}`}
+          positionNumber={index + 1}
+          rotation={cardData.rotation || 0}
+          left={scalePosition(cardData.position_x)}
+          top={scalePosition(cardData.position_y)}
+          {readonly}
+          isCustomSpread={true}
+          isMobileActive={mobileActiveCard === index}
+          interactAction={interactCard}
+          on:click={() => !readonly && handleCardClick(index)}
+          on:delete={() => deleteCard(index)}
+          on:rotateRight={() => rotateCardRight(index)}
+          on:rotateLeft={() => rotateCardLeft(index)}
+          on:addClick={() => openCardModal(index)}
+        />
       {/each}
     {:else if currentTemplate.id === "custom"}
       <!-- Custom template - click-to-add cards -->
       {#each Object.entries(spreadCards) as [indexStr, cardData]}
         {@const index = parseInt(indexStr)}
-        <button
-          type="button"
-          class="card-position custom-card {cardData.card_name
-            ? 'filled'
-            : ''} {mobileActiveCard === index ? 'mobile-active' : ''}"
-          style="left: {scalePosition(
-            cardData.position_x,
-          )}px; top: {scalePosition(cardData.position_y)}px; {cardData.rotation
-            ? `transform: rotate(${cardData.rotation}deg)`
-            : ''}; {readonly
-            ? 'cursor: default;'
-            : 'cursor: grab;'}; {cardData.card_name
-            ? `background-image: url('${getCardImageUrl(cardData.card_name)}'); background-size: cover; background-position: center;`
-            : ''}"
-          on:click|stopPropagation={() => handleCardClick(index)}
-          use:interactCard={index}
-          data-position-index={index}
-          aria-label="{cardData.position_label ||
-            `Position ${index + 1}`} - {cardData.card_name || 'Add card'}"
-        >
-          {#if !readonly}
-            <div
-              class="delete-card-btn {cardData.card_name ? '' : 'delete-icon'}"
-              title={cardData.card_name ? "Clear card" : "Delete position"}
-              on:click|stopPropagation={() => deleteCard(index)}
-              on:keydown={(e) => handleDeleteKeydown(e, index)}
-              role="button"
-              tabindex="0"
-              aria-label={cardData.card_name ? "Clear card" : "Delete position"}
-            >
-              <span class="material-symbols-outlined">
-                {cardData.card_name ? "close_small" : "delete_forever"}
-              </span>
-            </div>
-            <div class="drag-handle-icon" aria-hidden="true">
-              <span class="material-symbols-outlined">drag_handle</span>
-            </div>
-          {/if}
-          {#if !cardData.card_name}
-            <div class="position-number">{index + 1}</div>
-            <div class="position-label">
-              {cardData.position_label || `Card ${index + 1}`}
-            </div>
-          {/if}
-          {#if cardData.card_name}
-            <div class="card-position-name">{cardData.card_name}</div>
-          {:else}
-            <div
-              class="empty-card-btn"
-              on:click={(e) => handleAddButtonClick(e, index)}
-              on:keydown={(e) =>
-                e.key === "Enter" || e.key === " "
-                  ? handleAddButtonClick(e, index)
-                  : null}
-              role="button"
-              tabindex="0"
-              title="Add card"
-              aria-label="Add card to this position"
-            >
-              <span class="material-symbols-outlined">add_2</span>
-            </div>
-          {/if}
-          {#if !readonly}
-            <div
-              class="rotation-handle"
-              title="Rotate 30°"
-              on:click={(e) => rotateCard(e, index)}
-              on:keydown={(e) =>
-                e.key === "Enter" || e.key === " "
-                  ? rotateCard(e, index)
-                  : null}
-              role="button"
-              tabindex="0"
-              aria-label="Rotate card 30 degrees"
-            >
-              <span class="material-symbols-outlined">rotate_right</span>
-            </div>
-          {/if}
-        </button>
+        <CardPosition
+          {index}
+          cardName={cardData.card_name || ""}
+          positionLabel={cardData.position_label || `Card ${index + 1}`}
+          positionNumber={index + 1}
+          rotation={cardData.rotation || 0}
+          left={scalePosition(cardData.position_x)}
+          top={scalePosition(cardData.position_y)}
+          {readonly}
+          isCustomSpread={true}
+          isMobileActive={mobileActiveCard === index}
+          interactAction={interactCard}
+          on:click={() => handleCardClick(index)}
+          on:delete={() => deleteCard(index)}
+          on:rotateRight={() => rotateCardRight(index)}
+          on:rotateLeft={() => rotateCardLeft(index)}
+          on:addClick={() => openCardModal(index)}
+        />
       {/each}
     {:else}
       <!-- Pre-defined spread template -->
@@ -831,58 +706,24 @@
         {@const xPos = cardData?.position_x ?? position.defaultX}
         {@const yPos = cardData?.position_y ?? position.defaultY}
         {@const rotation = cardData?.rotation ?? position.rotation ?? 0}
-        <button
-          type="button"
-          class="card-position {cardData?.card_name
-            ? 'filled'
-            : ''} {mobileActiveCard === index ? 'mobile-active' : ''}"
-          style="left: {scalePosition(xPos)}px; top: {scalePosition(
-            yPos,
-          )}px; {rotation
-            ? `transform: rotate(${rotation}deg)`
-            : ''}; cursor: pointer; {cardData?.card_name
-            ? `background-image: url('${getCardImageUrl(cardData.card_name)}'); background-size: cover; background-position: center;`
-            : ''}"
-          on:click|stopPropagation={() => handleCardClick(index)}
-          use:interactCard={index}
-          data-position-index={index}
-          title={position.label}
-          aria-label="{position.label} - {cardData?.card_name || 'Add card'}"
-        >
-          {#if cardData?.card_name}
-            {#if !readonly && cardData.card_name.trim()}
-              <div
-                class="delete-card-btn"
-                title="Clear card"
-                on:click|stopPropagation={() => deleteCard(index)}
-                on:keydown={(e) => handleDeleteKeydown(e, index)}
-                role="button"
-                tabindex="0"
-                aria-label="Clear card"
-              >
-                <span class="material-symbols-outlined"> close </span>
-              </div>
-            {/if}
-            <div class="card-position-name">{cardData.card_name}</div>
-          {:else}
-            <div class="position-number">{position.order}</div>
-            <div class="position-label">{position.label}</div>
-            <div
-              class="empty-card-btn"
-              on:click={(e) => handleAddButtonClick(e, index)}
-              on:keydown={(e) =>
-                e.key === "Enter" || e.key === " "
-                  ? handleAddButtonClick(e, index)
-                  : null}
-              role="button"
-              tabindex="0"
-              title="Add card"
-              aria-label="Add card to this position"
-            >
-              <span class="material-symbols-outlined">add_2</span>
-            </div>
-          {/if}
-        </button>
+        <CardPosition
+          {index}
+          cardName={cardData?.card_name || ""}
+          positionLabel={position.label}
+          positionNumber={position.order}
+          {rotation}
+          left={scalePosition(xPos)}
+          top={scalePosition(yPos)}
+          {readonly}
+          isCustomSpread={false}
+          isMobileActive={mobileActiveCard === index}
+          interactAction={interactCard}
+          on:click={() => handleCardClick(index)}
+          on:delete={() => deleteCard(index)}
+          on:rotateRight={() => rotateCardRight(index)}
+          on:rotateLeft={() => rotateCardLeft(index)}
+          on:addClick={() => openCardModal(index)}
+        />
       {/each}
     {/if}
   </div>
