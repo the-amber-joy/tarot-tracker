@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import CardDetailsModal from "./CardDetailsModal.svelte";
   import ConfirmModal from "./ConfirmModal.svelte";
 
   export let isOpen = false;
@@ -27,6 +28,7 @@
 
   let showValidationModal = false;
   let validationMessage = "";
+  let showCardDetailsModal = false;
 
   onMount(async () => {
     await loadTarotCards();
@@ -354,6 +356,16 @@
                 </div>
               {/if}
             </div>
+            {#if cardName}
+              <button
+                type="button"
+                class="link-button more-info-link"
+                on:click={() => (showCardDetailsModal = true)}
+              >
+                <span class="material-symbols-outlined">info</span>
+                More Info
+              </button>
+            {/if}
           </div>
 
           <div class="form-group">
@@ -420,4 +432,10 @@
   confirmText="OK"
   isAlert={true}
   onConfirm={() => (showValidationModal = false)}
+/>
+
+<CardDetailsModal
+  bind:isOpen={showCardDetailsModal}
+  cardName={cardName}
+  onClose={() => (showCardDetailsModal = false)}
 />

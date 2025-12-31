@@ -834,6 +834,19 @@ tbody tr:hover {
   cursor: not-allowed;
 }
 
+.more-info-link {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.more-info-link .material-symbols-outlined {
+  font-size: 16px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   body {
