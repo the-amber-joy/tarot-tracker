@@ -967,10 +967,24 @@ tbody tr:hover {
 }
 
 .card-position.filled {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: transparent;
   color: white;
-  border-color: #764ba2;
+  border-color: transparent;
   border-style: solid;
+  box-shadow: none;
+}
+
+/* Card image layer - separate from card so only image can be reversed */
+.card-image-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 6px;
+  z-index: 0;
+  pointer-events: none;
+  transition: transform 0.4s ease;
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
@@ -1131,6 +1145,41 @@ tbody tr:hover {
 /* Mobile active state */
 .card-position.mobile-active .card-controls {
   opacity: 1;
+}
+
+/* Bottom controls bar - positioned below the card */
+.card-controls-bottom {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 4px 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-position:hover .card-controls-bottom {
+  opacity: 1;
+}
+
+.card-position.mobile-active .card-controls-bottom {
+  opacity: 1;
+}
+
+/* Reverse button styling */
+.card-control-btn.reverse-btn {
+  color: #667eea;
+}
+
+.card-control-btn.reverse-btn:hover {
+  color: #764ba2;
 }
 
 .drag-handle-icon {

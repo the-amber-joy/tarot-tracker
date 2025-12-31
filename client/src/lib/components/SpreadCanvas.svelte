@@ -589,6 +589,18 @@
     onCardsUpdate(newCards);
   }
 
+  // Toggle card reversal (flip 180 degrees)
+  function reverseCard(index: number) {
+    const currentReversed = spreadCards[index]?.reversed || false;
+
+    const newCards = { ...spreadCards };
+    newCards[index] = {
+      ...newCards[index],
+      reversed: !currentReversed,
+    };
+    onCardsUpdate(newCards);
+  }
+
   function handleCanvasKeydown(event: KeyboardEvent) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -663,6 +675,7 @@
           positionLabel={cardData.position_label || `Card ${index + 1}`}
           positionNumber={index + 1}
           rotation={cardData.rotation || 0}
+          reversed={cardData.reversed || false}
           left={scalePosition(cardData.position_x)}
           top={scalePosition(cardData.position_y)}
           {readonly}
@@ -673,6 +686,7 @@
           on:delete={() => deleteCard(index)}
           on:rotateRight={() => rotateCardRight(index)}
           on:rotateLeft={() => rotateCardLeft(index)}
+          on:reverse={() => reverseCard(index)}
           on:addClick={() => openCardModal(index)}
         />
       {/each}
@@ -686,6 +700,7 @@
           positionLabel={cardData.position_label || `Card ${index + 1}`}
           positionNumber={index + 1}
           rotation={cardData.rotation || 0}
+          reversed={cardData.reversed || false}
           left={scalePosition(cardData.position_x)}
           top={scalePosition(cardData.position_y)}
           {readonly}
@@ -696,6 +711,7 @@
           on:delete={() => deleteCard(index)}
           on:rotateRight={() => rotateCardRight(index)}
           on:rotateLeft={() => rotateCardLeft(index)}
+          on:reverse={() => reverseCard(index)}
           on:addClick={() => openCardModal(index)}
         />
       {/each}
@@ -706,12 +722,14 @@
         {@const xPos = cardData?.position_x ?? position.defaultX}
         {@const yPos = cardData?.position_y ?? position.defaultY}
         {@const rotation = cardData?.rotation ?? position.rotation ?? 0}
+        {@const reversed = cardData?.reversed || false}
         <CardPosition
           {index}
           cardName={cardData?.card_name || ""}
           positionLabel={position.label}
           positionNumber={position.order}
           {rotation}
+          {reversed}
           left={scalePosition(xPos)}
           top={scalePosition(yPos)}
           {readonly}
@@ -722,6 +740,7 @@
           on:delete={() => deleteCard(index)}
           on:rotateRight={() => rotateCardRight(index)}
           on:rotateLeft={() => rotateCardLeft(index)}
+          on:reverse={() => reverseCard(index)}
           on:addClick={() => openCardModal(index)}
         />
       {/each}

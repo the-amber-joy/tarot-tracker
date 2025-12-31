@@ -6,6 +6,7 @@
   export let positionLabel: string = "";
   export let positionNumber: number;
   export let rotation: number = 0;
+  export let reversed: boolean = false;
   export let left: number;
   export let top: number;
   export let readonly: boolean = false;
@@ -20,6 +21,7 @@
     delete: void;
     rotateRight: void;
     rotateLeft: void;
+    reverse: void;
     addClick: void;
   }>();
 
@@ -38,7 +40,7 @@
     }
   }
 
-  // Build the style string
+  // Build the style string (rotation only, no reversal - that's on the image layer)
   $: style = [
     `left: ${left}px`,
     `top: ${top}px`,
@@ -48,9 +50,16 @@
       : isCustomSpread
         ? "cursor: grab"
         : "cursor: pointer",
-    cardName
-      ? `background-image: url('${getCardImageUrl(cardName)}'); background-size: cover; background-position: center`
-      : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+
+  // Build the image layer style (background image + reversal)
+  $: imageStyle = [
+    `background-image: url('${getCardImageUrl(cardName)}')`,
+    "background-size: cover",
+    "background-position: center",
+    reversed ? "transform: rotate(180deg)" : "",
   ]
     .filter(Boolean)
     .join("; ");
@@ -98,6 +107,10 @@
   title={positionLabel}
   aria-label="{positionLabel} - {cardName || 'Add card'}"
 >
+  {#if cardName}
+    <div class="card-image-layer" style={imageStyle}></div>
+  {/if}
+
   {#if showControls}
     <div class="card-controls">
       {#if canRotateLeft}
@@ -164,6 +177,22 @@
       aria-label="Add card to this position"
     >
       <span class="material-symbols-outlined">add_2</span>
+    </div>
+  {/if}
+
+  {#if showControls && cardName}
+    <div class="card-controls-bottom">
+      <div
+        class="card-control-btn reverse-btn"
+        title={reversed ? "Set upright" : "Reverse card"}
+        on:click|stopPropagation={() => dispatch("reverse")}
+        on:keydown={(e) => handleKeydown(e, () => dispatch("reverse"))}
+        role="button"
+        tabindex="0"
+        aria-label={reversed ? "Set card upright" : "Reverse card"}
+      >
+        <span class="material-symbols-outlined">swap_vert</span>
+      </div>
     </div>
   {/if}
 </button>
