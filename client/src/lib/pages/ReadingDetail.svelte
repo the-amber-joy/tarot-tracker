@@ -13,6 +13,7 @@
     position_x?: number;
     position_y?: number;
     rotation?: number;
+    reversed?: boolean | number;
   };
 
   type Reading = {
@@ -41,6 +42,7 @@
           position_x: card.position_x,
           position_y: card.position_y,
           rotation: card.rotation,
+          reversed: card.reversed === 1 || card.reversed === true,
         };
         return acc;
       },
@@ -116,7 +118,12 @@
         {#each reading.cards as card, index}
           <div class="card-detail">
             <h4>Card {index + 1}: {card.position}</h4>
-            <p class="card-detail-name">{card.card_name}</p>
+            <p class="card-detail-name">
+              {card.card_name}
+              {#if card.reversed}
+                <span class="reversed-indicator">(Reversed)</span>
+              {/if}
+            </p>
             {#if card.interpretation}
               <p class="card-interpretation">{card.interpretation}</p>
             {/if}
@@ -138,5 +145,12 @@
 <style>
   .querent-value {
     text-transform: capitalize;
+  }
+
+  .reversed-indicator {
+    color: #764ba2;
+    font-weight: normal;
+    font-style: italic;
+    margin-left: 0.5em;
   }
 </style>

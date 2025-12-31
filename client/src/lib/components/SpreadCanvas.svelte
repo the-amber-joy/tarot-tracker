@@ -417,6 +417,7 @@
       card_name: cardData.card_name,
       interpretation: cardData.interpretation,
       position_label: cardData.position_label,
+      reversed: cardData.reversed,
     };
 
     onCardsUpdate(newCards);

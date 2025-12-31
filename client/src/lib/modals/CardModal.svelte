@@ -19,6 +19,7 @@
   let tarotCards: TarotCard[] = [];
   let cardName = "";
   let cardInterpretation = "";
+  let cardReversed = false;
   let modalElement: HTMLDivElement;
   let showDropdown = false;
   let searchInput = "";
@@ -59,6 +60,7 @@
       card_name: cardName.trim(),
       interpretation: cardInterpretation.trim(),
       position_label: positionLabel,
+      reversed: cardReversed,
     });
 
     resetForm();
@@ -75,6 +77,7 @@
       card_name: "",
       interpretation: "",
       position_label: positionLabel,
+      reversed: false,
     });
   }
 
@@ -100,10 +103,12 @@
     cardName = existingCard.card_name || "";
     searchInput = existingCard.card_name || "";
     cardInterpretation = existingCard.interpretation || "";
+    cardReversed = existingCard.reversed || false;
   } else {
     cardName = "";
     searchInput = "";
     cardInterpretation = "";
+    cardReversed = false;
   }
 
   function handleSearchInput() {
@@ -137,6 +142,7 @@
     cardName = "";
     searchInput = "";
     cardInterpretation = "";
+    cardReversed = false;
     showDropdown = false;
     highlightedIndex = -1;
   }
@@ -359,6 +365,17 @@
               placeholder="Your interpretation of this card..."
               {readonly}
             ></textarea>
+          </div>
+
+          <div class="form-group form-group-checkbox">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                bind:checked={cardReversed}
+                disabled={readonly}
+              />
+              <span>Reversed</span>
+            </label>
           </div>
 
           <div class="modal-actions">

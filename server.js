@@ -2006,7 +2006,7 @@ app.post("/api/readings", requireAuth, (req, res) => {
 
       // Insert cards with card_id lookup
       const stmt = db.prepare(
-        "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation, reversed) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?, ?)",
       );
 
       cards.forEach((card, index) => {
@@ -2020,6 +2020,7 @@ app.post("/api/readings", requireAuth, (req, res) => {
           card.position_x || null,
           card.position_y || null,
           card.rotation || 0,
+          card.reversed ? 1 : 0,
         );
       });
 
@@ -2078,7 +2079,7 @@ app.put("/api/readings/:id", requireAuth, (req, res) => {
 
           // Insert updated cards with card_id lookup
           const stmt = db.prepare(
-            "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO reading_cards (reading_id, card_id, card_name, position, interpretation, card_order, position_x, position_y, rotation, reversed) VALUES (?, (SELECT id FROM cards WHERE name = ?), ?, ?, ?, ?, ?, ?, ?, ?)",
           );
 
           cards.forEach((card, index) => {
@@ -2092,6 +2093,7 @@ app.put("/api/readings/:id", requireAuth, (req, res) => {
               card.position_x || null,
               card.position_y || null,
               card.rotation || 0,
+              card.reversed ? 1 : 0,
             );
           });
 

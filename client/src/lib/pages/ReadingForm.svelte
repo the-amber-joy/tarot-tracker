@@ -84,6 +84,7 @@
             position_x: card.position_x,
             position_y: card.position_y,
             rotation: card.rotation,
+            reversed: card.reversed === 1 || card.reversed === true,
           };
           return acc;
         },
@@ -253,6 +254,7 @@
         position_x: card.position_x,
         position_y: card.position_y,
         rotation: card.rotation || 0,
+        reversed: card.reversed || false,
       })),
     };
 
