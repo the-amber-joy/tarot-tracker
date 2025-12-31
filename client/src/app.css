@@ -935,7 +935,7 @@ tbody tr:hover {
   width: 100px;
   height: 140px;
   background: white;
-  border: 2px solid #667eea;
+  border: 2px dashed #667eea;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -978,6 +978,8 @@ tbody tr:hover {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-color: #764ba2;
+  border-style: solid;
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 .position-number {

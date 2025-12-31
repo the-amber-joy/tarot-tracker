@@ -379,7 +379,7 @@
           type="text"
           id="title"
           bind:value={title}
-          placeholder="e.g., Daily Pull, Should I quit my job?"
+          placeholder="What do I need to know today?"
         />
       </div>
 
