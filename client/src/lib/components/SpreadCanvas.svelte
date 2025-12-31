@@ -62,6 +62,13 @@
     .map(([_, card]) => card.card_name)
     .filter((name) => name && name.trim());
 
+  // Helper to get card image URL from card name
+  function getCardImageUrl(cardName: string): string {
+    if (!cardName || !cardName.trim()) return "";
+    const filename = cardName.replace(/\s+/g, "").toLowerCase();
+    return `/tarot-images/${filename}.jpeg`;
+  }
+
   onMount(() => {
     loadSpreadTemplates();
     updateCanvasScale();
@@ -566,86 +573,23 @@
       })
       .styleCursor(false); // We manage cursor ourselves
 
-    // Setup rotation gesture on the rotation handle
-    const handle = element.querySelector(".rotation-handle") as HTMLElement;
-    if (handle) {
-      let startAngle = 0;
-      let startRotation = 0;
-
-      interact(handle)
-        .on("down", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-
-          // Prevent card click while rotating
-          justDragged[index] = true;
-          preventCanvasClick = true;
-
-          // Store the initial rotation
-          startRotation = spreadCards[index]?.rotation || 0;
-
-          // Get card center
-          const cardRect = element.getBoundingClientRect();
-          const centerX = cardRect.left + cardRect.width / 2;
-          const centerY = cardRect.top + cardRect.height / 2;
-
-          // Calculate initial angle from center to mouse
-          startAngle =
-            Math.atan2(event.clientY - centerY, event.clientX - centerX) *
-            (180 / Math.PI);
-        })
-        .draggable({
-          listeners: {
-            move(event) {
-              event.stopPropagation();
-
-              // Get card center
-              const cardRect = element.getBoundingClientRect();
-              const centerX = cardRect.left + cardRect.width / 2;
-              const centerY = cardRect.top + cardRect.height / 2;
-
-              // Calculate current angle from center to mouse
-              const currentAngle =
-                Math.atan2(event.clientY - centerY, event.clientX - centerX) *
-                (180 / Math.PI);
-
-              // Calculate the delta rotation
-              const deltaAngle = currentAngle - startAngle;
-              const degrees = Math.round(startRotation + deltaAngle);
-
-              // Apply rotation
-              element.style.transform = `rotate(${degrees}deg)`;
-
-              // Store the current rotation temporarily
-              element.dataset.tempRotation = degrees.toString();
-            },
-            end(event) {
-              event.stopPropagation();
-
-              const rotation = parseInt(element.dataset.tempRotation || "0");
-
-              // Update rotation in spreadCards
-              const newCards = { ...spreadCards };
-              newCards[index] = {
-                ...newCards[index],
-                rotation,
-              };
-              onCardsUpdate(newCards);
-
-              // Keep justDragged and preventCanvasClick flags longer to prevent modal/card creation
-              setTimeout(() => {
-                justDragged[index] = false;
-                preventCanvasClick = false;
-              }, 200);
-
-              delete element.dataset.tempRotation;
-            },
-          },
-        })
-        .styleCursor(false);
-    }
-
     return interactable;
+  }
+
+  // Handle rotation by 30 degrees on click
+  function rotateCard(event: Event, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentRotation = spreadCards[index]?.rotation || 0;
+    const newRotation = (currentRotation + 30) % 360;
+
+    const newCards = { ...spreadCards };
+    newCards[index] = {
+      ...newCards[index],
+      rotation: newRotation,
+    };
+    onCardsUpdate(newCards);
   }
 
   function handleCanvasKeydown(event: KeyboardEvent) {
@@ -725,7 +669,11 @@
             cardData.position_x,
           )}px; top: {scalePosition(cardData.position_y)}px; {cardData.rotation
             ? `transform: rotate(${cardData.rotation}deg)`
-            : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
+            : ''}; {readonly
+            ? 'cursor: default;'
+            : 'cursor: grab;'}; {cardData.card_name
+            ? `background-image: url('${getCardImageUrl(cardData.card_name)}'); background-size: cover; background-position: center;`
+            : ''}"
           on:click|stopPropagation={() => !readonly && handleCardClick(index)}
           use:interactCard={index}
           data-position-index={index}
@@ -750,10 +698,12 @@
               <span class="material-symbols-outlined">drag_handle</span>
             </div>
           {/if}
-          <div class="position-number">{index + 1}</div>
-          <div class="position-label">
-            {cardData.position_label || `Card ${index + 1}`}
-          </div>
+          {#if !cardData.card_name}
+            <div class="position-number">{index + 1}</div>
+            <div class="position-label">
+              {cardData.position_label || `Card ${index + 1}`}
+            </div>
+          {/if}
           {#if cardData.card_name}
             <div class="card-position-name">{cardData.card_name}</div>
           {:else}
@@ -773,7 +723,18 @@
             </div>
           {/if}
           {#if !readonly}
-            <div class="rotation-handle" title="Drag to rotate">
+            <div
+              class="rotation-handle"
+              title="Rotate 30°"
+              on:click={(e) => rotateCard(e, index)}
+              on:keydown={(e) =>
+                e.key === "Enter" || e.key === " "
+                  ? rotateCard(e, index)
+                  : null}
+              role="button"
+              tabindex="0"
+              aria-label="Rotate card"
+            >
               <span class="material-symbols-outlined"> rotate_right </span>
             </div>
           {/if}
@@ -792,7 +753,11 @@
             cardData.position_x,
           )}px; top: {scalePosition(cardData.position_y)}px; {cardData.rotation
             ? `transform: rotate(${cardData.rotation}deg)`
-            : ''}; {readonly ? 'cursor: default;' : 'cursor: grab;'}"
+            : ''}; {readonly
+            ? 'cursor: default;'
+            : 'cursor: grab;'}; {cardData.card_name
+            ? `background-image: url('${getCardImageUrl(cardData.card_name)}'); background-size: cover; background-position: center;`
+            : ''}"
           on:click|stopPropagation={() => handleCardClick(index)}
           use:interactCard={index}
           data-position-index={index}
@@ -817,10 +782,12 @@
               <span class="material-symbols-outlined">drag_handle</span>
             </div>
           {/if}
-          <div class="position-number">{index + 1}</div>
-          <div class="position-label">
-            {cardData.position_label || `Card ${index + 1}`}
-          </div>
+          {#if !cardData.card_name}
+            <div class="position-number">{index + 1}</div>
+            <div class="position-label">
+              {cardData.position_label || `Card ${index + 1}`}
+            </div>
+          {/if}
           {#if cardData.card_name}
             <div class="card-position-name">{cardData.card_name}</div>
           {:else}
@@ -840,7 +807,20 @@
             </div>
           {/if}
           {#if !readonly}
-            <div class="rotation-handle" title="Drag to rotate">↻</div>
+            <div
+              class="rotation-handle"
+              title="Rotate 30°"
+              on:click={(e) => rotateCard(e, index)}
+              on:keydown={(e) =>
+                e.key === "Enter" || e.key === " "
+                  ? rotateCard(e, index)
+                  : null}
+              role="button"
+              tabindex="0"
+              aria-label="Rotate card 30 degrees"
+            >
+              <span class="material-symbols-outlined">rotate_right</span>
+            </div>
           {/if}
         </button>
       {/each}
@@ -860,7 +840,9 @@
             yPos,
           )}px; {rotation
             ? `transform: rotate(${rotation}deg)`
-            : ''}; cursor: pointer;"
+            : ''}; cursor: pointer; {cardData?.card_name
+            ? `background-image: url('${getCardImageUrl(cardData.card_name)}'); background-size: cover; background-position: center;`
+            : ''}"
           on:click|stopPropagation={() => handleCardClick(index)}
           use:interactCard={index}
           data-position-index={index}
@@ -881,8 +863,6 @@
                 <span class="material-symbols-outlined"> close </span>
               </div>
             {/if}
-            <div class="position-number">{position.order}</div>
-            <div class="position-label">{position.label}</div>
             <div class="card-position-name">{cardData.card_name}</div>
           {:else}
             <div class="position-number">{position.order}</div>
