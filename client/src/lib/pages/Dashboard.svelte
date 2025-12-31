@@ -187,136 +187,150 @@
 
   <!-- Readings Tab Content -->
   <div class="tab-content" class:hidden={activeTab !== "readings"}>
-    <div class="filters-section">
-      <div class="controls">
-        <select class="styled-select" bind:value={deckFilter}>
-          <option value="">All Decks</option>
-          {#each uniqueDecks as deck}
-            <option value={deck}>{deck}</option>
-          {/each}
-        </select>
-        <select class="styled-select" bind:value={spreadFilter}>
-          <option value="">All Spreads</option>
-          {#each uniqueSpreads as spread}
-            <option value={spread}>{spread}</option>
-          {/each}
-        </select>
-        <select class="styled-select" bind:value={statusFilter}>
-          <option value="">All Readings</option>
-          <option value="complete">Complete</option>
-          <option value="incomplete">Incomplete</option>
-        </select>
-        <select class="styled-select querent-filter" bind:value={querentFilter}>
-          <option value="">All Querents</option>
-          {#each uniqueQuerents as querent}
-            <option value={querent}>{querent}</option>
-          {/each}
-        </select>
-        {#if deckFilter || statusFilter || spreadFilter || querentFilter}
-          <button class="clear-filters-btn" on:click={clearFilters}>
-            Clear Filters
-          </button>
-        {/if}
-      </div>
-      <button class="mobile-sort-btn" on:click={toggleDateSort}>
-        Sort by Date {sortAscending ? "↑" : "↓"}
-      </button>
-    </div>
-
-    <!-- Table layout for larger screens -->
-    <table class="readings-table">
-      <thead>
-        <tr>
-          <th
-            class="sortable"
-            on:click={toggleDateSort}
-            on:keydown={handleSortKeydown}
-            tabindex="0"
+    {#if readings.length > 0}
+      <div class="filters-section">
+        <div class="controls">
+          <select class="styled-select" bind:value={deckFilter}>
+            <option value="">All Decks</option>
+            {#each uniqueDecks as deck}
+              <option value={deck}>{deck}</option>
+            {/each}
+          </select>
+          <select class="styled-select" bind:value={spreadFilter}>
+            <option value="">All Spreads</option>
+            {#each uniqueSpreads as spread}
+              <option value={spread}>{spread}</option>
+            {/each}
+          </select>
+          <select class="styled-select" bind:value={statusFilter}>
+            <option value="">All Readings</option>
+            <option value="complete">Complete</option>
+            <option value="incomplete">Incomplete</option>
+          </select>
+          <select
+            class="styled-select querent-filter"
+            bind:value={querentFilter}
           >
-            Date {sortAscending ? "↑" : "↓"}
-          </th>
-          <th>Title / Question</th>
-          <th>Querent</th>
-          <th>Spread</th>
-          <th>Deck</th>
-        </tr>
-      </thead>
-      <tbody aria-live="polite">
-        {#if readings.length === 0}
-          <tr>
-            <td colspan="5" class="empty-message">
-              No readings yet. Tap the + button below to get started!
-            </td>
-          </tr>
-        {:else}
-          {#each sortedReadings as reading}
-            <tr
-              on:click={() => handleReadingClick(reading)}
-              on:keydown={(e) => handleRowKeydown(e, reading)}
-              tabindex="0"
-              style="cursor: pointer;"
-            >
-              <td>{formatDateTime(reading.date, reading.time)}</td>
-              <td>
-                {#if reading.is_incomplete}
-                  <span class="incomplete-icon" title="Incomplete">⚠️</span>
-                {/if}
-                {reading.title}
-              </td>
-              <td class="querent-cell">{reading.querent || "Myself"}</td>
-              <td
-                ><span class="spread-badge"
-                  >{getSpreadLayout(reading.spread_template_id)}</span
-                ></td
-              >
-              <td>{reading.deck_name || "No Deck Specified"}</td>
-            </tr>
-          {/each}
-        {/if}
-      </tbody>
-    </table>
+            <option value="">All Querents</option>
+            {#each uniqueQuerents as querent}
+              <option value={querent}>{querent}</option>
+            {/each}
+          </select>
+          {#if deckFilter || statusFilter || spreadFilter || querentFilter}
+            <button class="clear-filters-btn" on:click={clearFilters}>
+              Clear Filters
+            </button>
+          {/if}
+        </div>
+        <button class="mobile-sort-btn" on:click={toggleDateSort}>
+          Sort by Date {sortAscending ? "↑" : "↓"}
+        </button>
+      </div>
+    {/if}
 
-    <!-- Card layout for mobile -->
-    <div class="readings-cards" aria-live="polite">
-      {#if sortedReadings.length === 0}
+    {#if readings.length === 0}
+      <!-- Empty state when no readings exist -->
+      <div class="empty-state" aria-live="polite">
         <p class="empty-message">
           No readings yet. Tap the + button below to get started!
         </p>
-      {:else}
-        {#each sortedReadings as reading}
-          <button
-            class="reading-card"
-            on:click={() => handleReadingClick(reading)}
-            on:keydown={(e) => handleRowKeydown(e, reading)}
-          >
-            <div class="reading-card-header">
-              <span class="reading-spread">
-                {#if reading.is_incomplete}
-                  <span class="incomplete-icon" title="Incomplete">⚠️</span>
-                {/if}
-                {reading.title}
-              </span>
-              <span class="spread-badge"
-                >{getSpreadLayout(reading.spread_template_id)}</span
+      </div>
+    {:else}
+      <!-- Table layout for larger screens -->
+      <table class="readings-table">
+        <thead>
+          <tr>
+            <th
+              class="sortable"
+              on:click={toggleDateSort}
+              on:keydown={handleSortKeydown}
+              tabindex="0"
+            >
+              Date {sortAscending ? "↑" : "↓"}
+            </th>
+            <th>Title / Question</th>
+            <th>Querent</th>
+            <th>Spread</th>
+            <th>Deck</th>
+          </tr>
+        </thead>
+        <tbody aria-live="polite">
+          {#if sortedReadings.length === 0}
+            <tr>
+              <td colspan="5" class="empty-message">
+                No readings match your filters. Try adjusting your selection.
+              </td>
+            </tr>
+          {:else}
+            {#each sortedReadings as reading}
+              <tr
+                on:click={() => handleReadingClick(reading)}
+                on:keydown={(e) => handleRowKeydown(e, reading)}
+                tabindex="0"
+                style="cursor: pointer;"
               >
-            </div>
-            <div class="reading-card-footer">
-              <div class="reading-date-info">
-                <span class="reading-date"
-                  >{formatDateTime(reading.date, reading.time)}</span
+                <td>{formatDateTime(reading.date, reading.time)}</td>
+                <td>
+                  {#if reading.is_incomplete}
+                    <span class="incomplete-icon" title="Incomplete">⚠️</span>
+                  {/if}
+                  {reading.title}
+                </td>
+                <td class="querent-cell">{reading.querent || "Myself"}</td>
+                <td
+                  ><span class="spread-badge"
+                    >{getSpreadLayout(reading.spread_template_id)}</span
+                  ></td
                 >
-                <span class="reading-querent"
-                  >{reading.querent || "Myself"}</span
+                <td>{reading.deck_name || "No Deck Specified"}</td>
+              </tr>
+            {/each}
+          {/if}
+        </tbody>
+      </table>
+
+      <!-- Card layout for mobile -->
+      <div class="readings-cards" aria-live="polite">
+        {#if sortedReadings.length === 0}
+          <p class="empty-message">
+            No readings match your filters. Try adjusting your selection.
+          </p>
+        {:else}
+          {#each sortedReadings as reading}
+            <button
+              class="reading-card"
+              on:click={() => handleReadingClick(reading)}
+              on:keydown={(e) => handleRowKeydown(e, reading)}
+            >
+              <div class="reading-card-header">
+                <span class="reading-spread">
+                  {#if reading.is_incomplete}
+                    <span class="incomplete-icon" title="Incomplete">⚠️</span>
+                  {/if}
+                  {reading.title}
+                </span>
+                <span class="spread-badge"
+                  >{getSpreadLayout(reading.spread_template_id)}</span
                 >
               </div>
-              <span class="reading-deck"
-                >{reading.deck_name || "No Deck Specified"}</span
-              >
-            </div>
-          </button>
-        {/each}
-      {/if}
-    </div>
+              <div class="reading-card-footer">
+                <div class="reading-date-info">
+                  <span class="reading-date"
+                    >{formatDateTime(reading.date, reading.time)}</span
+                  >
+                  <span class="reading-querent"
+                    >{reading.querent || "Myself"}</span
+                  >
+                </div>
+                <span class="reading-deck"
+                  >{reading.deck_name || "No Deck Specified"}</span
+                >
+              </div>
+            </button>
+          {/each}
+        {/if}
+      </div>
+    {/if}
   </div>
 
   <!-- Reports Tab Content -->

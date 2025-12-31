@@ -574,54 +574,60 @@
   <section class="reports-section">
     <h3>Reading Statistics</h3>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-      <div class="filter-group">
-        <label for="timespan">Time Period:</label>
-        <select
-          id="timespan"
-          class="styled-select"
-          bind:value={selectedTimespan}
-        >
-          <option value="7days">Last 7 Days</option>
-          <option value="30days">Last 30 Days</option>
-          <option value="3months">Last 3 Months</option>
-          <option value="6months">Last 6 Months</option>
-          <option value="12months">Last 12 Months</option>
-          <option value="yearToDate">Year to Date</option>
-          {#if showSelectedYearOption}
-            <option value="selectedYear">Select a Year</option>
-          {/if}
-          <option value="allTime">All Time</option>
-        </select>
+    {#if readings.length > 0}
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="timespan">Time Period:</label>
+          <select
+            id="timespan"
+            class="styled-select"
+            bind:value={selectedTimespan}
+          >
+            <option value="7days">Last 7 Days</option>
+            <option value="30days">Last 30 Days</option>
+            <option value="3months">Last 3 Months</option>
+            <option value="6months">Last 6 Months</option>
+            <option value="12months">Last 12 Months</option>
+            <option value="yearToDate">Year to Date</option>
+            {#if showSelectedYearOption}
+              <option value="selectedYear">Select a Year</option>
+            {/if}
+            <option value="allTime">All Time</option>
+          </select>
 
-        {#if selectedTimespan === "selectedYear"}
-          <select class="styled-select" bind:value={selectedYear}>
-            {#each availableYears as year}
-              <option value={year}>{year}</option>
+          {#if selectedTimespan === "selectedYear"}
+            <select class="styled-select" bind:value={selectedYear}>
+              {#each availableYears as year}
+                <option value={year}>{year}</option>
+              {/each}
+            </select>
+          {/if}
+        </div>
+
+        <div class="filter-group">
+          <label for="querent-filter">Querent:</label>
+          <select
+            id="querent-filter"
+            class="styled-select querent-select"
+            bind:value={selectedQuerent}
+          >
+            {#each querents as q}
+              <option value={q}>{q}</option>
             {/each}
           </select>
-        {/if}
+        </div>
       </div>
-
-      <div class="filter-group">
-        <label for="querent-filter">Querent:</label>
-        <select
-          id="querent-filter"
-          class="styled-select querent-select"
-          bind:value={selectedQuerent}
-        >
-          {#each querents as q}
-            <option value={q}>{q}</option>
-          {/each}
-        </select>
-      </div>
-    </div>
+    {/if}
 
     {#if readings.length === 0}
       <p class="empty-message">
         Create your first reading to start seeing reports. Tap the + button
         below to get started!
+      </p>
+    {:else if analytics?.totalReadings === 0}
+      <p class="empty-message">
+        No readings match your filters. Try adjusting your selection.
       </p>
     {:else}
       <!-- Top 3 Cards -->
