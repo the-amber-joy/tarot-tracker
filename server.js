@@ -1553,7 +1553,7 @@ app.delete("/api/decks/:id", requireAuth, (req, res) => {
 
 // Get card frequency statistics
 app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, querent } = req.query;
 
   let query = `
     SELECT 
@@ -1580,6 +1580,11 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
     params.push(endDate);
   }
 
+  if (querent) {
+    query += ` AND LOWER(r.querent) = LOWER(?)`;
+    params.push(querent);
+  }
+
   query += `
     GROUP BY c.id, c.name
     ORDER BY count DESC
@@ -1595,7 +1600,7 @@ app.get("/api/stats/card-frequency", requireAuth, (req, res) => {
 
 // Get suit distribution statistics
 app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, querent } = req.query;
 
   let query = `
     SELECT 
@@ -1617,6 +1622,11 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
   if (endDate) {
     query += ` AND r.date <= ?`;
     params.push(endDate);
+  }
+
+  if (querent) {
+    query += ` AND LOWER(r.querent) = LOWER(?)`;
+    params.push(querent);
   }
 
   query += ` GROUP BY c.suit`;
@@ -1647,7 +1657,7 @@ app.get("/api/stats/suit-distribution", requireAuth, (req, res) => {
 
 // Get suit frequency over time (for grouped bar chart)
 app.get("/api/stats/suit-frequency-over-time", requireAuth, (req, res) => {
-  const { startDate, endDate, groupBy } = req.query;
+  const { startDate, endDate, groupBy, querent } = req.query;
 
   if (!groupBy || !["day", "month", "year"].includes(groupBy)) {
     return res
@@ -1686,6 +1696,11 @@ app.get("/api/stats/suit-frequency-over-time", requireAuth, (req, res) => {
   if (endDate) {
     query += ` AND r.date <= ?`;
     params.push(endDate);
+  }
+
+  if (querent) {
+    query += ` AND LOWER(r.querent) = LOWER(?)`;
+    params.push(querent);
   }
 
   query += ` GROUP BY period, c.suit ORDER BY period`;
@@ -1748,7 +1763,7 @@ app.get("/api/stats/number-distribution", requireAuth, (req, res) => {
 
 // Get consolidated analytics (user-scoped)
 app.get("/api/stats/analytics", requireAuth, (req, res) => {
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, querent } = req.query;
 
   // Build WHERE clause for date filtering
   let dateFilter = "";
@@ -1762,6 +1777,11 @@ app.get("/api/stats/analytics", requireAuth, (req, res) => {
   if (endDate) {
     dateFilter += " AND r.date <= ?";
     dateParams.push(endDate);
+  }
+
+  if (querent) {
+    dateFilter += " AND LOWER(r.querent) = LOWER(?)";
+    dateParams.push(querent);
   }
 
   db.serialize(() => {
@@ -1873,6 +1893,7 @@ app.get("/api/readings", requireAuth, (req, res) => {
       r.spread_template_id,
       r.deck_name,
       r.notes,
+      r.querent,
       COUNT(rc.id) as card_count,
       SUM(CASE WHEN rc.card_name IS NULL OR rc.card_name = '' THEN 1 ELSE 0 END) as empty_positions
     FROM readings r
@@ -1950,12 +1971,32 @@ app.get("/api/readings/:id", requireAuth, (req, res) => {
 
 // Create a new reading
 app.post("/api/readings", requireAuth, (req, res) => {
-  const { date, time, title, spread_template_id, deck_name, notes, cards } =
-    req.body;
+  const {
+    date,
+    time,
+    title,
+    spread_template_id,
+    deck_name,
+    notes,
+    cards,
+    querent,
+  } = req.body;
+
+  // Default querent to "Myself" if not provided, and capitalize it
+  const normalizedQuerent = (querent || "Myself").trim() || "Myself";
 
   db.run(
-    "INSERT INTO readings (user_id, date, time, title, spread_template_id, deck_name, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [req.user.id, date, time, title, spread_template_id, deck_name, notes],
+    "INSERT INTO readings (user_id, date, time, title, spread_template_id, deck_name, notes, querent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    [
+      req.user.id,
+      date,
+      time,
+      title,
+      spread_template_id,
+      deck_name,
+      notes,
+      normalizedQuerent,
+    ],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -1994,11 +2035,22 @@ app.post("/api/readings", requireAuth, (req, res) => {
 
 // Update a reading
 app.put("/api/readings/:id", requireAuth, (req, res) => {
-  const { date, time, title, spread_template_id, deck_name, notes, cards } =
-    req.body;
+  const {
+    date,
+    time,
+    title,
+    spread_template_id,
+    deck_name,
+    notes,
+    cards,
+    querent,
+  } = req.body;
+
+  // Default querent to "Myself" if not provided, and normalize it
+  const normalizedQuerent = (querent || "Myself").trim() || "Myself";
 
   db.run(
-    "UPDATE readings SET date = ?, time = ?, title = ?, spread_template_id = ?, deck_name = ?, notes = ? WHERE id = ? AND user_id = ?",
+    "UPDATE readings SET date = ?, time = ?, title = ?, spread_template_id = ?, deck_name = ?, notes = ?, querent = ? WHERE id = ? AND user_id = ?",
     [
       date,
       time,
@@ -2006,6 +2058,7 @@ app.put("/api/readings/:id", requireAuth, (req, res) => {
       spread_template_id,
       deck_name,
       notes,
+      normalizedQuerent,
       req.params.id,
       req.user.id,
     ],
@@ -2050,6 +2103,21 @@ app.put("/api/readings/:id", requireAuth, (req, res) => {
           });
         },
       );
+    },
+  );
+});
+
+// Get distinct querents for the current user
+app.get("/api/querents", requireAuth, (req, res) => {
+  db.all(
+    `SELECT DISTINCT querent FROM readings WHERE user_id = ? AND querent IS NOT NULL ORDER BY querent COLLATE NOCASE`,
+    [req.user.id],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      const querents = rows.map((r) => r.querent);
+      res.json(querents);
     },
   );
 });

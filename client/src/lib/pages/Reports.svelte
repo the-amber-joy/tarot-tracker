@@ -14,6 +14,7 @@
     title: string;
     spread_template_id?: string;
     deck_name: string;
+    querent?: string;
     is_incomplete?: boolean;
   };
 
@@ -33,6 +34,10 @@
   let selectedYear: number = new Date().getFullYear();
   let filterInitialized = false;
 
+  // Querent filter
+  let selectedQuerent: string = "Myself";
+  let querents: string[] = [];
+
   // Load saved filter from localStorage
   function loadSavedFilter() {
     try {
@@ -45,6 +50,9 @@
         if (parsed.year) {
           selectedYear = parsed.year;
         }
+        if (parsed.querent) {
+          selectedQuerent = parsed.querent;
+        }
       }
     } catch (e) {
       // Ignore localStorage errors
@@ -56,7 +64,11 @@
   $: if (filterInitialized && typeof localStorage !== "undefined") {
     localStorage.setItem(
       "reports-timespan",
-      JSON.stringify({ timespan: selectedTimespan, year: selectedYear }),
+      JSON.stringify({
+        timespan: selectedTimespan,
+        year: selectedYear,
+        querent: selectedQuerent,
+      }),
     );
   }
 
@@ -389,8 +401,8 @@
     };
   }
 
-  // Reload data when timespan changes
-  $: if (selectedTimespan || selectedYear) {
+  // Reload data when timespan or querent changes
+  $: if (selectedTimespan || selectedYear || selectedQuerent) {
     // Capture current section before data reload
     if (typeof document !== "undefined") {
       currentSectionId = getCurrentVisibleSection();
@@ -427,6 +439,7 @@
   async function loadData() {
     await Promise.all([
       loadReadings(),
+      loadQuerents(),
       loadSuitDistribution(),
       loadSuitFrequencyOverTime(),
       loadAnalytics(),
@@ -464,6 +477,7 @@
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
+      if (selectedQuerent) params.append("querent", selectedQuerent);
 
       const response = await fetch(`/api/stats/suit-distribution?${params}`);
       suitDistribution = await response.json();
@@ -490,6 +504,7 @@
       params.append("groupBy", groupBy);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
+      if (selectedQuerent) params.append("querent", selectedQuerent);
 
       const response = await fetch(
         `/api/stats/suit-frequency-over-time?${params}`,
@@ -506,6 +521,7 @@
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
+      if (selectedQuerent) params.append("querent", selectedQuerent);
 
       const response = await fetch(`/api/stats/analytics?${params}`);
       analytics = await response.json();
@@ -520,6 +536,7 @@
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
+      if (selectedQuerent) params.append("querent", selectedQuerent);
 
       const response = await fetch(`/api/stats/card-frequency?${params}`);
       allCardFrequency = await response.json();
@@ -541,6 +558,15 @@
       console.error("Error loading readings:", error);
     }
   }
+
+  async function loadQuerents() {
+    try {
+      const response = await fetch("/api/querents");
+      querents = await response.json();
+    } catch (error) {
+      console.error("Error loading querents:", error);
+    }
+  }
 </script>
 
 <div class="reports-container">
@@ -548,29 +574,48 @@
   <section class="reports-section">
     <h3>Reading Statistics</h3>
 
-    <!-- Timespan Selector -->
-    <div class="timespan-selector">
-      <label for="timespan">Time Period:</label>
-      <select id="timespan" class="styled-select" bind:value={selectedTimespan}>
-        <option value="7days">Last 7 Days</option>
-        <option value="30days">Last 30 Days</option>
-        <option value="3months">Last 3 Months</option>
-        <option value="6months">Last 6 Months</option>
-        <option value="12months">Last 12 Months</option>
-        <option value="yearToDate">Year to Date</option>
-        {#if showSelectedYearOption}
-          <option value="selectedYear">Select a Year</option>
-        {/if}
-        <option value="allTime">All Time</option>
-      </select>
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label for="timespan">Time Period:</label>
+        <select
+          id="timespan"
+          class="styled-select"
+          bind:value={selectedTimespan}
+        >
+          <option value="7days">Last 7 Days</option>
+          <option value="30days">Last 30 Days</option>
+          <option value="3months">Last 3 Months</option>
+          <option value="6months">Last 6 Months</option>
+          <option value="12months">Last 12 Months</option>
+          <option value="yearToDate">Year to Date</option>
+          {#if showSelectedYearOption}
+            <option value="selectedYear">Select a Year</option>
+          {/if}
+          <option value="allTime">All Time</option>
+        </select>
 
-      {#if selectedTimespan === "selectedYear"}
-        <select class="styled-select" bind:value={selectedYear}>
-          {#each availableYears as year}
-            <option value={year}>{year}</option>
+        {#if selectedTimespan === "selectedYear"}
+          <select class="styled-select" bind:value={selectedYear}>
+            {#each availableYears as year}
+              <option value={year}>{year}</option>
+            {/each}
+          </select>
+        {/if}
+      </div>
+
+      <div class="filter-group">
+        <label for="querent-filter">Querent:</label>
+        <select
+          id="querent-filter"
+          class="styled-select querent-select"
+          bind:value={selectedQuerent}
+        >
+          {#each querents as q}
+            <option value={q}>{q}</option>
           {/each}
         </select>
-      {/if}
+      </div>
     </div>
 
     {#if readings.length === 0}
@@ -847,11 +892,11 @@
     padding-bottom: 0.5rem;
   }
 
-  /* Timespan Selector Styles */
-  .timespan-selector {
+  /* Filter Bar Styles */
+  .filter-bar {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 2rem;
     margin-bottom: 2rem;
     padding: 1rem;
     background: var(--color-bg-white);
@@ -863,10 +908,33 @@
     z-index: 10;
   }
 
-  .timespan-selector label {
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-group label {
     font-weight: 600;
     color: var(--color-text-secondary);
     font-size: 0.95rem;
+  }
+
+  .querent-select {
+    text-transform: capitalize;
+  }
+
+  @media (max-width: 600px) {
+    .filter-bar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .filter-group {
+      width: 100%;
+    }
   }
 
   .reports-section h4 {

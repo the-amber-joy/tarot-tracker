@@ -35,6 +35,8 @@
   let previousSpreadTemplate = "";
   let title = "";
   let notes = "";
+  let querent = "Myself";
+  let querents: string[] = [];
   let spreadCards: Record<number, any> = {};
   let showDeckModal = false;
 
@@ -47,7 +49,7 @@
   let toastType: "success" | "error" | "info" = "success";
 
   onMount(async () => {
-    await Promise.all([loadDecks(), loadSpreadTemplates()]);
+    await Promise.all([loadDecks(), loadSpreadTemplates(), loadQuerents()]);
     if (isEditMode) {
       await loadReadingData();
     }
@@ -69,6 +71,7 @@
       previousSpreadTemplate = reading.spread_template_id || "custom";
       title = reading.title;
       notes = reading.notes || "";
+      querent = reading.querent || "Myself";
 
       // Transform cards into spreadCards format using card_order as the key
       spreadCards = reading.cards.reduce(
@@ -128,6 +131,15 @@
       spreadTemplates = await response.json();
     } catch (error) {
       console.error("Error loading spread templates:", error);
+    }
+  }
+
+  async function loadQuerents() {
+    try {
+      const response = await fetch("/api/querents");
+      querents = await response.json();
+    } catch (error) {
+      console.error("Error loading querents:", error);
     }
   }
 
@@ -232,6 +244,7 @@
         title ||
         (spreadTemplate === "celtic-cross" ? "Celtic Cross" : "Custom Spread"),
       notes: notes,
+      querent: querent || "Myself",
       cards: Object.entries(spreadCards).map(([indexStr, card]) => ({
         card_order: parseInt(indexStr),
         position: card.position_label,
@@ -309,6 +322,23 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label for="querent">Querent</label>
+        <input
+          type="text"
+          id="querent"
+          bind:value={querent}
+          list="querent-options"
+          placeholder="Myself"
+          class="querent-input"
+        />
+        <datalist id="querent-options">
+          {#each querents as q}
+            <option value={q}></option>
+          {/each}
+        </datalist>
       </div>
 
       <div class="form-group">
@@ -411,5 +441,9 @@
     font-weight: 600;
     color: var(--color-primary);
     border-top: 1px solid var(--color-border);
+  }
+
+  .querent-input {
+    text-transform: capitalize;
   }
 </style>

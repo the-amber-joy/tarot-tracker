@@ -23,6 +23,7 @@
     spread_template_id?: string;
     deck_name: string;
     notes?: string;
+    querent?: string;
     cards: Card[];
   };
 
@@ -80,6 +81,10 @@
             {reading.time}
           </div>
           <div class="detail-item">
+            <strong>Querent:</strong>
+            <span class="querent-value">{reading.querent || "Myself"}</span>
+          </div>
+          <div class="detail-item">
             <strong>Deck:</strong>
             {reading.deck_name || "No Deck Specified"}
           </div>
@@ -129,3 +134,9 @@
     <p>Error loading reading: {error.message}</p>
   </div>
 {/await}
+
+<style>
+  .querent-value {
+    text-transform: capitalize;
+  }
+</style>
