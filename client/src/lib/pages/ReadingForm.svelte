@@ -137,7 +137,7 @@
 
   async function loadQuerents() {
     try {
-      const response = await fetch("/api/querents");
+      const response = await fetch("/api/readings/querents");
       querents = await response.json();
     } catch (error) {
       console.error("Error loading querents:", error);

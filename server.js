@@ -81,22 +81,6 @@ app.use("/api/stats", requireAuth, statsRoutes);
 app.use("/api/readings", requireAuth, readingsRoutes);
 app.use("/api/spreads", spreadsRoutes);
 
-// Get distinct querents for the current user
-app.get("/api/querents", requireAuth, (req, res) => {
-  const db = require("./database");
-  db.all(
-    `SELECT DISTINCT querent FROM readings WHERE user_id = ? AND querent IS NOT NULL ORDER BY querent COLLATE NOCASE`,
-    [req.user.id],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      const querents = rows.map((r) => r.querent);
-      res.json(querents);
-    },
-  );
-});
-
 // Serve deployment info
 app.get("/deploy.txt", (req, res) => {
   res.sendFile(path.join(__dirname, "deploy.txt"));

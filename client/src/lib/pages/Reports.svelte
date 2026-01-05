@@ -572,7 +572,7 @@
 
   async function loadQuerents() {
     try {
-      const response = await fetch("/api/querents");
+      const response = await fetch("/api/readings/querents");
       const loadedQuerents = await response.json();
       // Add "All" option if there are multiple querents
       if (loadedQuerents.length > 1) {

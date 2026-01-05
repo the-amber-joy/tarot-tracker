@@ -63,6 +63,21 @@ router.get("/", (req, res) => {
   );
 });
 
+// Get distinct querents for the current user (MUST come before /:id route)
+router.get("/querents", (req, res) => {
+  db.all(
+    `SELECT DISTINCT querent FROM readings WHERE user_id = ? AND querent IS NOT NULL ORDER BY querent COLLATE NOCASE`,
+    [req.user.id],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      const querents = rows.map((r) => r.querent);
+      res.json(querents);
+    },
+  );
+});
+
 // Get a single reading with all its cards
 router.get("/:id", (req, res) => {
   db.get(
