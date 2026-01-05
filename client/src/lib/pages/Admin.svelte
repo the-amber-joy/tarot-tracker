@@ -93,7 +93,7 @@
     showDeploymentInfo = true;
     deploymentLoading = true;
     try {
-      const response = await fetch("/api/deploy-info");
+      const response = await fetch("/api/admin/deploy-info");
       if (!response.ok) {
         throw new Error("Failed to load deployment info");
       }
