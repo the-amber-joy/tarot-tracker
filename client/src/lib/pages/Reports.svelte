@@ -52,10 +52,17 @@
         }
         if (parsed.querent) {
           selectedQuerent = parsed.querent;
+        } else {
+          // Default to "Myself" if no querent was saved
+          selectedQuerent = "Myself";
         }
+      } else {
+        // Default to "Myself" if no saved filter exists
+        selectedQuerent = "Myself";
       }
     } catch (e) {
-      // Ignore localStorage errors
+      // Ignore localStorage errors, default to "Myself"
+      selectedQuerent = "Myself";
     }
     filterInitialized = true;
   }
@@ -477,7 +484,8 @@
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
-      if (selectedQuerent) params.append("querent", selectedQuerent);
+      if (selectedQuerent && selectedQuerent !== "All")
+        params.append("querent", selectedQuerent);
 
       const response = await fetch(`/api/stats/suit-distribution?${params}`);
       suitDistribution = await response.json();
@@ -504,7 +512,8 @@
       params.append("groupBy", groupBy);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
-      if (selectedQuerent) params.append("querent", selectedQuerent);
+      if (selectedQuerent && selectedQuerent !== "All")
+        params.append("querent", selectedQuerent);
 
       const response = await fetch(
         `/api/stats/suit-frequency-over-time?${params}`,
@@ -521,7 +530,8 @@
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
-      if (selectedQuerent) params.append("querent", selectedQuerent);
+      if (selectedQuerent && selectedQuerent !== "All")
+        params.append("querent", selectedQuerent);
 
       const response = await fetch(`/api/stats/analytics?${params}`);
       analytics = await response.json();
@@ -536,7 +546,8 @@
       const params = new URLSearchParams();
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
-      if (selectedQuerent) params.append("querent", selectedQuerent);
+      if (selectedQuerent && selectedQuerent !== "All")
+        params.append("querent", selectedQuerent);
 
       const response = await fetch(`/api/stats/card-frequency?${params}`);
       allCardFrequency = await response.json();
@@ -562,7 +573,13 @@
   async function loadQuerents() {
     try {
       const response = await fetch("/api/querents");
-      querents = await response.json();
+      const loadedQuerents = await response.json();
+      // Add "All" option if there are multiple querents
+      if (loadedQuerents.length > 1) {
+        querents = ["All", ...loadedQuerents];
+      } else {
+        querents = loadedQuerents;
+      }
     } catch (error) {
       console.error("Error loading querents:", error);
     }
