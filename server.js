@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
+const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const { passport, requireAuth, requireAdmin } = require("./auth");
 const { setupSession } = require("./src/middleware/session");
@@ -20,6 +21,16 @@ const spreadsRoutes = require("./src/routes/spreads.routes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.disable("x-powered-by");
+
+// Security headers with Helmet
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Allow inline styles/scripts (can be configured later)
+    crossOriginEmbedderPolicy: false, // Allow loading external resources
+  }),
+);
+
 // Validate required environment variables in production
 if (process.env.NODE_ENV === "production") {
   if (
@@ -34,7 +45,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // Limit JSON payload size
 app.use(cookieParser());
 
 // Serve static tarot card images
