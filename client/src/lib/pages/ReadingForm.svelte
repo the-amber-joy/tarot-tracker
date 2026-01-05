@@ -37,6 +37,8 @@
   let notes = "";
   let querent = "Myself";
   let querents: string[] = [];
+  let showCustomQuerent = false;
+  let customQuerentName = "";
   let spreadCards: Record<number, any> = {};
   let showDeckModal = false;
 
@@ -328,19 +330,38 @@
 
       <div class="form-group">
         <label for="querent">Querent</label>
-        <input
-          type="text"
+        <select
           id="querent"
+          class="styled-select"
           bind:value={querent}
-          list="querent-options"
-          placeholder="Myself"
-          class="querent-input"
-        />
-        <datalist id="querent-options">
+          on:change={(e) => {
+            if (e.currentTarget.value === "") {
+              showCustomQuerent = true;
+              customQuerentName = "";
+            } else {
+              showCustomQuerent = false;
+            }
+          }}
+        >
           {#each querents as q}
-            <option value={q}></option>
+            <option value={q}>{q}</option>
           {/each}
-        </datalist>
+          <option value="">+ Add New Querent...</option>
+        </select>
+        {#if showCustomQuerent}
+          <input
+            type="text"
+            bind:value={customQuerentName}
+            placeholder="Enter querent name"
+            class="querent-custom-input"
+            autofocus
+            on:input={() => {
+              if (customQuerentName.trim()) {
+                querent = customQuerentName.trim();
+              }
+            }}
+          />
+        {/if}
       </div>
 
       <div class="form-group">
@@ -445,7 +466,19 @@
     border-top: 1px solid var(--color-border);
   }
 
-  .querent-input {
+  .querent-custom-input {
+    margin-top: 0.5rem;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
     text-transform: capitalize;
+  }
+
+  .querent-custom-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 </style>
