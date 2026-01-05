@@ -574,11 +574,18 @@
     try {
       const response = await fetch("/api/readings/querents");
       const loadedQuerents = await response.json();
-      // Add "All" option if there are multiple querents
+
+      // Separate "Myself" from other querents
+      const myself = loadedQuerents.find((q: string) => q === "Myself");
+      const others = loadedQuerents
+        .filter((q: string) => q !== "Myself")
+        .sort((a: string, b: string) => a.localeCompare(b));
+
+      // Build final list: "All" (if multiple), "Myself", then alphabetized others
       if (loadedQuerents.length > 1) {
-        querents = ["All", ...loadedQuerents];
+        querents = ["All", myself, ...others].filter(Boolean);
       } else {
-        querents = loadedQuerents;
+        querents = [myself, ...others].filter(Boolean);
       }
     } catch (error) {
       console.error("Error loading querents:", error);
