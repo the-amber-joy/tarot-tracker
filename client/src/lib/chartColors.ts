@@ -29,20 +29,16 @@ export const suitColors = {
 
 // Helper function to get suit colors as arrays for grouped bar chart
 export function getSuitColorsArray(includeMajorArcana: boolean = true) {
+  const minorArcanaSuits = [
+    suitColors.wands,
+    suitColors.cups,
+    suitColors.swords,
+    suitColors.pentacles,
+  ];
+
   const suits = includeMajorArcana
-    ? [
-        suitColors.majorArcana,
-        suitColors.wands,
-        suitColors.cups,
-        suitColors.swords,
-        suitColors.pentacles,
-      ]
-    : [
-        suitColors.wands,
-        suitColors.cups,
-        suitColors.swords,
-        suitColors.pentacles,
-      ];
+    ? [suitColors.majorArcana, ...minorArcanaSuits]
+    : minorArcanaSuits;
 
   return {
     backgrounds: suits.map((s) => s.background),

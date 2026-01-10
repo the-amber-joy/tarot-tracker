@@ -6,6 +6,12 @@
   import Toast from "../components/Toast.svelte";
   import AddDeckModal from "../modals/AddDeckModal.svelte";
   import ConfirmModal from "../modals/ConfirmModal.svelte";
+  import {
+    getDefaultTitle,
+    getDisplayDeckName,
+    normalizeDeckName,
+    readingCardsMapToApiCards,
+  } from "../utils/cardUtils";
 
   export let params: { id?: string } = {};
 
@@ -67,8 +73,7 @@
       // Populate form fields
       date = reading.date;
       time = reading.time;
-      deckName =
-        reading.deck_name === "No Deck Specified" ? "" : reading.deck_name;
+      deckName = normalizeDeckName(reading.deck_name);
       spreadTemplate = reading.spread_template_id || "custom";
       previousSpreadTemplate = reading.spread_template_id || "custom";
       title = reading.title;
@@ -76,21 +81,8 @@
       querent = reading.querent || "Myself";
 
       // Transform cards into spreadCards format using card_order as the key
-      spreadCards = reading.cards.reduce(
-        (acc: Record<number, any>, card: any) => {
-          const cardIndex = card.card_order;
-          acc[cardIndex] = {
-            card_name: card.card_name,
-            position_label: card.position,
-            interpretation: card.interpretation,
-            position_x: card.position_x,
-            position_y: card.position_y,
-            rotation: card.rotation,
-            reversed: card.reversed === 1 || card.reversed === true,
-          };
-          return acc;
-        },
-        {},
+      spreadCards = Object.fromEntries(
+        reading.cards.map((c: any) => [c.card_order, c]),
       );
     } catch (error) {
       console.error("Error loading reading:", error);
@@ -241,23 +233,12 @@
     const readingData = {
       date: date,
       time: time,
-      deck_name: deckName || "No Deck Specified",
+      deck_name: getDisplayDeckName(deckName),
       spread_template_id: spreadTemplate || "custom",
-      title:
-        title ||
-        (spreadTemplate === "celtic-cross" ? "Celtic Cross" : "Custom Spread"),
+      title: getDefaultTitle(title, spreadTemplate),
       notes: notes,
       querent: querent || "Myself",
-      cards: Object.entries(spreadCards).map(([indexStr, card]) => ({
-        card_order: parseInt(indexStr),
-        position: card.position_label,
-        card_name: card.card_name || "",
-        interpretation: card.interpretation || "",
-        position_x: card.position_x,
-        position_y: card.position_y,
-        rotation: card.rotation || 0,
-        reversed: card.reversed || false,
-      })),
+      cards: readingCardsMapToApiCards(spreadCards),
     };
 
     try {

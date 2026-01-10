@@ -1,4 +1,4 @@
-export type UserStats = {
+export interface UserStats {
   id: number;
   username: string;
   display_name: string;

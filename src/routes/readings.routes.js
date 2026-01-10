@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const db = require("../../database");
 const { SPREAD_TEMPLATES } = require("../../spreads");
+const {
+  addCompletionStatus,
+  normalizeQuerent,
+} = require("../utils/readingHelpers");
 
 // Get all readings (for summary table, user's own readings only)
 router.get("/", (req, res) => {
@@ -31,32 +35,7 @@ router.get("/", (req, res) => {
       }
 
       // Add is_incomplete flag based on spread template or empty positions
-      const enrichedReadings = readings.map((reading) => {
-        let isIncomplete = false;
-
-        // Check if spread has a template
-        if (reading.spread_template_id) {
-          const template = SPREAD_TEMPLATES[reading.spread_template_id];
-          if (template && template.cardCount) {
-            // For templated spreads, check if card count matches expected count
-            // and if there are any empty positions
-            isIncomplete =
-              reading.card_count < template.cardCount ||
-              reading.empty_positions > 0;
-          } else {
-            // For custom spreads, just check for empty positions
-            isIncomplete = reading.empty_positions > 0;
-          }
-        } else {
-          // For spreads without a template, check for empty positions
-          isIncomplete = reading.empty_positions > 0;
-        }
-
-        return {
-          ...reading,
-          is_incomplete: isIncomplete,
-        };
-      });
+      const enrichedReadings = addCompletionStatus(readings, SPREAD_TEMPLATES);
 
       res.json(enrichedReadings);
     },
@@ -99,7 +78,12 @@ router.get("/:id", (req, res) => {
           if (err) {
             return res.status(500).json({ error: err.message });
           }
-          res.json({ ...reading, cards });
+          // Convert SQLite integer (0/1) to boolean for reversed
+          const normalizedCards = cards.map((card) => ({
+            ...card,
+            reversed: Boolean(card.reversed),
+          }));
+          res.json({ ...reading, cards: normalizedCards });
         },
       );
     },
@@ -119,9 +103,6 @@ router.post("/", (req, res) => {
     querent,
   } = req.body;
 
-  // Default querent to "Myself" if not provided, and capitalize it
-  const normalizedQuerent = (querent || "Myself").trim() || "Myself";
-
   db.run(
     "INSERT INTO readings (user_id, date, time, title, spread_template_id, deck_name, notes, querent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     [
@@ -132,7 +113,7 @@ router.post("/", (req, res) => {
       spread_template_id,
       deck_name,
       notes,
-      normalizedQuerent,
+      normalizeQuerent(querent),
     ],
     function (err) {
       if (err) {
@@ -184,9 +165,6 @@ router.put("/:id", (req, res) => {
     querent,
   } = req.body;
 
-  // Default querent to "Myself" if not provided, and normalize it
-  const normalizedQuerent = (querent || "Myself").trim() || "Myself";
-
   db.run(
     "UPDATE readings SET date = ?, time = ?, title = ?, spread_template_id = ?, deck_name = ?, notes = ?, querent = ? WHERE id = ? AND user_id = ?",
     [
@@ -196,7 +174,7 @@ router.put("/:id", (req, res) => {
       spread_template_id,
       deck_name,
       notes,
-      normalizedQuerent,
+      normalizeQuerent(querent),
       req.params.id,
       req.user.id,
     ],

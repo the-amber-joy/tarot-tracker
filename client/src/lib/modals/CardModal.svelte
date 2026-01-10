@@ -61,7 +61,7 @@
     onSave({
       card_name: cardName.trim(),
       interpretation: cardInterpretation.trim(),
-      position_label: positionLabel,
+      position: positionLabel,
       reversed: cardReversed,
     });
 
@@ -78,7 +78,7 @@
     onSave({
       card_name: "",
       interpretation: "",
-      position_label: positionLabel,
+      position: positionLabel,
       reversed: false,
     });
   }
@@ -241,7 +241,9 @@
   // Focus on interpretation textarea when modal opens and trap focus
   $: if (isOpen && modalElement) {
     setTimeout(() => {
-      const input = modalElement.querySelector("#cardInterpretation") as HTMLInputElement;
+      const input = modalElement.querySelector(
+        "#cardInterpretation",
+      ) as HTMLInputElement;
       input?.focus();
     }, 50);
   }
@@ -436,6 +438,6 @@
 
 <CardDetailsModal
   bind:isOpen={showCardDetailsModal}
-  cardName={cardName}
+  {cardName}
   onClose={() => (showCardDetailsModal = false)}
 />

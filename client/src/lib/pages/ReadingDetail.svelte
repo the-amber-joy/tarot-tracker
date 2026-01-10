@@ -1,20 +1,12 @@
 <script lang="ts">
   import { navigate } from "svelte-routing";
+  import type { ReadingCard } from "../../types/reading";
   import SpreadCanvas from "../components/SpreadCanvas.svelte";
+  import { apiCardsToReadingCardsMap } from "../utils/cardUtils";
 
   export let params: { id?: string } = { id: "" };
 
   const readingId = parseInt(params.id || "");
-
-  type Card = {
-    card_name: string;
-    position: string;
-    interpretation: string;
-    position_x?: number;
-    position_y?: number;
-    rotation?: number;
-    reversed?: boolean | number;
-  };
 
   type Reading = {
     id: number;
@@ -25,29 +17,16 @@
     deck_name: string;
     notes?: string;
     querent?: string;
-    cards: Card[];
+    cards: ReadingCard[];
   };
 
   let reading: Reading | null = null;
   let readingPromise: Promise<void>;
 
   // Transform reading cards into spreadCards format
-  $: spreadCards =
-    reading?.cards.reduce(
-      (acc, card, idx) => {
-        acc[idx] = {
-          card_name: card.card_name,
-          position_label: card.position,
-          interpretation: card.interpretation,
-          position_x: card.position_x,
-          position_y: card.position_y,
-          rotation: card.rotation,
-          reversed: card.reversed === 1 || card.reversed === true,
-        };
-        return acc;
-      },
-      {} as Record<number, any>,
-    ) || {};
+  $: spreadCards = reading?.cards
+    ? apiCardsToReadingCardsMap(reading.cards)
+    : {};
 
   async function loadReading() {
     const response = await fetch(`/api/readings/${readingId}`);

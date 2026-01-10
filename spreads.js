@@ -1,9 +1,11 @@
+// TODO: Consider making a Spread type to use (this would be a TS conversion for teh backend)
+// TOOD: Consider eliminating "cardCount" since this value should be calculable from positions.length
 // Spread template definitions
 const SPREAD_TEMPLATES = {
   "celtic-cross": {
     id: "celtic-cross",
     name: "Celtic Cross",
-    cardCount: 10,
+    cardCount: 10,  
     positions: [
       {
         order: 1,

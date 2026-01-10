@@ -340,7 +340,7 @@
     newCards[nextIndex] = {
       position_x: x,
       position_y: y,
-      position_label: `Card ${nextIndex + 1}`,
+      position: `Card ${nextIndex + 1}`,
       card_name: "",
       rotation: 0,
     };
@@ -394,9 +394,9 @@
       currentTemplate.positions[index]
     ) {
       modalPositionLabel =
-        existingCard?.position_label || currentTemplate.positions[index].label;
+        existingCard?.position || currentTemplate.positions[index].label;
     } else {
-      modalPositionLabel = existingCard?.position_label || `Card ${index + 1}`;
+      modalPositionLabel = existingCard?.position || `Card ${index + 1}`;
     }
 
     // Clear mobile active card when opening modal
@@ -416,7 +416,7 @@
       ...existingCard,
       card_name: cardData.card_name,
       interpretation: cardData.interpretation,
-      position_label: cardData.position_label,
+      position: cardData.position,
       reversed: cardData.reversed,
     };
 
@@ -459,7 +459,7 @@
             // Keep this card but renumber it
             newCards[newIndex] = {
               ...spreadCards[oldIndex],
-              position_label: `Card ${newIndex + 1}`,
+              position: `Card ${newIndex + 1}`,
             };
             newIndex++;
           }
@@ -673,7 +673,7 @@
         <CardPosition
           {index}
           cardName={cardData.card_name || ""}
-          positionLabel={cardData.position_label || `Card ${index + 1}`}
+          positionLabel={cardData.position || `Card ${index + 1}`}
           positionNumber={index + 1}
           rotation={cardData.rotation || 0}
           reversed={cardData.reversed || false}
@@ -698,7 +698,7 @@
         <CardPosition
           {index}
           cardName={cardData.card_name || ""}
-          positionLabel={cardData.position_label || `Card ${index + 1}`}
+          positionLabel={cardData.position || `Card ${index + 1}`}
           positionNumber={index + 1}
           rotation={cardData.rotation || 0}
           reversed={cardData.reversed || false}
