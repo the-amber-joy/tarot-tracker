@@ -335,7 +335,6 @@
             bind:value={customQuerentName}
             placeholder="Enter querent name"
             class="querent-custom-input"
-            autofocus
             on:input={() => {
               if (customQuerentName.trim()) {
                 querent = customQuerentName.trim();

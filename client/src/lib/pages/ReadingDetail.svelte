@@ -2,7 +2,6 @@
   import { navigate } from "svelte-routing";
   import type { ReadingCard } from "../../types/reading";
   import SpreadCanvas from "../components/SpreadCanvas.svelte";
-  import { apiCardsToReadingCardsMap } from "../utils/cardUtils";
 
   export let params: { id?: string } = { id: "" };
 
@@ -25,7 +24,7 @@
 
   // Transform reading cards into spreadCards format
   $: spreadCards = reading?.cards
-    ? apiCardsToReadingCardsMap(reading.cards)
+    ? Object.fromEntries(reading.cards.map((c) => [c.card_order, c]))
     : {};
 
   async function loadReading() {
