@@ -90,7 +90,7 @@ app.get("/deploy.txt", (req, res) => {
 app.use(express.static(path.join(__dirname, "client/dist")));
 
 // Serve frontend for all other routes (SPA routing)
-app.get("*", (req, res) => {
+app.get("*splat", (req, res) => {
   res.sendFile(path.join(__dirname, "client/dist/index.html"));
 });
 
