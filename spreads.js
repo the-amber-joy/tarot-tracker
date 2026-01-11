@@ -1,6 +1,21 @@
-// TODO: Consider making a Spread type to use (this would be a TS conversion for teh backend)
-// TOOD: Consider eliminating "cardCount" since this value should be calculable from positions.length
-// Spread template definitions
+/**
+ * @typedef {Object} SpreadPosition
+ * @property {number} order - Position order in the spread (1-indexed)
+ * @property {string} label - Display label for this position
+ * @property {number} defaultX - Default X coordinate for canvas placement
+ * @property {number} defaultY - Default Y coordinate for canvas placement
+ * @property {number} [rotation] - Optional rotation in degrees
+ */
+
+/**
+ * @typedef {Object} SpreadTemplate
+ * @property {string} id - Unique identifier for the spread
+ * @property {string} name - Display name
+ * @property {number|null} cardCount - Expected number of cards (null for custom)
+ * @property {SpreadPosition[]} positions - Array of position definitions
+ */
+
+/** @type {Record<string, SpreadTemplate>} */
 const SPREAD_TEMPLATES = {
   "celtic-cross": {
     id: "celtic-cross",
