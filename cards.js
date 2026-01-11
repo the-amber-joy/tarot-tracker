@@ -1,3 +1,15 @@
+/**
+ * @typedef {'Major Arcana' | 'Wands' | 'Cups' | 'Swords' | 'Pentacles'} Suit
+ */
+
+/**
+ * @typedef {Object} TarotCard
+ * @property {string} name - Card name (e.g., "The Fool", "Ace of Wands")
+ * @property {number} number - Card number (0-21 for Major Arcana, 1-14 for Minor)
+ * @property {Suit} suit - Card suit
+ */
+
+/** @type {TarotCard[]} */
 // Full 78-card Tarot deck with numbers
 const TAROT_CARDS = [
   // Major Arcana (22 cards) - 0-21

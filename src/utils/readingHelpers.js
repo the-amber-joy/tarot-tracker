@@ -1,8 +1,16 @@
+/** @typedef {import('../types.js').Reading} Reading */
+/** @typedef {import('../../spreads.js').SpreadTemplate} SpreadTemplate */
+
+/**
+ * Reading with filled_positions from the list query
+ * @typedef {Reading & { filled_positions: number }} ReadingFromQuery
+ */
+
 /**
  * Determines if a reading is incomplete based on its spread template and filled positions
  *
- * @param {Object} reading - The reading object with filled_positions and spread_template_id
- * @param {Object} spreadTemplates - The spread templates lookup object
+ * @param {ReadingFromQuery} reading - The reading object with filled_positions
+ * @param {Record<string, SpreadTemplate>} spreadTemplates - The spread templates lookup object
  * @returns {boolean} - Whether the reading is incomplete
  */
 function isReadingIncomplete(reading, spreadTemplates) {
@@ -16,9 +24,9 @@ function isReadingIncomplete(reading, spreadTemplates) {
 /**
  * Adds is_incomplete flag to a list of readings
  *
- * @param {Array} readings - Array of reading objects
- * @param {Object} spreadTemplates - The spread templates lookup object
- * @returns {Array} - Readings with is_incomplete flag added
+ * @param {ReadingFromQuery[]} readings - Array of reading objects
+ * @param {Record<string, SpreadTemplate>} spreadTemplates - The spread templates lookup object
+ * @returns {(ReadingFromQuery & { is_incomplete: boolean })[]} - Readings with is_incomplete flag added
  */
 function addCompletionStatus(readings, spreadTemplates) {
   return readings.map((reading) => ({
