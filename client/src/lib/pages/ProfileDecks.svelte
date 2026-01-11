@@ -320,6 +320,7 @@
   cancelText="Cancel"
   onConfirm={confirmDeleteDeck}
   onCancel={cancelDeleteDeck}
+  isDanger={true}
 />
 
 <!-- Validation Modal (deck in use) -->
