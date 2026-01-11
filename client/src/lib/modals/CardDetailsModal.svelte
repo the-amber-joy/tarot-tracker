@@ -26,10 +26,10 @@
     string,
     { color: string; bg: string; icon: string }
   > = {
-    Fire: { color: "#dc2626", bg: "rgba(220, 38, 38, 0.1)", icon: "🔥" },
-    Water: { color: "#2563eb", bg: "rgba(37, 99, 235, 0.1)", icon: "💧" },
-    Air: { color: "#7c3aed", bg: "rgba(124, 58, 237, 0.1)", icon: "💨" },
-    Earth: { color: "#16a34a", bg: "rgba(22, 163, 74, 0.1)", icon: "🌿" },
+    Fire: { color: "#ff9169", bg: "rgba(255, 145, 105, 0.1)", icon: "🔥" },
+    Water: { color: "#007bc2", bg: "rgba(0, 123, 194, 0.1)", icon: "💧" },
+    Air: { color: "#764ba2", bg: "rgba(118, 75, 162, 0.1)", icon: "💨" },
+    Earth: { color: "#05a190", bg: "rgba(5, 161, 144, 0.1)", icon: "🌿" },
   };
 
   // Planet icons

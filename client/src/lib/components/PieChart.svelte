@@ -8,11 +8,11 @@
   export let labels: string[] = [];
   export let data: number[] = [];
   export let backgroundColors: string[] = [
-    "rgba(255, 99, 132, 0.7)",
-    "rgba(54, 162, 235, 0.7)",
-    "rgba(255, 206, 86, 0.7)",
-    "rgba(75, 192, 192, 0.7)",
-    "rgba(153, 102, 255, 0.7)",
+    "rgba(246, 103, 130, 0.7)",
+    "rgba(0, 123, 194, 0.7)",
+    "rgba(255, 196, 93, 0.7)",
+    "rgba(5, 161, 144, 0.7)",
+    "rgba(118, 75, 162, 0.7)",
   ];
 
   let canvas: HTMLCanvasElement;

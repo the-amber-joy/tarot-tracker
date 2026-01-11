@@ -44,6 +44,7 @@
     gap: 0.75rem;
     z-index: var(--z-toast);
     animation: slideIn 0.3s ease-out;
+    color: white;
   }
 
   @keyframes slideIn {
@@ -59,17 +60,14 @@
 
   .toast-success {
     background: var(--color-success);
-    color: white;
   }
 
   .toast-error {
     background: var(--color-danger);
-    color: white;
   }
 
   .toast-info {
     background: #17a2b8;
-    color: white;
   }
 
   .toast-icon {
