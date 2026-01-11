@@ -1,28 +1,16 @@
 /**
- * Determines if a reading is incomplete based on its spread template and card data
+ * Determines if a reading is incomplete based on its spread template and filled positions
  *
- * @param {Object} reading - The reading object with card_count, empty_positions, and spread_template_id
+ * @param {Object} reading - The reading object with filled_positions and spread_template_id
  * @param {Object} spreadTemplates - The spread templates lookup object
  * @returns {boolean} - Whether the reading is incomplete
  */
 function isReadingIncomplete(reading, spreadTemplates) {
-  // Check if spread has a template
-  if (reading.spread_template_id) {
-    const template = spreadTemplates[reading.spread_template_id];
-    if (template && template.cardCount) {
-      // For templated spreads, check if card count matches expected count
-      // and if there are any empty positions
-      return (
-        reading.card_count < template.cardCount || reading.empty_positions > 0
-      );
-    } else {
-      // For custom spreads, just check for empty positions
-      return reading.empty_positions > 0;
-    }
-  } else {
-    // For spreads without a template, check for empty positions
-    return reading.empty_positions > 0;
-  }
+  const template = spreadTemplates[reading.spread_template_id];
+  const expectedCount = template?.cardCount ?? 0;
+
+  // A reading is incomplete if it has fewer filled positions than expected
+  return reading.filled_positions < expectedCount;
 }
 
 /**

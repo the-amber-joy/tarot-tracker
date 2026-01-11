@@ -21,8 +21,7 @@ router.get("/", (req, res) => {
       r.deck_name,
       r.notes,
       r.querent,
-      COUNT(rc.id) as card_count,
-      SUM(CASE WHEN rc.card_name IS NULL OR rc.card_name = '' THEN 1 ELSE 0 END) as empty_positions
+      SUM(CASE WHEN rc.card_name IS NOT NULL AND rc.card_name != '' THEN 1 ELSE 0 END) as filled_positions
     FROM readings r
     LEFT JOIN reading_cards rc ON r.id = rc.reading_id
     WHERE r.user_id = ?

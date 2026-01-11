@@ -9,107 +9,89 @@ import {
 describe("Reading Helpers", () => {
   describe("isReadingIncomplete", () => {
     describe("with templated spreads", () => {
-      it("should return false when card count matches template and no empty positions", () => {
+      it("should return false when filled positions matches template cardCount", () => {
         const reading = {
           spread_template_id: "three-card",
-          card_count: 3,
-          empty_positions: 0,
+          filled_positions: 3,
         };
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
 
-      // FIXME: This is confusing. If the template requires 10 cards, and the count is 5, how could there be 0 empty positions?
-      it("should return true when card count is less than template requires", () => {
+      it("should return true when filled positions is less than template requires", () => {
         const reading = {
           spread_template_id: "celtic-cross",
-          card_count: 5,
-          empty_positions: 0,
+          filled_positions: 5,
         };
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(true);
       });
 
-      it("should return true when there are empty positions", () => {
+      it("should return false when filled positions exceeds template cardCount", () => {
         const reading = {
           spread_template_id: "three-card",
-          card_count: 3,
-          empty_positions: 1,
+          filled_positions: 5,
         };
-        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(true);
+        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
 
-      it("should return true when both card count is low and has empty positions", () => {
+      it("should return true when no cards are filled", () => {
         const reading = {
           spread_template_id: "celtic-cross",
-          card_count: 8,
-          empty_positions: 2,
+          filled_positions: 0,
         };
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(true);
       });
     });
 
     describe("with custom spreads (no cardCount)", () => {
-      it("should return false when no empty positions", () => {
+      it("should return false for custom spread with any filled positions", () => {
         const reading = {
           spread_template_id: "custom",
-          card_count: 5,
-          empty_positions: 0,
+          filled_positions: 5,
         };
+        // custom template has no cardCount, so expectedCount is 0
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
 
-      it("should return true when there are empty positions", () => {
+      it("should return false for custom spread with zero filled positions", () => {
         const reading = {
           spread_template_id: "custom",
-          card_count: 5,
-          empty_positions: 2,
+          filled_positions: 0,
         };
-        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(true);
+        // 0 >= 0 (expectedCount) means complete
+        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
     });
 
     describe("with unknown template", () => {
-      it("should return false when no empty positions with unknown template", () => {
+      it("should return false with unknown template (defaults to 0 expected)", () => {
         const reading = {
           spread_template_id: "unknown-template",
-          card_count: 5,
-          empty_positions: 0,
+          filled_positions: 5,
         };
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
 
-      it("should return true when there are empty positions with unknown template", () => {
+      it("should return false with unknown template and zero filled", () => {
         const reading = {
           spread_template_id: "unknown-template",
-          card_count: 5,
-          empty_positions: 1,
+          filled_positions: 0,
         };
-        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(true);
+        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
     });
 
     describe("without spread template", () => {
-      it("should return false when no spread_template_id and no empty positions", () => {
+      it("should return false when no spread_template_id", () => {
         const reading = {
           spread_template_id: null,
-          card_count: 3,
-          empty_positions: 0,
+          filled_positions: 3,
         };
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
 
-      it("should return true when no spread_template_id but has empty positions", () => {
-        const reading = {
-          spread_template_id: null,
-          card_count: 3,
-          empty_positions: 1,
-        };
-        expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(true);
-      });
-
       it("should handle undefined spread_template_id", () => {
         const reading = {
-          card_count: 3,
-          empty_positions: 0,
+          filled_positions: 3,
         };
         expect(isReadingIncomplete(reading, SPREAD_TEMPLATES)).toBe(false);
       });
@@ -122,14 +104,12 @@ describe("Reading Helpers", () => {
         {
           id: 1,
           spread_template_id: "three-card",
-          card_count: 3,
-          empty_positions: 0,
+          filled_positions: 3,
         },
         {
           id: 2,
           spread_template_id: "three-card",
-          card_count: 2,
-          empty_positions: 1,
+          filled_positions: 2,
         },
       ];
 
@@ -150,8 +130,7 @@ describe("Reading Helpers", () => {
           title: "My Reading",
           date: "2025-01-01",
           spread_template_id: "three-card",
-          card_count: 3,
-          empty_positions: 0,
+          filled_positions: 3,
         },
       ];
 
