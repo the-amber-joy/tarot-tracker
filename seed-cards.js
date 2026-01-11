@@ -1,6 +1,6 @@
-const db = require("./database");
-const { TAROT_CARDS } = require("./cards");
-const { promisify } = require("util");
+import { promisify } from "util";
+import { TAROT_CARDS } from "./cards.js";
+import db from "./database.js";
 
 // Promisify database methods
 const dbRun = promisify(db.run.bind(db));
@@ -341,7 +341,9 @@ async function seedReferenceTablesAndCards() {
 }
 
 // Run seeding if this file is executed directly
-if (require.main === module) {
+const isMainModule =
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, "/")}`;
+if (isMainModule) {
   seedReferenceTablesAndCards()
     .then(() => {
       console.log("Database connection will close automatically");
@@ -353,4 +355,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedReferenceTablesAndCards };
+export { seedReferenceTablesAndCards };

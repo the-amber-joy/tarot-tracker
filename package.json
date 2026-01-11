@@ -1,6 +1,7 @@
 {
   "name": "tarot-stats",
   "version": "1.0.0",
+  "type": "module",
   "description": "Tarot reading statistics tracker",
   "main": "server.js",
   "scripts": {

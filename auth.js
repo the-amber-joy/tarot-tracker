@@ -1,8 +1,8 @@
-const passport = require("passport");
-const LocalStrategy = require("passport-local").Strategy;
-const bcrypt = require("bcrypt");
-const crypto = require("crypto");
-const db = require("./database");
+import bcrypt from "bcrypt";
+import crypto from "crypto";
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import db from "./database.js";
 
 // Configure password hashing
 const SALT_ROUNDS = 10;
@@ -272,19 +272,19 @@ function isTokenExpired(expiryDate) {
   return new Date() > new Date(expiryDate);
 }
 
-module.exports = {
-  passport,
-  createUser,
-  requireAuth,
-  requireAdmin,
-  generateToken,
-  getVerificationTokenExpiry,
-  getResetTokenExpiry,
-  canResendVerification,
-  getResendWaitMinutes,
+export {
   canResendReset,
+  canResendVerification,
+  createUser,
+  generateToken,
+  getResendWaitMinutes,
+  getResetTokenExpiry,
   getResetWaitMinutes,
+  getVerificationTokenExpiry,
   isTokenExpired,
+  passport,
+  requireAdmin,
+  requireAuth,
   RESEND_RATE_LIMIT_MINUTES,
   RESET_RATE_LIMIT_MINUTES,
 };

@@ -1,5 +1,9 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Migration runner for SQLite database
@@ -94,11 +98,12 @@ class MigrationRunner {
   async runMigration(filename) {
     const version = filename.split("_")[0];
     const name = filename.replace(/^\d{3}_/, "").replace(/\.js$/, "");
-    const migrationPath = path.join(this.migrationsDir, filename);
 
     console.log(`  Running ${filename}...`);
 
-    const migration = require(migrationPath);
+    const migrationPath =
+      "file://" + path.join(this.migrationsDir, filename).replace(/\\/g, "/");
+    const migration = await import(migrationPath);
 
     return new Promise((resolve, reject) => {
       this.db.serialize(() => {
@@ -138,4 +143,4 @@ class MigrationRunner {
   }
 }
 
-module.exports = MigrationRunner;
+export default MigrationRunner;

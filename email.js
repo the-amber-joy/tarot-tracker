@@ -2,7 +2,7 @@
  * Email service using Nodemailer with Gmail
  */
 
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
@@ -214,9 +214,9 @@ Happy reading! ✨
   }
 }
 
-module.exports = {
-  verifyConnection,
-  sendVerificationEmail,
-  sendPasswordResetEmail,
+export {
   sendAdminVerifiedEmail,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+  verifyConnection,
 };

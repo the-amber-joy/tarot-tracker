@@ -2,7 +2,7 @@
  * Maps tarot card names to image filenames
  * Image files use lowercase, no spaces format (e.g., "aceofcups.jpeg")
  */
-function getImageFilename(cardName) {
+export function getImageFilename(cardName) {
   // Convert to lowercase and remove all spaces
   let filename = cardName.replace(/\s+/g, "").toLowerCase();
 
@@ -13,11 +13,6 @@ function getImageFilename(cardName) {
 /**
  * Gets the full URL path for a card image
  */
-function getImageUrl(cardName) {
+export function getImageUrl(cardName) {
   return `/tarot-images/${getImageFilename(cardName)}`;
 }
-
-module.exports = {
-  getImageFilename,
-  getImageUrl,
-};

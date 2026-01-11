@@ -56,8 +56,4 @@ function normalizeQuerent(querent) {
     .join(" ");
 }
 
-module.exports = {
-  isReadingIncomplete,
-  addCompletionStatus,
-  normalizeQuerent,
-};
+export { addCompletionStatus, isReadingIncomplete, normalizeQuerent };

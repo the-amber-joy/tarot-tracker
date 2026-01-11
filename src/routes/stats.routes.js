@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
+import db from "../../database.js";
+
 const router = express.Router();
-const db = require("../../database");
 
 // Get card frequency statistics
 router.get("/card-frequency", (req, res) => {
@@ -332,4 +333,4 @@ router.get("/analytics", (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

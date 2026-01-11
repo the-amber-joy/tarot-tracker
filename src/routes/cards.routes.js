@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import { TAROT_CARDS } from "../../cards.js";
+import db from "../../database.js";
+
 const router = express.Router();
-const db = require("../../database");
-const { TAROT_CARDS } = require("../../cards");
 
 // Get all tarot cards (public)
 router.get("/", (req, res) => {
@@ -43,4 +44,4 @@ router.get("/:name", (req, res) => {
   );
 });
 
-module.exports = router;
+export default router;

@@ -1,7 +1,13 @@
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
-const fs = require("fs");
-const MigrationRunner = require("./migrations/migrate");
+import bcrypt from "bcrypt";
+import fs from "fs";
+import path from "path";
+import sqlite3Pkg from "sqlite3";
+import { fileURLToPath } from "url";
+import MigrationRunner from "./migrations/migrate.js";
+
+const sqlite3 = sqlite3Pkg.verbose();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Use environment variable for data directory, fallback to local ./data
 const dataDir = process.env.DB_PATH || path.join(__dirname, "data");
@@ -30,7 +36,9 @@ async function seedCardData() {
       if (row.count === 0) {
         console.log("Cards table is empty, seeding card data...");
         try {
-          const { seedReferenceTablesAndCards } = require("./seed-cards");
+          const { seedReferenceTablesAndCards } = await import(
+            "./seed-cards.js"
+          );
           await seedReferenceTablesAndCards();
           console.log("✓ Card data seeded successfully");
           resolve();
@@ -72,7 +80,6 @@ async function initDatabase() {
             return;
           }
           if (!existing) {
-            const bcrypt = require("bcrypt");
             bcrypt.hash(adminPassword, 10, (err, hash) => {
               if (err) {
                 console.error("Error hashing admin password:", err.message);
@@ -102,4 +109,4 @@ async function initDatabase() {
   }
 }
 
-module.exports = db;
+export default db;

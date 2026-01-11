@@ -178,4 +178,4 @@ async function down(db) {
   await runAsync(db, "DROP TABLE IF EXISTS users");
 }
 
-module.exports = { up, down };
+export { down, up };

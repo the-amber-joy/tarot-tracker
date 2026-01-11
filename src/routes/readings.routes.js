@@ -1,11 +1,12 @@
-const express = require("express");
-const router = express.Router();
-const db = require("../../database");
-const { SPREAD_TEMPLATES } = require("../../spreads");
-const {
+import express from "express";
+import db from "../../database.js";
+import { SPREAD_TEMPLATES } from "../../spreads.js";
+import {
   addCompletionStatus,
   normalizeQuerent,
-} = require("../utils/readingHelpers");
+} from "../utils/readingHelpers.js";
+
+const router = express.Router();
 
 // Get all readings (for summary table, user's own readings only)
 router.get("/", (req, res) => {
@@ -262,4 +263,4 @@ router.delete("/:id", (req, res) => {
   );
 });
 
-module.exports = router;
+export default router;

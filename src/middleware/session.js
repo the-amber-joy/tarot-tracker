@@ -1,7 +1,12 @@
-const path = require("path");
-const session = require("express-session");
-const SqliteStore = require("better-sqlite3-session-store")(session);
-const Database = require("better-sqlite3");
+import Database from "better-sqlite3";
+import SqliteStoreFactory from "better-sqlite3-session-store";
+import session from "express-session";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const SqliteStore = SqliteStoreFactory(session);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function setupSession() {
   // Setup persistent session store
@@ -28,4 +33,4 @@ function setupSession() {
   });
 }
 
-module.exports = { setupSession };
+export { setupSession };

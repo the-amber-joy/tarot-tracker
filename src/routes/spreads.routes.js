@@ -1,10 +1,11 @@
-const express = require("express");
+import express from "express";
+import { SPREAD_TEMPLATES } from "../../spreads.js";
+
 const router = express.Router();
-const { SPREAD_TEMPLATES } = require("../../spreads");
 
 // Get all spread templates (public)
 router.get("/", (req, res) => {
   res.json(Object.values(SPREAD_TEMPLATES));
 });
 
-module.exports = router;
+export default router;

@@ -1,9 +1,16 @@
-const express = require("express");
+import bcrypt from "bcrypt";
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import db from "../../database.js";
+import { sendAdminVerifiedEmail } from "../../email.js";
+import { SPREAD_TEMPLATES } from "../../spreads.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
-const db = require("../../database");
-const { requireAdmin } = require("../../auth");
-const { SPREAD_TEMPLATES } = require("../../spreads");
-const { sendAdminVerifiedEmail } = require("../../email");
 
 // Get all users with statistics (admin only)
 router.get("/users", (req, res) => {
@@ -75,7 +82,6 @@ router.put("/users/:id/reset-password", async (req, res) => {
   }
 
   try {
-    const bcrypt = require("bcrypt");
     const newHash = await bcrypt.hash(newPassword, 10);
 
     db.run(
@@ -678,8 +684,6 @@ router.get("/cards", (req, res) => {
 
 // Get deployment info (admin only)
 router.get("/deploy-info", (req, res) => {
-  const fs = require("fs");
-  const path = require("path");
   const deployPath = path.join(__dirname, "../../deploy.txt");
 
   if (fs.existsSync(deployPath)) {
@@ -699,4 +703,4 @@ router.get("/is-production", (req, res) => {
   res.json({ isProduction: process.env.NODE_ENV === "production" });
 });
 
-module.exports = router;
+export default router;

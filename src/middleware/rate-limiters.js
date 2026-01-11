@@ -1,4 +1,4 @@
-const rateLimit = require("express-rate-limit");
+import rateLimit from "express-rate-limit";
 
 // Rate limiters for different endpoints
 const authLimiter = rateLimit({
@@ -25,8 +25,4 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = {
-  authLimiter,
-  emailLimiter,
-  generalLimiter,
-};
+export { authLimiter, emailLimiter, generalLimiter };

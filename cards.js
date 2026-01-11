@@ -89,4 +89,4 @@ const TAROT_CARDS = [
   { name: "King of Pentacles", number: 14, suit: "Pentacles" },
 ];
 
-module.exports = { TAROT_CARDS };
+export { TAROT_CARDS };

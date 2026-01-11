@@ -28,4 +28,4 @@ async function down(db) {
   console.log("    ⚠ Cannot remove reversed column (SQLite limitation)");
 }
 
-module.exports = { up, down };
+export { down, up };

@@ -5,7 +5,7 @@ const SPREAD_TEMPLATES = {
   "celtic-cross": {
     id: "celtic-cross",
     name: "Celtic Cross",
-    cardCount: 10,  
+    cardCount: 10,
     positions: [
       {
         order: 1,
@@ -108,4 +108,4 @@ const SPREAD_TEMPLATES = {
   },
 };
 
-module.exports = { SPREAD_TEMPLATES };
+export { SPREAD_TEMPLATES };

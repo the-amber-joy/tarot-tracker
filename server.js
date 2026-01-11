@@ -1,22 +1,26 @@
 // Load environment variables from .env file
-require("dotenv").config();
+import "dotenv/config";
 
-const express = require("express");
-const path = require("path");
-const helmet = require("helmet");
-const cookieParser = require("cookie-parser");
-const { passport, requireAuth, requireAdmin } = require("./auth");
-const { setupSession } = require("./src/middleware/session");
-const { generalLimiter } = require("./src/middleware/rate-limiters");
+import cookieParser from "cookie-parser";
+import express from "express";
+import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
+import { passport, requireAdmin, requireAuth } from "./auth.js";
+import { generalLimiter } from "./src/middleware/rate-limiters.js";
+import { setupSession } from "./src/middleware/session.js";
 
 // Import route handlers
-const authRoutes = require("./src/routes/auth.routes");
-const adminRoutes = require("./src/routes/admin.routes");
-const cardsRoutes = require("./src/routes/cards.routes");
-const decksRoutes = require("./src/routes/decks.routes");
-const statsRoutes = require("./src/routes/stats.routes");
-const readingsRoutes = require("./src/routes/readings.routes");
-const spreadsRoutes = require("./src/routes/spreads.routes");
+import adminRoutes from "./src/routes/admin.routes.js";
+import authRoutes from "./src/routes/auth.routes.js";
+import cardsRoutes from "./src/routes/cards.routes.js";
+import decksRoutes from "./src/routes/decks.routes.js";
+import readingsRoutes from "./src/routes/readings.routes.js";
+import spreadsRoutes from "./src/routes/spreads.routes.js";
+import statsRoutes from "./src/routes/stats.routes.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;

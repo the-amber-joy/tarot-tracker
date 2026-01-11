@@ -1,24 +1,23 @@
-const express = require("express");
-const router = express.Router();
-const db = require("../../database");
-const {
-  passport,
-  createUser,
-  requireAuth,
-  generateToken,
-  getVerificationTokenExpiry,
-  getResetTokenExpiry,
-  canResendVerification,
-  getResendWaitMinutes,
+import bcrypt from "bcrypt";
+import express from "express";
+import {
   canResendReset,
+  canResendVerification,
+  createUser,
+  generateToken,
+  getResendWaitMinutes,
+  getResetTokenExpiry,
   getResetWaitMinutes,
+  getVerificationTokenExpiry,
   isTokenExpired,
-} = require("../../auth");
-const {
-  sendVerificationEmail,
-  sendPasswordResetEmail,
-} = require("../../email");
-const { authLimiter, emailLimiter } = require("../middleware/rate-limiters");
+  passport,
+  requireAuth,
+} from "../../auth.js";
+import db from "../../database.js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../../email.js";
+import { authLimiter, emailLimiter } from "../middleware/rate-limiters.js";
+
+const router = express.Router();
 
 // Authentication routes
 router.post("/register", authLimiter, async (req, res) => {
@@ -395,7 +394,6 @@ router.post("/reset-password", async (req, res) => {
     }
 
     // Hash new password
-    const bcrypt = require("bcrypt");
     const newHash = await bcrypt.hash(newPassword, 10);
 
     // Update password and clear reset token
@@ -539,8 +537,6 @@ router.put("/password", requireAuth, async (req, res) => {
   }
 
   try {
-    const bcrypt = require("bcrypt");
-
     // Get user's current password hash
     db.get(
       "SELECT password_hash FROM users WHERE id = ?",
@@ -669,4 +665,4 @@ router.put("/email", requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
