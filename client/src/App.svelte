@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import { Route, Router, navigate } from "svelte-routing";
   import Header from "./lib/components/Header.svelte";
-  import ManageDeckModal from "./lib/modals/ManageDeckModal.svelte";
   import SessionExpiredModal from "./lib/modals/SessionExpiredModal.svelte";
   import Admin from "./lib/pages/Admin.svelte";
   import Dashboard from "./lib/pages/Dashboard.svelte";
@@ -19,7 +18,6 @@
 
   let currentPath = "";
   let authInitialized = false;
-  let isDeckModalOpen: boolean = false;
 
   // Show FAB on home, profile, admin, and reading pages (not in edit/new mode)
   $: showFab =
@@ -72,10 +70,6 @@
   function handleNewReading() {
     navigate("/reading/new");
     setTimeout(() => (currentPath = window.location.pathname), 0);
-  }
-
-  function closeDeckModal() {
-    isDeckModalOpen = false;
   }
 
   function handleSessionExpired() {
@@ -144,12 +138,6 @@
         <span class="fab-icon">+</span>
       </button>
     {/if}
-
-    <ManageDeckModal
-      isOpen={isDeckModalOpen}
-      onClose={closeDeckModal}
-      onDeckAdded={() => {}}
-    />
   </Router>
 {/if}
 

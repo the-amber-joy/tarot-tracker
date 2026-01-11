@@ -45,6 +45,7 @@
     <div class="demo-box button-row">
       <button class="btn btn-primary">Primary</button>
       <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-success">Success</button>
       <button class="btn btn-danger">Danger</button>
       <button class="btn btn-warning">Warning</button>
       <button class="btn btn-small btn-primary">Small</button>
