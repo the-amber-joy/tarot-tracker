@@ -460,9 +460,9 @@
   }
 
   .warning-box {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    color: #856404;
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning);
+    color: var(--color-warning-text);
     padding: 1rem;
     border-radius: var(--radius-md);
     margin-bottom: 1.5rem;

@@ -90,6 +90,16 @@ app.get("/deploy.txt", (req, res) => {
   res.sendFile(path.join(__dirname, "deploy.txt"));
 });
 
+// Serve PWA files with no-cache headers so Cloudflare doesn't cache them
+// (cached sw.js or manifest breaks PWA installability)
+const pwaFiles = ["sw.js", "manifest.webmanifest", "registerSW.js"];
+pwaFiles.forEach((file) => {
+  app.get(`/${file}`, (req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.sendFile(path.join(__dirname, "client/dist", file));
+  });
+});
+
 // Serve static files from Vite build
 app.use(express.static(path.join(__dirname, "client/dist")));
 

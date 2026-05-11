@@ -32,6 +32,8 @@
   /* Warning Colors */
   --color-warning: #ffc45d;
   --color-warning-hover: #ff9169;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #856404;
 
   /* Secondary/Gray Colors */
   --color-secondary: #6c757d;
