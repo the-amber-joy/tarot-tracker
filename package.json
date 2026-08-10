@@ -35,7 +35,7 @@
     "svelte-routing": "^2.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "nodemon": "^3.1.14",
     "vitest": "^4.1.0"
   }
 }
